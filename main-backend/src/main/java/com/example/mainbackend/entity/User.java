@@ -17,8 +17,10 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; // Worker ID
 
-    @Column(nullable = false, unique = true, length = 80)
-    private String username;
+    // Authentication Details
+
+    @Column(name = "teudat_zehut", unique = true, nullable = false)
+    private String teudatZehut; // Person ID
 
     @Column(nullable = false)
     private String password;
@@ -26,7 +28,9 @@ public class User {
     private String firstName;
     private String lastName;
 
+    @Column(unique = true)
     private String email;
+
     private String phoneNumber;
     private Double salary;
     private String address;
@@ -36,7 +40,6 @@ public class User {
     private Integer maxTasks;
 
     // Relationship Roles
-
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "user_role",
