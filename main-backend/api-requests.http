@@ -1,0 +1,20 @@
+### Server API Tests - SIMPLE COPY-PASTE VERSION
+### Save this file as: api-requests.http
+### Use with IntelliJ IDEA Ultimate HTTP Client
+
+### INSTRUCTIONS:
+### 1. Run MainBackendApplication to start the server
+### 2. Open this file in IntelliJ IDEA Ultimate
+### 3. Click the "Run" icon next to each request to execute it
+
+### Variables
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### GET request to server
+GET {{baseUrl}}/api/status
+Accept: {{contentType}}
+
+### GET request to fetch all users
+GET {{baseUrl}}/api/users
+Accept: {{contentType}}

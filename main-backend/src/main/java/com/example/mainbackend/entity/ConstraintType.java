@@ -3,23 +3,19 @@ package com.example.mainbackend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
-
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-public class Vacation {
+public class ConstraintType {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User worker;
+    @Column(nullable = false, unique = true)
+    private String name;
 
-    private LocalDate startDate;
-    private LocalDate endDate;
+    private String description;
 }

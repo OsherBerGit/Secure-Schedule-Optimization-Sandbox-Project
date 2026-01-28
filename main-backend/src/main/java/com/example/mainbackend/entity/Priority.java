@@ -1,7 +1,13 @@
 package com.example.mainbackend.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 public class Priority {
     @Id
