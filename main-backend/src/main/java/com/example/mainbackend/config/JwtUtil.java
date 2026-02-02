@@ -32,8 +32,7 @@ public class JwtUtil {
         }
     }
 
-    // Use the stored key
-    private Key getKey() { return this.key; }
+    private Key getKey() { return this.key; } // Use the stored key
 
     // Generate a JWT token for a user, first time login
     public String generateToken(AuthenticationRequest authenticationRequest, UserDetails userDetails, String jwtID) {
@@ -102,8 +101,7 @@ public class JwtUtil {
     // Extract all claims from a JWT token
     private Claims extractAllClaims(String token) {
         SecretKey secretKey = (SecretKey) getKey();
-        return Jwts
-                .parser()
+        return Jwts.parser()
                 .verifyWith(secretKey)
                 .build().parseSignedClaims(token).getPayload();
     }

@@ -24,8 +24,4 @@ public class UserDto {
 
     // Roles as role names (not full entity to avoid circular references)
     private Set<String> roles;
-
-    // Vacation and Settlement IDs (not full objects to keep DTO lightweight)
-    private List<Long> vacationIds;
-    private List<Long> settlementIds;
 }
