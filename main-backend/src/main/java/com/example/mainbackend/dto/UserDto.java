@@ -3,7 +3,6 @@ package com.example.mainbackend.dto;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.List;
 import java.util.Set;
 
 @Data

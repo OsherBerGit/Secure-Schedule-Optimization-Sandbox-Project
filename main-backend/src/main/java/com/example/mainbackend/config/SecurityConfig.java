@@ -1,16 +1,26 @@
 package com.example.mainbackend.config;
 
+import com.example.mainbackend.service.CustomLogoutHandler;
+import com.example.mainbackend.service.CustomUserDetailsService;
+import com.example.mainbackend.service.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+
+import java.util.List;
 
 @Configuration
-@EnableWebSecurity
+@EnableWebSecurity(debug = true) // enable debug mode to see the security filter chain in action
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -26,10 +36,61 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // Disable security for now (configure properly later)
+        // we don't need csrf protection in jwt
         http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+                .csrf(AbstractHttpConfigurer::disable)
+                // add cors corsConfigurer
+                .cors(cors -> {
+                    // register cors configuration source, React app is running on localhost:5173
+                    cors.configurationSource(request -> {
+                        var corsConfig = new CorsConfiguration();
+                        corsConfig.setAllowedOrigins(List.of("http://localhost:5173")); // vite dev server
+                        corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                        corsConfig.setAllowedHeaders(List.of("*"));
+                        return corsConfig;
+                    });
+                })
+
+
+                // adding a custom JWT authentication filter
+                .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService, tokenBlacklistService),
+                        UsernamePasswordAuthenticationFilter.class)
+
+                // The SessionCreationPolicy.STATELESS setting means that the application will not create or use HTTP sessions.
+                // This is a common configuration in RESTful APIs, especially when using token-based authentication like JWT (JSON Web Token).
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // Adding logout mechanism
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
+                        .logoutSuccessHandler(customLogoutHandler) // Custom logout handler class
+                        .invalidateHttpSession(true) // Invalidate session
+                        .clearAuthentication(true)
+                        .permitAll())
+
+                // Configuring authorization for HTTP requests
+                .authorizeHttpRequests(auth -> auth
+                        // Public endpoints
+                        .requestMatchers("/login", "/register", "/home").permitAll()
+                        .requestMatchers("/api/status").permitAll() // Health check endpoint
+
+                        // User endpoints - accessible by authenticated users
+                        .requestMatchers(HttpMethod.GET, "/api/users/**", "/users/**").hasAnyRole("USER", "ADMIN")
+
+                        // Admin-only endpoints
+                        .requestMatchers(HttpMethod.POST, "/api/users/**", "/users/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**", "/users/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**", "/users/**").hasRole("ADMIN")
+
+                        .requestMatchers("/api/login/**").permitAll()
+                        .requestMatchers("/api/refresh-token/**").permitAll() // Refresh token path
+
+                        .requestMatchers("/api/protected-message-admin").hasAnyRole("ADMIN")
+                        .requestMatchers("/api/protected-message").hasAnyRole("USER", "ADMIN")
+
+                        // All other requests must be authenticated
+                        .anyRequest().authenticated());
+
         return http.build();
     }
 }

@@ -1,5 +1,7 @@
 package com.example.mainbackend.config;
 
+import com.example.mainbackend.service.CustomUserDetailsService;
+import com.example.mainbackend.service.TokenBlacklistService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,11 +21,13 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     final private JwtUtil jwtUtil;
+    final private CustomUserDetailsService customUserDetailsService;
+    final private TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        return path.startsWith("/api/login") || path.startsWith("/api/public") || path.startsWith("/api/refresh-token");
+        return path.startsWith("/api/login") || path.startsWith("/api/public") || path.startsWith("/api/refresh-token") || path.equals("/api/status");
     }
 
     @Override
@@ -61,10 +65,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            // extract the username from the token
-            String username = jwtUtil.extractUsername(token);
-            // load user details using the extracted username
-            UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+            // extract the teudatZehut from the token
+            String teudatZehut = jwtUtil.extractTeudatZehut(token);
+            // load user details using the extracted teudatZehut
+            UserDetails userDetails = customUserDetailsService.loadUserByUsername(teudatZehut);
 
             // validate the token with the loaded user details
             if (jwtUtil.validateToken(token, userDetails)) {

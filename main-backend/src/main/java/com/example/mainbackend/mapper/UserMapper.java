@@ -2,9 +2,7 @@ package com.example.mainbackend.mapper;
 
 import com.example.mainbackend.dto.UserDto;
 import com.example.mainbackend.entity.Role;
-import com.example.mainbackend.entity.Settlement;
 import com.example.mainbackend.entity.User;
-import com.example.mainbackend.entity.Vacation;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -30,12 +28,6 @@ public class UserMapper {
                 .roles(user.getRoles() != null
                         ? user.getRoles().stream().map(Role::getRoleName).collect(Collectors.toSet())
                         : Collections.emptySet())
-                .vacationIds(user.getVacations() != null
-                        ? user.getVacations().stream().map(Vacation::getId).collect(Collectors.toList())
-                        : Collections.emptyList())
-                .settlementIds(user.getSettlements() != null
-                        ? user.getSettlements().stream().map(Settlement::getId).collect(Collectors.toList())
-                        : Collections.emptyList())
                 .build();
     }
 

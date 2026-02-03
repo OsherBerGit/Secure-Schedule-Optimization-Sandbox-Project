@@ -11,10 +11,126 @@
 @baseUrl = http://localhost:8080
 @contentType = application/json
 
-### GET request to server
+### ==================== PUBLIC ENDPOINTS ====================
+
+### GET request to server status (public - no auth required)
 GET {{baseUrl}}/api/status
 Accept: {{contentType}}
 
-### GET request to fetch all users
+### ==================== AUTHENTICATION ====================
+
+### Login as ADMIN - Get access token and refresh token
+### Credentials: teudatZehut=admin, password=admin (has ADMIN + USER roles)
+POST {{baseUrl}}/api/login
+Content-Type: {{contentType}}
+
+{
+  "teudatZehut": "admin",
+  "password": "admin"
+}
+
+> {%
+    client.global.set("accessToken", response.body.accessToken);
+    client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### Login as USER - Get access token and refresh token
+### Credentials: teudatZehut=user, password=user (has USER role only)
+POST {{baseUrl}}/api/login
+Content-Type: {{contentType}}
+
+{
+  "teudatZehut": "user",
+  "password": "user"
+}
+
+> {%
+    client.global.set("accessToken", response.body.accessToken);
+    client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### Refresh Token - Get new access token using refresh token
+POST {{baseUrl}}/api/refresh-token
+Content-Type: {{contentType}}
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+> {%
+    client.global.set("accessToken", response.body.accessToken);
+    client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### Logout - Blacklist the current token
+### NOTE: The correct URL is /api/auth/logout (not /api/logout)
+POST {{baseUrl}}/api/auth/logout
+Authorization: Bearer {{accessToken}}
+
+### ==================== PROTECTED ENDPOINTS ====================
+
+### GET request to fetch all users (requires authentication + USER or ADMIN role)
+GET {{baseUrl}}/api/users
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### GET request to fetch a specific user by ID
+GET {{baseUrl}}/api/users/1
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### GET user by Teudat Zehut
+GET {{baseUrl}}/api/users/teudat-zehut/123456789
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### GET user by Email
+GET {{baseUrl}}/api/users/email/test@example.com
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Create a new user (requires ADMIN role)
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "teudatZehut": "987654321",
+  "password": "newpassword123",
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "phoneNumber": "0501234567",
+  "salary": 10000.0,
+  "address": "123 Main St",
+  "dailyAvailabilityHours": 8,
+  "maxTasks": 5
+}
+
+### Update a user (requires ADMIN role)
+PUT {{baseUrl}}/api/users/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "teudatZehut": "123456789",
+  "firstName": "Updated",
+  "lastName": "User",
+  "email": "updated@example.com",
+  "phoneNumber": "0509876543"
+}
+
+### Delete a user (requires ADMIN role)
+DELETE {{baseUrl}}/api/users/1
+Authorization: Bearer {{accessToken}}
+
+### ==================== TEST SCENARIOS ====================
+
+### Test with invalid token (should return 401)
+GET {{baseUrl}}/api/users
+Accept: {{contentType}}
+Authorization: Bearer invalid_token_here
+
+### Test without token (should return 401)
 GET {{baseUrl}}/api/users
 Accept: {{contentType}}

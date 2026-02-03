@@ -1,0 +1,56 @@
+package com.example.mainbackend.service;
+
+import com.example.mainbackend.config.JwtUtil;
+import com.example.mainbackend.dto.AuthenticationResponse;
+import com.example.mainbackend.dto.RefreshTokenRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+@Service
+@RequiredArgsConstructor
+public class RefreshTokenService {
+
+    private final JwtUtil jwtUtil;
+    private final CustomUserDetailsService customUserDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
+
+    private final Map<String, String> refreshTokenIps = new ConcurrentHashMap<>();
+
+    public AuthenticationResponse refreshAccessToken(RefreshTokenRequest refreshTokenRequest) {
+
+        String refreshToken = refreshTokenRequest.getRefreshToken();
+
+        // get the id from refresh token for the new access token
+        String jwtID = jwtUtil.extractJWTID(refreshToken);
+
+        // check if the refresh token's id is blacklisted
+        if (tokenBlacklistService.isTokenBlacklisted(jwtID))
+            throw new RuntimeException("Token is blacklisted");
+
+        // load the user details from the refresh token
+        String teudatZehut = jwtUtil.extractTeudatZehut(refreshToken);
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(teudatZehut);
+
+        String clientIP = refreshTokenRequest.getIp();
+        String storedIP = refreshTokenIps.get(jwtID);
+        if (storedIP == null || !storedIP.equals(clientIP))
+            throw new RuntimeException("Invalid IP address for this refresh token");
+
+        // check if the refresh token is valid
+        if (!jwtUtil.validateToken(refreshToken, userDetails))
+            throw new RuntimeException("Invalid or expired refresh token");
+
+        // create a new access token
+        String newAccessToken = jwtUtil.generateToken(null, userDetails, jwtID);
+        String newRefreshToken = jwtUtil.generateRefreshToken(null, userDetails, jwtID);
+
+        // returns the new access token along with the refresh token
+        return new AuthenticationResponse(newAccessToken, newRefreshToken);
+    }
+
+    public void storeRefreshTokenIp(String jwtId, String ip) { refreshTokenIps.put(jwtId, ip); }
+}

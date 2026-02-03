@@ -74,12 +74,12 @@ public class JwtUtil {
     // This implementation implicitly validates the signature when extracting claims:
     public boolean validateToken(String token, UserDetails userDetails) {
         try {
-            // extract the username from the JWT token
-            String username = extractUsername(token);
-            // If signature verification fails, extractUsername will throw an exception.
+            // extract the teudatZehut from the JWT token
+            String teudatZehut = extractTeudatZehut(token);
+            // If signature verification fails, extractTeudatZehut will throw an exception.
 
-            // check if the username extracted from the JWT token matches the username in the UserDetails object and the token is not expired
-            return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+            // check if the teudatZehut extracted from the JWT token matches the teudatZehut in the UserDetails object and the token is not expired
+            return (teudatZehut.equals(userDetails.getUsername()) && !isTokenExpired(token));
         } catch (Exception e) {
             // Handle the invalid signature here
             throw new RuntimeException("The token signature is invalid: " + e.getMessage());
@@ -87,8 +87,8 @@ public class JwtUtil {
         // Other exceptions related to token parsing can also be caught here if necessary
     }
 
-    // Extract the username from a JWT token
-    public String extractUsername(String token) { return extractClaim(token, Claims::getSubject); }
+    // Extract the teudatZehut from a JWT token
+    public String extractTeudatZehut(String token) { return extractClaim(token, Claims::getSubject); }
 
     // Extract the jwtID from a JWT token
     public String extractJWTID(String token) { return extractClaim(token, Claims::getId); }

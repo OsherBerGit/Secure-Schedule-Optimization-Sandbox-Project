@@ -3,7 +3,7 @@ package com.example.mainbackend.config;
 public class JwtProperties {
     // The EXPIRATION_TIME constant is used to set the expiration time of the JWT
 
-    public static final int ACCESS_TOKEN_EXPIRATION_TIME = 5 * 60 * 1000; // 30 minutes
+    public static final int ACCESS_TOKEN_EXPIRATION_TIME = 5 * 60 * 1000; // 5 minutes
 
     public static final int REFRESH_TOKEN_EXPIRATION_TIME = 7 * 24 * 60 * 60 * 1000; // 7 days
 
