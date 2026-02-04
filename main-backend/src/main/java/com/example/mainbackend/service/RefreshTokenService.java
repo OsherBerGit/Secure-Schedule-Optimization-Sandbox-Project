@@ -1,8 +1,8 @@
 package com.example.mainbackend.service;
 
 import com.example.mainbackend.config.JwtUtil;
-import com.example.mainbackend.dto.AuthenticationResponse;
-import com.example.mainbackend.dto.RefreshTokenRequest;
+import com.example.mainbackend.dto.auth.AuthenticationResponse;
+import com.example.mainbackend.dto.auth.RefreshTokenRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -32,8 +32,8 @@ public class RefreshTokenService {
             throw new RuntimeException("Token is blacklisted");
 
         // load the user details from the refresh token
-        String teudatZehut = jwtUtil.extractTeudatZehut(refreshToken);
-        UserDetails userDetails = customUserDetailsService.loadUserByUsername(teudatZehut);
+        String nationalId = jwtUtil.extractNationalId(refreshToken);
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(nationalId);
 
         String clientIP = refreshTokenRequest.getIp();
         String storedIP = refreshTokenIps.get(jwtID);

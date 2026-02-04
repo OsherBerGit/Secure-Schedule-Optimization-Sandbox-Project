@@ -1,7 +1,7 @@
 package com.example.mainbackend.controller;
 
-import com.example.mainbackend.dto.CreateUserRequest;
-import com.example.mainbackend.dto.UserDto;
+import com.example.mainbackend.dto.user.CreateUserRequest;
+import com.example.mainbackend.dto.user.UserDto;
 import com.example.mainbackend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,20 +17,34 @@ public class UserController {
 
     private final UserService userService;
 
-    // Create
+    /**
+     * Creates a new user.
+     *
+     * @param request the user creation request
+     * @return ResponseEntity with the created user and HTTP 201 status
+     */
     @PostMapping
     public ResponseEntity<UserDto> createUser(@RequestBody CreateUserRequest request) {
         UserDto createdUser = userService.createUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }
 
-    // Read - Get all users
+    /**
+     * Retrieves all users.
+     *
+     * @return ResponseEntity with list of all users and HTTP 200 status
+     */
     @GetMapping
     public ResponseEntity<List<UserDto>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    // Read - Get by ID
+    /**
+     * Retrieves a user by their system ID.
+     *
+     * @param id the user's system-generated ID
+     * @return ResponseEntity with the user and HTTP 200 if found, HTTP 404 if not found
+     */
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
         return userService.getUserById(id)
@@ -38,15 +52,25 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Read - Get by Teudat Zehut
-    @GetMapping("/teudat-zehut/{teudatZehut}")
-    public ResponseEntity<UserDto> getUserByTeudatZehut(@PathVariable String teudatZehut) {
-        return userService.getUserByTeudatZehut(teudatZehut)
+    /**
+     * Retrieves a user by their national ID (Teudat Zehut).
+     *
+     * @param nationalId the user's Israeli national ID
+     * @return ResponseEntity with the user and HTTP 200 if found, HTTP 404 if not found
+     */
+    @GetMapping("/national-id/{nationalId}")
+    public ResponseEntity<UserDto> getUserByNationalId(@PathVariable String nationalId) {
+        return userService.getUserByNationalId(nationalId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Read - Get by Email
+    /**
+     * Retrieves a user by their email address.
+     *
+     * @param email the user's email address
+     * @return ResponseEntity with the user and HTTP 200 if found, HTTP 404 if not found
+     */
     @GetMapping("/email/{email}")
     public ResponseEntity<UserDto> getUserByEmail(@PathVariable String email) {
         return userService.getUserByEmail(email)
@@ -54,7 +78,13 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Update
+    /**
+     * Updates an existing user.
+     *
+     * @param id the user ID to update
+     * @param userDto the user data with updated values
+     * @return ResponseEntity with the updated user and HTTP 200 if found, HTTP 404 if not found
+     */
     @PutMapping("/{id}")
     public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {
         return userService.updateUser(id, userDto)
@@ -62,7 +92,12 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Delete
+    /**
+     * Deletes a user by their ID.
+     *
+     * @param id the user ID to delete
+     * @return ResponseEntity with HTTP 204 if deleted, HTTP 404 if not found
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         if (userService.deleteUser(id))

@@ -1,4 +1,4 @@
-package com.example.mainbackend.dto;
+package com.example.mainbackend.dto.user;
 
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +11,7 @@ import java.util.Set;
 @Builder
 public class UserWithVacationsDto {
     private Long id;
-    private String teudatZehut;
+    private String nationalId; // Israeli National ID (Teudat Zehut)
     private String firstName;
     private String lastName;
     private String email;

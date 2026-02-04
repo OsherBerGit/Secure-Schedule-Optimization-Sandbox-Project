@@ -1,8 +1,8 @@
 package com.example.mainbackend.controller;
 
-import com.example.mainbackend.dto.AuthenticationRequest;
-import com.example.mainbackend.dto.AuthenticationResponse;
-import com.example.mainbackend.dto.RefreshTokenRequest;
+import com.example.mainbackend.dto.auth.AuthenticationRequest;
+import com.example.mainbackend.dto.auth.AuthenticationResponse;
+import com.example.mainbackend.dto.auth.RefreshTokenRequest;
 import com.example.mainbackend.service.AuthenticationService;
 import com.example.mainbackend.service.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;

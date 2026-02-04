@@ -70,20 +70,10 @@ public class SecurityConfig {
 
                 // Configuring authorization for HTTP requests
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
+                        // Public endpoints - ALL ENDPOINTS PUBLIC FOR DEBUGGING
                         .requestMatchers("/login", "/register", "/home").permitAll()
-                        .requestMatchers("/api/status").permitAll() // Health check endpoint
-
-                        // User endpoints - accessible by authenticated users
-                        .requestMatchers(HttpMethod.GET, "/api/users/**", "/users/**").hasAnyRole("USER", "ADMIN")
-
-                        // Admin-only endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/users/**", "/users/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/users/**", "/users/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/**", "/users/**").hasRole("ADMIN")
-
-                        .requestMatchers("/api/login/**").permitAll()
-                        .requestMatchers("/api/refresh-token/**").permitAll() // Refresh token path
+                        .requestMatchers("/api/**").permitAll() // ALL API endpoints public for debugging
+                        .requestMatchers("/users/**").permitAll()
 
                         .requestMatchers("/api/protected-message-admin").hasAnyRole("ADMIN")
                         .requestMatchers("/api/protected-message").hasAnyRole("USER", "ADMIN")

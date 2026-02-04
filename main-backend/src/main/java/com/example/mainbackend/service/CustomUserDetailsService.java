@@ -24,12 +24,12 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String teudatZehut) throws UsernameNotFoundException {
-        User user = userRepository.findByTeudatZehut(teudatZehut).orElse(null);
+    public UserDetails loadUserByUsername(String nationalId) throws UsernameNotFoundException {
+        User user = userRepository.findByNationalId(nationalId).orElse(null);
 
         if (user != null) {
             UserDetails userDetails = new org.springframework.security.core.userdetails.User(
-                    user.getTeudatZehut(),  // Use teudatZehut as the principal identifier instead of username
+                    user.getNationalId(),  // Use nationalId as the principal identifier
                     user.getPassword(),
                     mapRolesToAuthorities(user.getRoles()));
             if (!userDetails.isEnabled())
@@ -41,7 +41,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             return userDetails;
 
         } else {
-            throw new UsernameNotFoundException("Invalid teudat zehut: " + teudatZehut);
+            throw new UsernameNotFoundException("Invalid national ID: " + nationalId);
         }
     }
 

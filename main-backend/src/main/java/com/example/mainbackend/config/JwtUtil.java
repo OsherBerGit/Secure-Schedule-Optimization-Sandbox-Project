@@ -1,6 +1,6 @@
 package com.example.mainbackend.config;
 
-import com.example.mainbackend.dto.AuthenticationRequest;
+import com.example.mainbackend.dto.auth.AuthenticationRequest;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -74,12 +74,12 @@ public class JwtUtil {
     // This implementation implicitly validates the signature when extracting claims:
     public boolean validateToken(String token, UserDetails userDetails) {
         try {
-            // extract the teudatZehut from the JWT token
-            String teudatZehut = extractTeudatZehut(token);
-            // If signature verification fails, extractTeudatZehut will throw an exception.
+            // extract the nationalId from the JWT token
+            String nationalId = extractNationalId(token);
+            // If signature verification fails, extractNationalId will throw an exception.
 
-            // check if the teudatZehut extracted from the JWT token matches the teudatZehut in the UserDetails object and the token is not expired
-            return (teudatZehut.equals(userDetails.getUsername()) && !isTokenExpired(token));
+            // check if the nationalId extracted from the JWT token matches the nationalId in the UserDetails object and the token is not expired
+            return (nationalId.equals(userDetails.getUsername()) && !isTokenExpired(token));
         } catch (Exception e) {
             // Handle the invalid signature here
             throw new RuntimeException("The token signature is invalid: " + e.getMessage());
@@ -87,8 +87,8 @@ public class JwtUtil {
         // Other exceptions related to token parsing can also be caught here if necessary
     }
 
-    // Extract the teudatZehut from a JWT token
-    public String extractTeudatZehut(String token) { return extractClaim(token, Claims::getSubject); }
+    // Extract the nationalId from a JWT token
+    public String extractNationalId(String token) { return extractClaim(token, Claims::getSubject); }
 
     // Extract the jwtID from a JWT token
     public String extractJWTID(String token) { return extractClaim(token, Claims::getId); }

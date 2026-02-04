@@ -1,8 +1,8 @@
 package com.example.mainbackend.service;
 
 import com.example.mainbackend.config.JwtUtil;
-import com.example.mainbackend.dto.AuthenticationRequest;
-import com.example.mainbackend.dto.AuthenticationResponse;
+import com.example.mainbackend.dto.auth.AuthenticationRequest;
+import com.example.mainbackend.dto.auth.AuthenticationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UserDetails;

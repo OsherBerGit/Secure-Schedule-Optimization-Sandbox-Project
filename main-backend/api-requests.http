@@ -95,7 +95,7 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 {
-  "teudatZehut": "987654321",
+  "nationalId": "987654321",
   "password": "newpassword123",
   "firstName": "John",
   "lastName": "Doe",
@@ -113,7 +113,7 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 {
-  "teudatZehut": "123456789",
+  "nationalId": "123456789",
   "firstName": "Updated",
   "lastName": "User",
   "email": "updated@example.com",
@@ -122,6 +122,77 @@ Authorization: Bearer {{accessToken}}
 
 ### Delete a user (requires ADMIN role)
 DELETE {{baseUrl}}/api/users/1
+Authorization: Bearer {{accessToken}}
+
+### ==================== TASK ENDPOINTS ====================
+
+### GET all tasks
+GET {{baseUrl}}/api/tasks
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### GET task by ID
+GET {{baseUrl}}/api/tasks/1
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### GET tasks by worker ID
+GET {{baseUrl}}/api/tasks/worker/1
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### GET tasks by status name
+GET {{baseUrl}}/api/tasks/status/Pending
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Create a new task (requires ADMIN role)
+POST {{baseUrl}}/api/tasks
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "Complete Project Documentation",
+  "description": "Write comprehensive documentation for the project",
+  "deadline": "2026-03-15T17:00:00",
+  "durationHours": 8,
+  "priorityId": 1,
+  "statusId": 1,
+  "assignedWorkerId": 1
+}
+
+### Create a task without assigned worker
+POST {{baseUrl}}/api/tasks
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "Code Review",
+  "description": "Review pull requests",
+  "deadline": "2026-02-10T12:00:00",
+  "durationHours": 4,
+  "priorityId": 2,
+  "statusId": 1,
+  "assignedWorkerId": null
+}
+
+### Update a task (requires ADMIN role)
+PUT {{baseUrl}}/api/tasks/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "Updated Task Title",
+  "description": "Updated task description",
+  "deadline": "2026-03-20T18:00:00",
+  "durationHours": 10,
+  "priorityId": 1,
+  "statusId": 2,
+  "assignedWorkerId": 2
+}
+
+### Delete a task (requires ADMIN role)
+DELETE {{baseUrl}}/api/tasks/1
 Authorization: Bearer {{accessToken}}
 
 ### ==================== TEST SCENARIOS ====================

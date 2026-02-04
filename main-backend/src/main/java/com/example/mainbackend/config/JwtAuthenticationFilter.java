@@ -65,10 +65,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            // extract the teudatZehut from the token
-            String teudatZehut = jwtUtil.extractTeudatZehut(token);
-            // load user details using the extracted teudatZehut
-            UserDetails userDetails = customUserDetailsService.loadUserByUsername(teudatZehut);
+            // extract the nationalId from the token
+            String nationalId = jwtUtil.extractNationalId(token);
+            // load user details using the extracted nationalId
+            UserDetails userDetails = customUserDetailsService.loadUserByUsername(nationalId);
 
             // validate the token with the loaded user details
             if (jwtUtil.validateToken(token, userDetails)) {

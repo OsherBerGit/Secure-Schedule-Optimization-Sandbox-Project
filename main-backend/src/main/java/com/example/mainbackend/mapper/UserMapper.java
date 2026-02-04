@@ -1,6 +1,7 @@
 package com.example.mainbackend.mapper;
 
-import com.example.mainbackend.dto.UserDto;
+import com.example.mainbackend.dto.user.CreateUserRequest;
+import com.example.mainbackend.dto.user.UserDto;
 import com.example.mainbackend.entity.Role;
 import com.example.mainbackend.entity.User;
 import org.springframework.stereotype.Component;
@@ -16,7 +17,7 @@ public class UserMapper {
 
         return UserDto.builder()
                 .id(user.getId())
-                .teudatZehut(user.getTeudatZehut())
+                .nationalId(user.getNationalId())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .email(user.getEmail())
@@ -31,12 +32,44 @@ public class UserMapper {
                 .build();
     }
 
+    /**
+     * Updates an existing User entity with data from UserDto.
+     * Used for PATCH/PUT operations to avoid manual field copying.
+     * Note: Does not update roles, vacations, or settlements - they should be handled separately.
+     *
+     * @param existingUser the User entity to update
+     * @param userDto the source DTO with new values
+     */
+    public void updateEntityFromDto(User existingUser, UserDto userDto) {
+        if (existingUser == null || userDto == null) return;
+
+        existingUser.setNationalId(userDto.getNationalId());
+        existingUser.setFirstName(userDto.getFirstName());
+        existingUser.setLastName(userDto.getLastName());
+        existingUser.setEmail(userDto.getEmail());
+        existingUser.setPhoneNumber(userDto.getPhoneNumber());
+        existingUser.setSalary(userDto.getSalary());
+        existingUser.setAddress(userDto.getAddress());
+        existingUser.setDailyAvailabilityHours(userDto.getDailyAvailabilityHours());
+        existingUser.setMaxTasks(userDto.getMaxTasks());
+        // Note: roles, vacations, settlements are not updated here
+        // They should be handled separately by dedicated service methods
+    }
+
+    /**
+     * Converts UserDto to User entity.
+     * Note: This creates a basic entity without roles, vacations, or settlements.
+     * These relationships should be set by the service layer after fetching from DB.
+     *
+     * @param userDto the source DTO
+     * @return User entity with basic fields populated, or null if input is null
+     */
     public User toEntity(UserDto userDto) {
         if (userDto == null) return null;
 
         return User.builder()
                 .id(userDto.getId())
-                .teudatZehut(userDto.getTeudatZehut())
+                .nationalId(userDto.getNationalId())
                 .firstName(userDto.getFirstName())
                 .lastName(userDto.getLastName())
                 .email(userDto.getEmail())
@@ -47,6 +80,32 @@ public class UserMapper {
                 .maxTasks(userDto.getMaxTasks())
                 // Note: roles, vacations, settlements are not set here
                 // They should be fetched from DB by service layer using the IDs/names
+                .build();
+    }
+
+    /**
+     * Creates a User entity from CreateUserRequest.
+     * Eliminates code duplication in service layer.
+     * Note: Password should be encoded by the service layer before calling this method.
+     *
+     * @param request the creation request
+     * @param encodedPassword the already-encoded password
+     * @return User entity ready to be saved
+     */
+    public User fromCreateRequest(CreateUserRequest request, String encodedPassword) {
+        if (request == null) return null;
+
+        return User.builder()
+                .nationalId(request.getNationalId())
+                .password(encodedPassword)
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .phoneNumber(request.getPhoneNumber())
+                .salary(request.getSalary())
+                .address(request.getAddress())
+                .dailyAvailabilityHours(request.getDailyAvailabilityHours())
+                .maxTasks(request.getMaxTasks())
                 .build();
     }
 }

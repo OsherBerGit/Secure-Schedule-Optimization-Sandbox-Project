@@ -1,4 +1,4 @@
-package com.example.mainbackend.dto;
+package com.example.mainbackend.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,7 +10,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthenticationRequest {
-    private String teudatZehut;
+    private String nationalId; // Israeli National ID (Teudat Zehut)
     private String password;
     private String ip;  // field to store the IP address of the client
 }
