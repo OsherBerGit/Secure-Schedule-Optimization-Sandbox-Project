@@ -55,11 +55,13 @@ public class Task {
     private Set<Role> requiredRoles = new HashSet<>();
 
     // Bidirectional relationship with TaskConstraint
-    @OneToMany(mappedBy = "firstTask", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Tasks where this task is the predecessor (must complete before successors)
+    @OneToMany(mappedBy = "predecessorTask", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<TaskConstraint> constraintsAsFirst = new ArrayList<>();
+    private List<TaskConstraint> outgoingConstraints = new ArrayList<>();
 
-    @OneToMany(mappedBy = "secondTask", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Tasks where this task is the successor (depends on predecessors)
+    @OneToMany(mappedBy = "successorTask", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<TaskConstraint> constraintsAsSecond = new ArrayList<>();
+    private List<TaskConstraint> incomingConstraints = new ArrayList<>();
 }

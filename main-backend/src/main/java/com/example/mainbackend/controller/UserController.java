@@ -3,13 +3,23 @@ package com.example.mainbackend.controller;
 import com.example.mainbackend.dto.user.CreateUserRequest;
 import com.example.mainbackend.dto.user.UserDto;
 import com.example.mainbackend.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controller for User management.
+ *
+ * Business Rules:
+ * - Only ADMIN users can create new employees (no public registration)
+ * - ADMIN users can perform all CRUD operations
+ * - Regular users can view their own profile
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/users")
@@ -18,13 +28,15 @@ public class UserController {
     private final UserService userService;
 
     /**
-     * Creates a new user.
+     * Creates a new user (employee).
+     * RESTRICTED TO ADMIN ONLY - No public registration allowed.
      *
      * @param request the user creation request
      * @return ResponseEntity with the created user and HTTP 201 status
      */
     @PostMapping
-    public ResponseEntity<UserDto> createUser(@RequestBody CreateUserRequest request) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserDto> createUser(@Valid @RequestBody CreateUserRequest request) {
         UserDto createdUser = userService.createUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }

@@ -123,8 +123,8 @@ public class TaskService {
             builder.id(existingTask.getId())
                     .startTime(existingTask.getStartTime())
                     .requiredRoles(existingTask.getRequiredRoles())
-                    .constraintsAsFirst(existingTask.getConstraintsAsFirst())
-                    .constraintsAsSecond(existingTask.getConstraintsAsSecond());
+                    .outgoingConstraints(existingTask.getOutgoingConstraints())
+                    .incomingConstraints(existingTask.getIncomingConstraints());
         }
 
         return builder.build();

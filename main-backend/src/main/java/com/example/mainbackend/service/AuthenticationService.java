@@ -21,8 +21,8 @@ public class AuthenticationService {
     private final RefreshTokenService refreshTokenService;
 
     public AuthenticationResponse authenticate(AuthenticationRequest authenticationRequest) {
-        // load the user details from the database using the username by calling the loadUserByUsername() method
-        UserDetails userDetails = customUserDetailsService.loadUserByUsername(authenticationRequest.getTeudatZehut());
+        // load the user details from the database using the nationalId
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(authenticationRequest.getNationalId());
 
         // check if the password matches the password in the database
         if (!passwordEncoder.matches(authenticationRequest.getPassword(), userDetails.getPassword())) {
