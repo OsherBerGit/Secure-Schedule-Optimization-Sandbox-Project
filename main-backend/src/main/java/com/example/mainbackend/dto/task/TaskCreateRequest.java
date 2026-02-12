@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 public class TaskCreateRequest {
-
     @NotBlank(message = "Title is required")
     @Size(min = 1, max = 255, message = "Title must be between 1 and 255 characters")
     private String title;

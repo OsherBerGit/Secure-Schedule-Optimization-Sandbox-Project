@@ -119,13 +119,12 @@ public class TaskService {
                 .assignedEmployee(assignedWorker);
 
         // Preserve ID and other fields for updates
-        if (existingTask != null) {
+        if (existingTask != null)
             builder.id(existingTask.getId())
                     .startTime(existingTask.getStartTime())
                     .requiredRoles(existingTask.getRequiredRoles())
                     .outgoingConstraints(existingTask.getOutgoingConstraints())
                     .incomingConstraints(existingTask.getIncomingConstraints());
-        }
 
         return builder.build();
     }

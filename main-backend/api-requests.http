@@ -195,6 +195,188 @@ Authorization: Bearer {{accessToken}}
 DELETE {{baseUrl}}/api/tasks/1
 Authorization: Bearer {{accessToken}}
 
+### ==================== TASK CONSTRAINTS (Dependencies) ====================
+
+### Get all task constraints (any authenticated user)
+GET {{baseUrl}}/api/task-constraints
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Get task constraint by ID
+GET {{baseUrl}}/api/task-constraints/1
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Get constraints where task is predecessor (tasks that depend on this one)
+GET {{baseUrl}}/api/task-constraints/predecessor/1
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Get constraints where task is successor (tasks that this one depends on)
+GET {{baseUrl}}/api/task-constraints/successor/2
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Create a task constraint (requires ADMIN role)
+### Example: Task 2 cannot start until Task 1 finishes
+POST {{baseUrl}}/api/task-constraints
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "predecessorTaskId": 1,
+  "successorTaskId": 2,
+  "constraintTypeId": 1,
+  "lagMinutes": 0
+}
+
+### Create a task constraint with lag time (30 minutes delay)
+POST {{baseUrl}}/api/task-constraints
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "predecessorTaskId": 2,
+  "successorTaskId": 3,
+  "constraintTypeId": 1,
+  "lagMinutes": 30
+}
+
+### Update a task constraint (requires ADMIN role)
+PUT {{baseUrl}}/api/task-constraints/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "predecessorTaskId": 1,
+  "successorTaskId": 2,
+  "constraintTypeId": 1,
+  "lagMinutes": 15
+}
+
+### Delete a task constraint (requires ADMIN role)
+DELETE {{baseUrl}}/api/task-constraints/1
+Authorization: Bearer {{accessToken}}
+
+### Test circular dependency prevention (should return 400 error)
+### Example: If constraint 1->2 and 2->3 exist, trying to add 3->1 should fail
+POST {{baseUrl}}/api/task-constraints
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "predecessorTaskId": 3,
+  "successorTaskId": 1,
+  "constraintTypeId": 1,
+  "lagMinutes": 0
+}
+
+### Test self-reference prevention (should return 400 error)
+POST {{baseUrl}}/api/task-constraints
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "predecessorTaskId": 1,
+  "successorTaskId": 1,
+  "constraintTypeId": 1,
+  "lagMinutes": 0
+}
+
+### ==================== VACATIONS (Worker Unavailability) ====================
+
+### Get all vacations (any authenticated user)
+GET {{baseUrl}}/api/vacations
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Get vacation by ID
+GET {{baseUrl}}/api/vacations/1
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Get vacations by worker ID
+GET {{baseUrl}}/api/vacations/worker/1
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Get vacations by date range
+GET {{baseUrl}}/api/vacations/date-range?startDate=2026-03-01&endDate=2026-03-31
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Create a vacation (requires ADMIN role)
+POST {{baseUrl}}/api/vacations
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "workerId": 1,
+  "startDate": "2026-03-15",
+  "endDate": "2026-03-20"
+}
+
+### Create another vacation
+POST {{baseUrl}}/api/vacations
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "workerId": 2,
+  "startDate": "2026-04-01",
+  "endDate": "2026-04-05"
+}
+
+### Update a vacation (requires ADMIN role)
+PUT {{baseUrl}}/api/vacations/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "workerId": 1,
+  "startDate": "2026-03-16",
+  "endDate": "2026-03-22"
+}
+
+### Delete a vacation (requires ADMIN role)
+DELETE {{baseUrl}}/api/vacations/1
+Authorization: Bearer {{accessToken}}
+
+### Test overlapping vacation prevention (should return 400 error)
+### First create vacation: 2026-03-15 to 2026-03-20
+### Then try to create: 2026-03-18 to 2026-03-25 (overlaps)
+POST {{baseUrl}}/api/vacations
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "workerId": 1,
+  "startDate": "2026-03-18",
+  "endDate": "2026-03-25"
+}
+
+### Test past date prevention (should return 400 error)
+POST {{baseUrl}}/api/vacations
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "workerId": 1,
+  "startDate": "2020-01-01",
+  "endDate": "2020-01-05"
+}
+
+### Test invalid date range (should return 400 error)
+POST {{baseUrl}}/api/vacations
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "workerId": 1,
+  "startDate": "2026-03-25",
+  "endDate": "2026-03-20"
+}
+
 ### ==================== TEST SCENARIOS ====================
 
 ### Test with invalid token (should return 401)

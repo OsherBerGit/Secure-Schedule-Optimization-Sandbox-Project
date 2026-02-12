@@ -25,9 +25,8 @@ public class AuthenticationService {
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(authenticationRequest.getNationalId());
 
         // check if the password matches the password in the database
-        if (!passwordEncoder.matches(authenticationRequest.getPassword(), userDetails.getPassword())) {
+        if (!passwordEncoder.matches(authenticationRequest.getPassword(), userDetails.getPassword()))
             throw new AuthenticationServiceException("Invalid credentials");
-        }
 
         // generate a unique ID for the two tokens
         String jwtID = UUID.randomUUID().toString();
