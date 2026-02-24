@@ -377,6 +377,222 @@ Authorization: Bearer {{accessToken}}
   "endDate": "2026-03-20"
 }
 
+### ==================== SETTLEMENTS (Final Schedule Assignments) ====================
+
+### Get all settlements (any authenticated user)
+GET {{baseUrl}}/api/settlements
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Get settlement by ID
+GET {{baseUrl}}/api/settlements/1
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Get settlements by worker ID
+GET {{baseUrl}}/api/settlements/worker/1
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Get settlements by task ID
+GET {{baseUrl}}/api/settlements/task/1
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Get settlements by date range
+GET {{baseUrl}}/api/settlements/date-range?startDate=2026-03-01T00:00:00&endDate=2026-03-31T23:59:59
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Create a settlement (requires ADMIN role)
+### This assigns a worker to a task with settlement date
+POST {{baseUrl}}/api/settlements
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "taskId": 1,
+  "workerId": 1,
+  "settlementDate": "2026-03-15T09:00:00",
+  "completionDate": null
+}
+
+### Create a settlement with completion date
+POST {{baseUrl}}/api/settlements
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "taskId": 2,
+  "workerId": 2,
+  "settlementDate": "2026-03-16T10:00:00",
+  "completionDate": "2026-03-16T18:00:00"
+}
+
+### Delete a settlement (requires ADMIN role)
+DELETE {{baseUrl}}/api/settlements/1
+Authorization: Bearer {{accessToken}}
+
+### ==================== STATUSES (Lookup Table - Task States) ====================
+
+### Get all statuses (any authenticated user)
+GET {{baseUrl}}/api/statuses
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Get status by ID
+GET {{baseUrl}}/api/statuses/1
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Create a new status (requires ADMIN role)
+POST {{baseUrl}}/api/statuses
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "ON_HOLD"
+}
+
+### Create another status
+POST {{baseUrl}}/api/statuses
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "CANCELLED"
+}
+
+### Update a status (requires ADMIN role)
+PUT {{baseUrl}}/api/statuses/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "PENDING_REVIEW"
+}
+
+### Delete a status (requires ADMIN role)
+DELETE {{baseUrl}}/api/statuses/1
+Authorization: Bearer {{accessToken}}
+
+### Test duplicate status name (should return 400 error)
+POST {{baseUrl}}/api/statuses
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "PENDING"
+}
+
+### ==================== PRIORITIES (Lookup Table - Task Importance) ====================
+
+### Get all priorities (any authenticated user)
+GET {{baseUrl}}/api/priorities
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Get priority by ID
+GET {{baseUrl}}/api/priorities/1
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Create a new priority (requires ADMIN role)
+POST {{baseUrl}}/api/priorities
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "URGENT"
+}
+
+### Create another priority
+POST {{baseUrl}}/api/priorities
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "NICE_TO_HAVE"
+}
+
+### Update a priority (requires ADMIN role)
+PUT {{baseUrl}}/api/priorities/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "SUPER_HIGH"
+}
+
+### Delete a priority (requires ADMIN role)
+DELETE {{baseUrl}}/api/priorities/1
+Authorization: Bearer {{accessToken}}
+
+### Test duplicate priority name (should return 400 error)
+POST {{baseUrl}}/api/priorities
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "HIGH"
+}
+
+### ==================== CONSTRAINT TYPES (Lookup Table - Task Dependencies) ====================
+
+### Get all constraint types (any authenticated user)
+GET {{baseUrl}}/api/constraint-types
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Get constraint type by ID
+GET {{baseUrl}}/api/constraint-types/1
+Accept: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+### Create a new constraint type (requires ADMIN role)
+POST {{baseUrl}}/api/constraint-types
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "FINISH_TO_FINISH",
+  "description": "Successor cannot finish until predecessor finishes"
+}
+
+### Create another constraint type
+POST {{baseUrl}}/api/constraint-types
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "START_TO_FINISH",
+  "description": "Successor cannot finish until predecessor starts"
+}
+
+### Update a constraint type (requires ADMIN role)
+PUT {{baseUrl}}/api/constraint-types/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "FINISH_TO_START_UPDATED",
+  "description": "Updated: Successor cannot start until predecessor finishes"
+}
+
+### Delete a constraint type (requires ADMIN role)
+DELETE {{baseUrl}}/api/constraint-types/1
+Authorization: Bearer {{accessToken}}
+
+### Test duplicate constraint type name (should return 400 error)
+POST {{baseUrl}}/api/constraint-types
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "FINISH_TO_START",
+  "description": "This should fail - name already exists"
+}
+
 ### ==================== TEST SCENARIOS ====================
 
 ### Test with invalid token (should return 401)
@@ -387,3 +603,19 @@ Authorization: Bearer invalid_token_here
 ### Test without token (should return 401)
 GET {{baseUrl}}/api/users
 Accept: {{contentType}}
+
+### Test ADMIN-only endpoint as regular user (should return 403)
+### First login as user, then try to create a task
+POST {{baseUrl}}/api/tasks
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "Should Fail",
+  "description": "This should return 403 if logged in as USER",
+  "deadline": "2026-03-15T17:00:00",
+  "durationHours": 8,
+  "priorityId": 1,
+  "statusId": 1
+}
+
