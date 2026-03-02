@@ -2,16 +2,20 @@ package com.example.mainbackend.service;
 
 import com.example.mainbackend.dto.user.CreateUserRequest;
 import com.example.mainbackend.dto.user.UserDto;
+import com.example.mainbackend.entity.Role;
 import com.example.mainbackend.entity.User;
 import com.example.mainbackend.mapper.UserMapper;
+import com.example.mainbackend.repository.RoleRepository;
 import com.example.mainbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,21 +25,32 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
 
     // Create
     @Transactional
     public UserDto createUser(CreateUserRequest request) {
-        // Check if nationalId is already taken
         if (userRepository.findByNationalId(request.getNationalId()).isPresent())
             throw new IllegalArgumentException("National ID already exists: " + request.getNationalId());
 
-        // Check if email is already taken (if provided)
         if (request.getEmail() != null && userRepository.findByEmail(request.getEmail()).isPresent())
             throw new IllegalArgumentException("Email already exists: " + request.getEmail());
 
-        // Use mapper to create User entity - cleaner and eliminates duplication
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         User user = userMapper.fromCreateRequest(request, encodedPassword);
+
+        // Assign role — default to WORKER if not specified
+        String roleName = (request.getRole() != null && !request.getRole().isBlank())
+                ? request.getRole().toUpperCase()
+                : "WORKER";
+
+        Set<Role> roles = new HashSet<>();
+        roleRepository.findByRoleName(roleName).ifPresent(roles::add);
+        // ADMIN also gets WORKER role
+        if ("ADMIN".equals(roleName))
+            roleRepository.findByRoleName("WORKER").ifPresent(roles::add);
+
+        user.setRoles(roles);
 
         User savedUser = userRepository.save(user);
         return userMapper.toDto(savedUser);
@@ -66,6 +81,14 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<UserDto> getAllUsers() {
         return userRepository.findAll().stream()
+                .map(userMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // Read - Get all users by role (e.g. "WORKER" or "ADMIN")
+    @Transactional(readOnly = true)
+    public List<UserDto> getUsersByRole(String roleName) {
+        return userRepository.findByRoles_RoleName(roleName).stream()
                 .map(userMapper::toDto)
                 .collect(Collectors.toList());
     }

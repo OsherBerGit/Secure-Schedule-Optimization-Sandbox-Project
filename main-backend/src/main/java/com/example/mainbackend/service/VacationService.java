@@ -1,12 +1,17 @@
 package com.example.mainbackend.service;
 
+import com.example.mainbackend.constants.VacationStatusConstants;
 import com.example.mainbackend.dto.vacation.VacationCreateRequest;
+import com.example.mainbackend.dto.vacation.VacationRequestDto;
 import com.example.mainbackend.dto.vacation.VacationResponseDto;
+import com.example.mainbackend.dto.vacation.VacationStatusUpdateRequest;
 import com.example.mainbackend.entity.User;
 import com.example.mainbackend.entity.Vacation;
+import com.example.mainbackend.entity.VacationStatus;
 import com.example.mainbackend.mapper.VacationMapper;
 import com.example.mainbackend.repository.UserRepository;
 import com.example.mainbackend.repository.VacationRepository;
+import com.example.mainbackend.repository.VacationStatusRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,66 +25,118 @@ public class VacationService {
 
     private final VacationRepository vacationRepository;
     private final UserRepository userRepository;
+    private final VacationStatusRepository vacationStatusRepository;
     private final VacationMapper mapper;
 
+    /**
+     * ADMIN creates a vacation directly — auto-set to APPROVED.
+     */
     @Transactional
     public VacationResponseDto createVacation(VacationCreateRequest request) {
-        // Validate dates
         if (request.getStartDate().isAfter(request.getEndDate()))
             throw new IllegalArgumentException("Start date must be before or equal to end date");
 
         if (request.getStartDate().isBefore(LocalDate.now()))
             throw new IllegalArgumentException("Start date cannot be in the past");
 
-        // Fetch worker
         User worker = userRepository.findById(request.getWorkerId())
                 .orElseThrow(() -> new IllegalArgumentException("Worker not found with ID: " + request.getWorkerId()));
 
-        // Check for overlapping vacations
-        List<Vacation> existingVacations = vacationRepository.findByWorkerId(request.getWorkerId());
-        for (Vacation existing : existingVacations) {
-            if (datesOverlap(existing.getStartDate(), existing.getEndDate(),
-                           request.getStartDate(), request.getEndDate()))
-                throw new IllegalArgumentException("Vacation period overlaps with existing vacation");
+        List<Vacation> existing = vacationRepository.findByWorkerId(request.getWorkerId());
+        for (Vacation v : existing) {
+            if (datesOverlap(v.getStartDate(), v.getEndDate(), request.getStartDate(), request.getEndDate()))
+                throw new IllegalArgumentException("Vacation period overlaps with an existing vacation");
         }
 
-        // Build and save
+        VacationStatus approved = vacationStatusRepository.findByName(VacationStatusConstants.APPROVED)
+                .orElseThrow(() -> new IllegalStateException("APPROVED vacation status not found in database"));
+
         Vacation vacation = Vacation.builder()
                 .worker(worker)
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
+                .status(approved)
                 .build();
 
-        Vacation saved = vacationRepository.save(vacation);
-        return mapper.toDto(saved);
+        return mapper.toDto(vacationRepository.save(vacation));
+    }
+
+    /**
+     * WORKER submits a vacation request — starts as PENDING.
+     * Worker identity is resolved from their nationalId (JWT principal).
+     *
+     * @param nationalId the worker's nationalId extracted from the Security Context
+     * @param request    the vacation date range
+     */
+    @Transactional
+    public VacationResponseDto requestVacation(String nationalId, VacationRequestDto request) {
+        if (request.getStartDate().isAfter(request.getEndDate()))
+            throw new IllegalArgumentException("Start date must be before or equal to end date");
+
+        User worker = userRepository.findByNationalId(nationalId)
+                .orElseThrow(() -> new IllegalArgumentException("Worker not found with national ID: " + nationalId));
+
+        List<Vacation> existing = vacationRepository.findByWorkerId(worker.getId());
+        for (Vacation v : existing) {
+            if (datesOverlap(v.getStartDate(), v.getEndDate(), request.getStartDate(), request.getEndDate()))
+                throw new IllegalArgumentException("Vacation period overlaps with an existing vacation");
+        }
+
+        VacationStatus pending = vacationStatusRepository.findByName(VacationStatusConstants.PENDING)
+                .orElseThrow(() -> new IllegalStateException("PENDING vacation status not found in database"));
+
+        Vacation vacation = Vacation.builder()
+                .worker(worker)
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .status(pending)
+                .build();
+
+        return mapper.toDto(vacationRepository.save(vacation));
+    }
+
+    /**
+     * ADMIN approves or rejects a PENDING vacation request.
+     *
+     * @param id      the vacation ID
+     * @param request contains the target status (APPROVED or REJECTED)
+     */
+    @Transactional
+    public VacationResponseDto updateVacationStatus(Long id, VacationStatusUpdateRequest request) {
+        Vacation vacation = vacationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Vacation not found with ID: " + id));
+
+        if (vacation.getStatus() == null || !VacationStatusConstants.PENDING.equals(vacation.getStatus().getName()))
+            throw new IllegalStateException("Only PENDING vacation requests can be approved or rejected");
+
+        VacationStatus newStatus = vacationStatusRepository.findByName(request.getStatus())
+                .orElseThrow(() -> new IllegalArgumentException("Vacation status not found: " + request.getStatus()));
+
+        vacation.setStatus(newStatus);
+        return mapper.toDto(vacationRepository.save(vacation));
     }
 
     @Transactional(readOnly = true)
     public VacationResponseDto getVacationById(Long id) {
-        Vacation vacation = vacationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Vacation not found with ID: " + id));
-        return mapper.toDto(vacation);
+        return mapper.toDto(
+                vacationRepository.findById(id)
+                        .orElseThrow(() -> new IllegalArgumentException("Vacation not found with ID: " + id))
+        );
     }
 
     @Transactional(readOnly = true)
     public List<VacationResponseDto> getAllVacations() {
-        return vacationRepository.findAll().stream()
-                .map(mapper::toDto)
-                .toList();
+        return vacationRepository.findAll().stream().map(mapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
     public List<VacationResponseDto> getVacationsByWorker(Long workerId) {
-        return vacationRepository.findByWorkerId(workerId).stream()
-                .map(mapper::toDto)
-                .toList();
+        return vacationRepository.findByWorkerId(workerId).stream().map(mapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
     public List<VacationResponseDto> getVacationsByDateRange(LocalDate startDate, LocalDate endDate) {
-        return vacationRepository.findByStartDateBetween(startDate, endDate).stream()
-                .map(mapper::toDto)
-                .toList();
+        return vacationRepository.findByStartDateBetween(startDate, endDate).stream().map(mapper::toDto).toList();
     }
 
     @Transactional
@@ -87,48 +144,37 @@ public class VacationService {
         Vacation existing = vacationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Vacation not found with ID: " + id));
 
-        // Validate dates
         if (request.getStartDate().isAfter(request.getEndDate()))
             throw new IllegalArgumentException("Start date must be before or equal to end date");
 
-        // Check for overlapping vacations (excluding current one)
-        List<Vacation> existingVacations = vacationRepository.findByWorkerId(request.getWorkerId());
-        for (Vacation other : existingVacations) {
+        List<Vacation> others = vacationRepository.findByWorkerId(request.getWorkerId());
+        for (Vacation other : others) {
             if (!other.getId().equals(id) &&
-                datesOverlap(other.getStartDate(), other.getEndDate(),
-                           request.getStartDate(), request.getEndDate()))
-                throw new IllegalArgumentException("Vacation period overlaps with existing vacation");
+                    datesOverlap(other.getStartDate(), other.getEndDate(), request.getStartDate(), request.getEndDate()))
+                throw new IllegalArgumentException("Vacation period overlaps with an existing vacation");
         }
 
-        // Update worker if changed
         if (!existing.getWorker().getId().equals(request.getWorkerId())) {
             User worker = userRepository.findById(request.getWorkerId())
                     .orElseThrow(() -> new IllegalArgumentException("Worker not found with ID: " + request.getWorkerId()));
             existing.setWorker(worker);
         }
 
-        // Update dates
         existing.setStartDate(request.getStartDate());
         existing.setEndDate(request.getEndDate());
 
-        Vacation updated = vacationRepository.save(existing);
-        return mapper.toDto(updated);
+        return mapper.toDto(vacationRepository.save(existing));
     }
 
     @Transactional
     public boolean deleteVacation(Long id) {
         if (!vacationRepository.existsById(id))
             throw new IllegalArgumentException("Vacation not found with ID: " + id);
-
         vacationRepository.deleteById(id);
         return true;
     }
 
-    /**
-     * Check if two date ranges overlap.
-     */
-    private boolean datesOverlap(LocalDate start1, LocalDate end1, LocalDate start2, LocalDate end2) {
-        return !start1.isAfter(end2) && !start2.isAfter(end1);
+    private boolean datesOverlap(LocalDate s1, LocalDate e1, LocalDate s2, LocalDate e2) {
+        return !s1.isAfter(e2) && !s2.isAfter(e1);
     }
 }
-

@@ -92,8 +92,11 @@ public class TokenBlacklistService {
     /**
      * Scheduled cleanup job - runs every 5 minutes.
      */
+    @Transactional
     @Scheduled(fixedRate = 300_000)
     public void scheduledCleanup() {
-        cleanupExpiredTokens();
+        int deletedCount = blacklistedTokenRepository.deleteExpiredTokens(Instant.now());
+        if (deletedCount > 0)
+            log.info("Cleaned up {} expired blacklisted tokens", deletedCount);
     }
 }

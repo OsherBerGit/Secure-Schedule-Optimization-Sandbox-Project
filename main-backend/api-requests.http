@@ -20,12 +20,12 @@ Accept: {{contentType}}
 ### ==================== AUTHENTICATION ====================
 
 ### Login as ADMIN - Get access token and refresh token
-### Credentials: teudatZehut=admin, password=admin (has ADMIN + USER roles)
-POST {{baseUrl}}/api/login
+### Credentials: nationalId=admin, password=admin (has ADMIN + WORKER roles)
+POST {{baseUrl}}/api/auth/login
 Content-Type: {{contentType}}
 
 {
-  "teudatZehut": "admin",
+  "nationalId": "admin",
   "password": "admin"
 }
 
@@ -34,14 +34,14 @@ Content-Type: {{contentType}}
     client.global.set("refreshToken", response.body.refreshToken);
 %}
 
-### Login as USER - Get access token and refresh token
-### Credentials: teudatZehut=user, password=user (has USER role only)
-POST {{baseUrl}}/api/login
+### Login as WORKER - Get access token and refresh token
+### Credentials: nationalId=worker, password=worker (has WORKER role only)
+POST {{baseUrl}}/api/auth/login
 Content-Type: {{contentType}}
 
 {
-  "teudatZehut": "user",
-  "password": "user"
+  "nationalId": "worker",
+  "password": "worker"
 }
 
 > {%
@@ -50,7 +50,7 @@ Content-Type: {{contentType}}
 %}
 
 ### Refresh Token - Get new access token using refresh token
-POST {{baseUrl}}/api/refresh-token
+POST {{baseUrl}}/api/auth/refresh-token
 Content-Type: {{contentType}}
 
 {
@@ -79,8 +79,8 @@ GET {{baseUrl}}/api/users/1
 Accept: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
-### GET user by Teudat Zehut
-GET {{baseUrl}}/api/users/teudat-zehut/123456789
+### GET user by National ID
+GET {{baseUrl}}/api/users/national-id/123456789
 Accept: {{contentType}}
 Authorization: Bearer {{accessToken}}
 

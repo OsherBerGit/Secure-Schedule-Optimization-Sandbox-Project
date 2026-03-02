@@ -1,0 +1,259 @@
+.schedule-container {
+    padding: 2rem;
+    max-width: 1300px;
+    margin: 0 auto;
+}
+
+/* Header */
+.schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.schedule-title h1 { margin: 0; color: #333; font-size: 1.8rem; }
+.schedule-subtitle { margin: 0.25rem 0 0; color: #888; font-size: 0.95rem; }
+
+.schedule-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* View toggle */
+.view-toggle {
+    display: flex;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+}
+.view-toggle button {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #666;
+    transition: all 0.2s;
+}
+.view-toggle button.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+}
+
+/* Generate button */
+.btn-generate {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.4rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.btn-generate:hover    { opacity: 0.9; }
+.btn-generate:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Alerts */
+.alert {
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 1.2rem;
+    font-size: 0.95rem;
+}
+.alert-error { background: #fde8e8; color: #c0392b; border: 1px solid #f5c6cb; }
+.alert-info  { background: #e8f4fd; color: #2980b9; border: 1px solid #bee5eb; }
+
+/* Loading */
+.loading { text-align: center; padding: 3rem; color: #888; font-size: 1.1rem; }
+
+/* Summary cards */
+.summary-cards {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
+}
+.summary-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem 1.4rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 110px;
+    flex: 1;
+}
+.card-value { font-size: 2rem; font-weight: 700; color: #667eea; line-height: 1; }
+.card-label { font-size: 0.8rem; color: #888; margin-top: 0.3rem; text-align: center; }
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+.empty-state h3 { color: #555; margin: 0 0 0.5rem; }
+.empty-state p  { color: #999; margin: 0; }
+
+/* ---- GANTT ---- */
+.gantt-wrapper {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    padding: 1.5rem;
+    overflow-x: auto;
+}
+
+.gantt-legend {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.gantt-axis,
+.gantt-row {
+    display: flex;
+    align-items: stretch;
+    min-height: 52px;
+}
+
+.gantt-label-col {
+    min-width: 160px;
+    width: 160px;
+    padding-right: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-right: 1px solid #eee;
+    flex-shrink: 0;
+}
+
+.gantt-bar-col {
+    flex: 1;
+    position: relative;
+    padding: 0.5rem 0;
+    min-height: 52px;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.gantt-axis .gantt-bar-col {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #aaa;
+    padding: 0 0 0.4rem;
+    border-bottom: 2px solid #eee;
+}
+
+.worker-name { font-weight: 600; color: #333; font-size: 0.9rem; }
+.worker-task-count { font-size: 0.75rem; color: #aaa; }
+
+.gantt-bar {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 28px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    cursor: default;
+    transition: filter 0.15s;
+    min-width: 2%;
+    overflow: hidden;
+}
+.gantt-bar:hover { filter: brightness(1.1); }
+
+.bar-label {
+    font-size: 0.75rem;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* ---- TABLE VIEW ---- */
+.schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+}
+.schedule-table th {
+    background: #f5f5f5;
+    padding: 0.9rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #555;
+    font-size: 0.9rem;
+    border-bottom: 2px solid #eee;
+}
+.schedule-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f0f0f0;
+    color: #333;
+    font-size: 0.9rem;
+}
+.schedule-table tr:last-child td { border-bottom: none; }
+.schedule-table tr:hover td { background: #fafafa; }
+.task-title-cell { font-weight: 500; }
+
+.priority-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 0.4rem;
+    vertical-align: middle;
+}
+
+.status-badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+.status-pending     { background: #fff3e0; color: #e65100; }
+.status-in-progress { background: #e3f2fd; color: #1565c0; }
+.status-in_progress { background: #e3f2fd; color: #1565c0; }
+.status-completed   { background: #e8f5e9; color: #2e7d32; }
+.status-cancelled   { background: #f5f5f5; color: #757575; }
+.status-on-hold     { background: #f3e5f5; color: #6a1b9a; }
+
+/* Unscheduled panel */
+.unscheduled-panel {
+    margin-top: 1.5rem;
+    padding: 1rem 1.5rem;
+    background: #fffbea;
+    border: 1px solid #ffe58f;
+    border-radius: 8px;
+}
+.unscheduled-panel h3 { margin: 0 0 0.8rem; font-size: 1rem; color: #8a6914; }
+.unscheduled-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.unscheduled-tag {
+    background: #fff3cd;
+    color: #856404;
+    padding: 0.25rem 0.7rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    border: 1px solid #ffc107;
+}
+

@@ -2,7 +2,8 @@ package com.example.mainbackend;
 
 import com.example.mainbackend.constants.ConstraintTypeConstants;
 import com.example.mainbackend.constants.PriorityConstants;
-import com.example.mainbackend.constants.StatusConstants;
+import com.example.mainbackend.constants.TaskStatusConstants;
+import com.example.mainbackend.constants.VacationStatusConstants;
 import com.example.mainbackend.entity.*;
 import com.example.mainbackend.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -21,33 +23,36 @@ public class DataLoader implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final StatusRepository statusRepository;
+    private final TaskStatusRepository taskStatusRepository;
+    private final VacationStatusRepository vacationStatusRepository;
     private final PriorityRepository priorityRepository;
     private final ConstraintTypeRepository constraintTypeRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional
     public void run(String... args) throws Exception {
-        // Seed lookup tables (always runs to ensure required values exist)
-        seedStatuses();
+        seedTaskStatuses();
+        seedVacationStatuses();
         seedPriorities();
         seedConstraintTypes();
-
-        // Seed users only if database is empty
-        if (userRepository.count() > 0) {
-            log.info("Users already exist, skipping user seeding");
-            return;
-        }
-
         seedRolesAndUsers();
     }
 
-    private void seedStatuses() {
-        for (String statusName : StatusConstants.REQUIRED_STATUSES) {
-            if (!statusRepository.findByName(statusName).isPresent()) {
-                Status status = Status.builder().name(statusName).build();
-                statusRepository.save(status);
-                log.info("Created status: {}", statusName);
+    private void seedTaskStatuses() {
+        for (String name : TaskStatusConstants.REQUIRED_STATUSES) {
+            if (taskStatusRepository.findByName(name).isEmpty()) {
+                taskStatusRepository.save(TaskStatus.builder().name(name).build());
+                log.info("Created task status: {}", name);
+            }
+        }
+    }
+
+    private void seedVacationStatuses() {
+        for (String name : VacationStatusConstants.REQUIRED_STATUSES) {
+            if (vacationStatusRepository.findByName(name).isEmpty()) {
+                vacationStatusRepository.save(VacationStatus.builder().name(name).build());
+                log.info("Created vacation status: {}", name);
             }
         }
     }
@@ -55,7 +60,7 @@ public class DataLoader implements CommandLineRunner {
     private void seedPriorities() {
         int value = 1;
         for (String priorityName : PriorityConstants.REQUIRED_PRIORITIES) {
-            if (!priorityRepository.findByName(priorityName).isPresent()) {
+            if (priorityRepository.findByName(priorityName).isEmpty()) {
                 Priority priority = Priority.builder()
                         .name(priorityName)
                         .value(value)
@@ -88,36 +93,45 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
-    private void seedRolesAndUsers() {
-        // Create roles
-        Role adminRole = new Role();
-        adminRole.setRoleName("ADMIN");
-        roleRepository.save(adminRole);
+    @Transactional
+    public void seedRolesAndUsers() {
+        // Ensure ADMIN and WORKER roles exist (create if missing)
+        Role adminRole = roleRepository.findByRoleName("ADMIN")
+                .orElseGet(() -> { Role r = new Role(); r.setRoleName("ADMIN"); return roleRepository.save(r); });
 
-        Role userRole = new Role();
-        userRole.setRoleName("USER");
-        roleRepository.save(userRole);
+        Role workerRole = roleRepository.findByRoleName("WORKER")
+                .orElseGet(() -> { Role r = new Role(); r.setRoleName("WORKER"); return roleRepository.save(r); });
 
-        // Create admin user with admin role
-        User adminUser = new User();
-        adminUser.setNationalId("admin");
-        adminUser.setPassword(passwordEncoder.encode("admin"));
-        Set<Role> roles = new HashSet<>();
-        roles.add(adminRole);
-        roles.add(userRole);
-        adminUser.setRoles(roles);
+        // Note: stale USER role is left in DB — removing it causes FK issues.
+        // The admin user below will be re-assigned to ADMIN+WORKER, fixing the 403.
+
+        // Ensure admin user exists with correct roles
+        User adminUser = userRepository.findByNationalId("admin").orElseGet(() -> {
+            User u = new User();
+            u.setNationalId("admin");
+            u.setPassword(passwordEncoder.encode("admin"));
+            log.info("Created admin user (nationalId=admin, password=admin)");
+            return u;
+        });
+        Set<Role> adminRoles = new HashSet<>();
+        adminRoles.add(adminRole);
+        adminRoles.add(workerRole);
+        adminUser.setRoles(adminRoles);
         userRepository.save(adminUser);
-        log.info("Created admin user");
+        log.info("Ensured admin user has ADMIN + WORKER roles");
 
-        // Create regular user
-        User user = new User();
-        user.setNationalId("user");
-        user.setPassword(passwordEncoder.encode("user"));
-        Set<Role> userRoles = new HashSet<>();
-        userRoles.add(userRole);
-        user.setRoles(userRoles);
-        userRepository.save(user);
-        log.info("Created regular user");
+        // Ensure worker user exists with correct roles
+        User workerUser = userRepository.findByNationalId("worker").orElseGet(() -> {
+            User u = new User();
+            u.setNationalId("worker");
+            u.setPassword(passwordEncoder.encode("worker"));
+            log.info("Created worker user (nationalId=worker, password=worker)");
+            return u;
+        });
+        Set<Role> workerRoles = new HashSet<>();
+        workerRoles.add(workerRole);
+        workerUser.setRoles(workerRoles);
+        userRepository.save(workerUser);
+        log.info("Ensured worker user has WORKER role");
     }
-
 }

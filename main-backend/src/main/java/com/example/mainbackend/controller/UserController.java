@@ -91,6 +91,18 @@ public class UserController {
     }
 
     /**
+     * Retrieves all users with a specific role (e.g. WORKER or ADMIN).
+     *
+     * @param role the role name to filter by
+     * @return ResponseEntity with list of users
+     */
+    @GetMapping("/role/{role}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserDto>> getUsersByRole(@PathVariable String role) {
+        return ResponseEntity.ok(userService.getUsersByRole(role));
+    }
+
+    /**
      * Updates an existing user.
      *
      * @param id the user ID to update

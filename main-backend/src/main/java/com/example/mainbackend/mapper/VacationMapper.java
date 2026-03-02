@@ -17,7 +17,7 @@ public class VacationMapper {
                 .startDate(vacation.getStartDate())
                 .endDate(vacation.getEndDate())
                 .workerName(vacation.getWorker().getFirstName() + " " + vacation.getWorker().getLastName())
+                .statusName(vacation.getStatus() != null ? vacation.getStatus().getName() : null)
                 .build();
     }
 }
-

@@ -42,4 +42,10 @@ public class CreateUserRequest {
 
     @Positive(message = "Max tasks must be positive")
     private Integer maxTasks;
+
+    /**
+     * Role to assign to the new user: ADMIN or WORKER.
+     * Defaults to WORKER if not provided.
+     */
+    private String role;
 }

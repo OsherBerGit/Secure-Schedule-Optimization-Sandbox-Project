@@ -1,13 +1,13 @@
 package com.example.mainbackend.mapper;
 
 import com.example.mainbackend.dto.status.StatusResponseDto;
-import com.example.mainbackend.entity.Status;
+import com.example.mainbackend.entity.TaskStatus;
 import org.springframework.stereotype.Component;
 
 @Component
 public class StatusMapper {
 
-    public StatusResponseDto toDto(Status status) {
+    public StatusResponseDto toDto(TaskStatus status) {
         if (status == null) return null;
 
         return StatusResponseDto.builder()
@@ -16,4 +16,3 @@ public class StatusMapper {
                 .build();
     }
 }
-

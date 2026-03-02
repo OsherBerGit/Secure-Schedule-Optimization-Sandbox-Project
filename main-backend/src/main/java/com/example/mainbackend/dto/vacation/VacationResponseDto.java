@@ -15,4 +15,7 @@ public class VacationResponseDto {
 
     // Display name for UI
     private String workerName;
+
+    // Vacation request status (PENDING, APPROVED, REJECTED)
+    private String statusName;
 }

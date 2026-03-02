@@ -1,7 +1,9 @@
 package com.example.mainbackend.controller;
 
 import com.example.mainbackend.dto.vacation.VacationCreateRequest;
+import com.example.mainbackend.dto.vacation.VacationRequestDto;
 import com.example.mainbackend.dto.vacation.VacationResponseDto;
+import com.example.mainbackend.dto.vacation.VacationStatusUpdateRequest;
 import com.example.mainbackend.service.VacationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +11,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -21,12 +24,41 @@ public class VacationController {
 
     private final VacationService vacationService;
 
+    /**
+     * ADMIN creates a vacation directly (auto-approved).
+     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VacationResponseDto> createVacation(
             @Valid @RequestBody VacationCreateRequest request) {
         VacationResponseDto response = vacationService.createVacation(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * WORKER submits a vacation request (starts as PENDING).
+     * Worker identity is extracted from the JWT Security Context — no workerId in body.
+     */
+    @PostMapping("/request")
+    @PreAuthorize("hasRole('WORKER')")
+    public ResponseEntity<VacationResponseDto> requestVacation(
+            @Valid @RequestBody VacationRequestDto request,
+            Authentication authentication) {
+        String nationalId = authentication.getName(); // nationalId is the principal
+        VacationResponseDto response = vacationService.requestVacation(nationalId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * ADMIN approves or rejects a PENDING vacation request.
+     */
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<VacationResponseDto> updateVacationStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody VacationStatusUpdateRequest request) {
+        VacationResponseDto response = vacationService.updateVacationStatus(id, request);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
@@ -75,4 +107,3 @@ public class VacationController {
         return ResponseEntity.noContent().build();
     }
 }
-

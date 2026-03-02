@@ -3,12 +3,12 @@ package com.example.mainbackend.service;
 import com.example.mainbackend.dto.task.TaskCreateRequest;
 import com.example.mainbackend.dto.task.TaskResponseDto;
 import com.example.mainbackend.entity.Priority;
-import com.example.mainbackend.entity.Status;
+import com.example.mainbackend.entity.TaskStatus;
 import com.example.mainbackend.entity.Task;
 import com.example.mainbackend.entity.User;
 import com.example.mainbackend.mapper.TaskMapper;
 import com.example.mainbackend.repository.PriorityRepository;
-import com.example.mainbackend.repository.StatusRepository;
+import com.example.mainbackend.repository.TaskStatusRepository;
 import com.example.mainbackend.repository.TaskRepository;
 import com.example.mainbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public class TaskService {
 
     private final TaskRepository taskRepository;
-    private final StatusRepository statusRepository;
+    private final TaskStatusRepository taskStatusRepository;
     private final PriorityRepository priorityRepository;
     private final UserRepository userRepository;
     private final TaskMapper taskMapper;
@@ -97,9 +97,9 @@ public class TaskService {
         Priority priority = priorityRepository.findById(request.getPriorityId())
                 .orElseThrow(() -> new RuntimeException("Priority not found with id: " + request.getPriorityId()));
 
-        // Fetch Status (required)
-        Status status = statusRepository.findById(request.getStatusId())
-                .orElseThrow(() -> new RuntimeException("Status not found with id: " + request.getStatusId()));
+        // Fetch TaskStatus (required)
+        TaskStatus status = taskStatusRepository.findById(request.getStatusId())
+                .orElseThrow(() -> new RuntimeException("TaskStatus not found with id: " + request.getStatusId()));
 
         // Fetch User (optional - can be null)
         User assignedWorker = null;
