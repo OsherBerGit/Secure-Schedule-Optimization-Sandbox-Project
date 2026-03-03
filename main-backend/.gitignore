@@ -4,6 +4,14 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# ============================================================
+# SECRETS — local safety net (root .gitignore is authoritative)
+# ============================================================
+src/main/resources/application.properties
+src/main/resources/application-*.properties
+!src/main/resources/application.properties.example
+!src/main/resources/application-*.properties.example
+
 ### STS ###
 .apt_generated
 .classpath

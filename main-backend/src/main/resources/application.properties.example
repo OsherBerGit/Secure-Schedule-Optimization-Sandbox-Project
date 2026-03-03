@@ -3,8 +3,8 @@ spring.application.name=main-backend
 # Database configuration
 spring.datasource.url=jdbc:mysql://localhost:3306/main_backend_db?createDatabaseIfNotExist=true&serverTimezone=UTC
 spring.datasource.username=root
-spring.datasource.password=1234
-# spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+# REQUIRED: Set via environment variable DB_PASSWORD
+spring.datasource.password=${DB_PASSWORD:YOUR_DB_PASSWORD}
 
 # Hibernate configuration
 spring.jpa.hibernate.ddl-auto=update
@@ -18,9 +18,9 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
 server.port=8080
 
 # JWT Configuration
-# IMPORTANT: In production, use environment variable: JWT_SECRET
-# Generate a secure key: openssl rand -base64 32
-jwt.secret=${JWT_SECRET:default-dev-secret-key-change-in-production-min-32-chars}
+# REQUIRED: Generate with `openssl rand -base64 32` and set via environment variable JWT_SECRET
+# Must be at least 32 characters long
+jwt.secret=${JWT_SECRET:YOUR_JWT_SECRET_MIN_32_CHARS}
 jwt.access-token-expiration=900000
 jwt.refresh-token-expiration=604800000
 
@@ -28,9 +28,9 @@ jwt.refresh-token-expiration=604800000
 spring.main.allow-bean-definition-overriding=true
 
 # Development Mode
-# Set to false in production to enable full authentication/authorization
+# IMPORTANT: Set to false in production to enable full authentication/authorization
 app.development-mode=true
 
-# Algorithm service URL
-algorithm.service.url=http://localhost:8081
+# Algorithm service URL — set via environment variable ALGO_SERVICE_URL in production
+algorithm.service.url=${ALGO_SERVICE_URL:http://localhost:8081}
 

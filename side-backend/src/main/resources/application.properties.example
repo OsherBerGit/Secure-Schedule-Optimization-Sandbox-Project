@@ -3,15 +3,19 @@ spring.application.name=side-backend
 
 # -------------------------------------------------------
 # SECURITY: Bind to localhost ONLY.
-# This server is internal ? it must never be exposed to
+# This server is internal — it must never be exposed to
 # the internet. Only main-backend (same machine) can reach it.
 # -------------------------------------------------------
 server.address=127.0.0.1
 
 # -------------------------------------------------------
-# NO DATABASE ? this server is completely stateless.
+# NO DATABASE — this server is completely stateless.
 # Do NOT add any spring.datasource or JPA properties here.
 # -------------------------------------------------------
 
 # Jackson: serialize LocalDateTime as ISO-8601 strings
 spring.jackson.serialization.write-dates-as-timestamps=false
+
+# Internal API key — REQUIRED in production, set via environment variable INTERNAL_KEY
+internal.api.key=${INTERNAL_KEY:YOUR_INTERNAL_API_KEY}
+
