@@ -1,0 +1,298 @@
+### ============================================================
+### Side-Backend & Integration Tests
+### Tests the full communication chain:
+###   main-backend (8080) → side-backend (8081) → algorithm (in-memory)
+### ============================================================
+
+@sideBaseUrl = http://localhost:8081
+@mainBaseUrl = http://localhost:8080
+@token = your_access_token_here
+
+### ============================================================
+### PART 1: Direct side-backend tests (port 8081)
+### ============================================================
+
+### [1] Health check — side-backend should respond
+GET {{sideBaseUrl}}/api/v1/algo/schedule
+
+###
+
+### [2] ✅ HAPPY PATH — Valid schedule request with 1 user and 1 task
+### Expected: 200 OK with assignments list
+POST {{sideBaseUrl}}/api/v1/algo/schedule
+Content-Type: application/json
+
+{
+  "strategy": "GREEDY",
+  "users": [
+    {
+      "id": 1,
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "email": "alice@example.com",
+      "dailyAvailabilityHours": 8,
+      "maxTasks": 5,
+      "roles": ["WORKER"],
+      "vacations": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Build Login Page",
+      "description": "Create the login UI",
+      "durationHours": 4,
+      "deadline": "2026-12-31T23:59:59",
+      "priority": "HIGH",
+      "priorityLevel": 3,
+      "status": "PENDING",
+      "requiredRoles": ["WORKER"],
+      "predecessorTaskIds": [],
+      "successorTaskIds": []
+    }
+  ]
+}
+
+###
+
+### [3] ✅ ROUND_ROBIN strategy with 2 users and 3 tasks
+POST {{sideBaseUrl}}/api/v1/algo/schedule
+Content-Type: application/json
+
+{
+  "strategy": "ROUND_ROBIN",
+  "users": [
+    {
+      "id": 1,
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "email": "alice@example.com",
+      "dailyAvailabilityHours": 8,
+      "maxTasks": 5,
+      "roles": ["WORKER", "DEVELOPER"],
+      "vacations": []
+    },
+    {
+      "id": 2,
+      "firstName": "Bob",
+      "lastName": "Jones",
+      "email": "bob@example.com",
+      "dailyAvailabilityHours": 6,
+      "maxTasks": 3,
+      "roles": ["WORKER"],
+      "vacations": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Task Alpha",
+      "durationHours": 4,
+      "deadline": "2026-12-31T23:59:59",
+      "priority": "HIGH",
+      "priorityLevel": 3,
+      "status": "PENDING",
+      "requiredRoles": ["WORKER"],
+      "predecessorTaskIds": [],
+      "successorTaskIds": []
+    },
+    {
+      "id": 2,
+      "title": "Task Beta",
+      "durationHours": 6,
+      "deadline": "2026-12-31T23:59:59",
+      "priority": "MEDIUM",
+      "priorityLevel": 2,
+      "status": "PENDING",
+      "requiredRoles": ["WORKER"],
+      "predecessorTaskIds": [],
+      "successorTaskIds": []
+    },
+    {
+      "id": 3,
+      "title": "Task Gamma (needs DEVELOPER)",
+      "durationHours": 8,
+      "deadline": "2026-12-31T23:59:59",
+      "priority": "LOW",
+      "priorityLevel": 1,
+      "status": "PENDING",
+      "requiredRoles": ["DEVELOPER"],
+      "predecessorTaskIds": [],
+      "successorTaskIds": []
+    }
+  ]
+}
+
+###
+
+### [4] ✅ Task with predecessor dependency
+POST {{sideBaseUrl}}/api/v1/algo/schedule
+Content-Type: application/json
+
+{
+  "strategy": "GREEDY",
+  "users": [
+    {
+      "id": 1,
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "email": "alice@example.com",
+      "dailyAvailabilityHours": 8,
+      "maxTasks": 10,
+      "roles": ["WORKER"],
+      "vacations": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Backend API",
+      "durationHours": 8,
+      "deadline": "2026-12-31T23:59:59",
+      "priority": "HIGH",
+      "priorityLevel": 3,
+      "status": "PENDING",
+      "requiredRoles": ["WORKER"],
+      "predecessorTaskIds": [],
+      "successorTaskIds": [2]
+    },
+    {
+      "id": 2,
+      "title": "Frontend UI (depends on Backend)",
+      "durationHours": 6,
+      "deadline": "2026-12-31T23:59:59",
+      "priority": "MEDIUM",
+      "priorityLevel": 2,
+      "status": "PENDING",
+      "requiredRoles": ["WORKER"],
+      "predecessorTaskIds": [1],
+      "successorTaskIds": []
+    }
+  ]
+}
+
+###
+
+### [5] ❌ VALIDATION ERROR — empty users list (expect 400)
+POST {{sideBaseUrl}}/api/v1/algo/schedule
+Content-Type: application/json
+
+{
+  "strategy": "GREEDY",
+  "users": [],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Some Task",
+      "durationHours": 4,
+      "status": "PENDING"
+    }
+  ]
+}
+
+###
+
+### [6] ❌ SANITIZATION ERROR — duplicate user IDs (expect 400)
+POST {{sideBaseUrl}}/api/v1/algo/schedule
+Content-Type: application/json
+
+{
+  "strategy": "GREEDY",
+  "users": [
+    {
+      "id": 1,
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "email": "alice@example.com",
+      "dailyAvailabilityHours": 8,
+      "maxTasks": 5,
+      "roles": ["WORKER"],
+      "vacations": []
+    },
+    {
+      "id": 1,
+      "firstName": "Duplicate",
+      "lastName": "User",
+      "email": "dup@example.com",
+      "dailyAvailabilityHours": 8,
+      "maxTasks": 5,
+      "roles": ["WORKER"],
+      "vacations": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Task",
+      "durationHours": 4,
+      "status": "PENDING"
+    }
+  ]
+}
+
+###
+
+### [7] ❌ SANITIZATION ERROR — invalid dailyAvailabilityHours (expect 400)
+POST {{sideBaseUrl}}/api/v1/algo/schedule
+Content-Type: application/json
+
+{
+  "strategy": "GREEDY",
+  "users": [
+    {
+      "id": 1,
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "email": "alice@example.com",
+      "dailyAvailabilityHours": 999,
+      "maxTasks": 5,
+      "roles": ["WORKER"],
+      "vacations": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Task",
+      "durationHours": 4,
+      "status": "PENDING"
+    }
+  ]
+}
+
+###
+
+### ============================================================
+### PART 2: Full integration test via main-backend (port 8080)
+### main-backend fetches from DB → sends to side-backend → returns results
+### ============================================================
+
+### [8] Login first — token is auto-saved to @token variable
+POST {{mainBaseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "nationalId": "admin",
+  "password": "admin"
+}
+
+> {% client.global.set("token", response.body.accessToken); %}
+
+###
+
+### [9] 🔗 FULL INTEGRATION — trigger scheduling via main-backend
+### main-backend (8080) reads DB, calls side-backend (8081), saves results
+### Replace {{token}} with the accessToken from step [8]
+POST {{mainBaseUrl}}/api/schedule/run?strategy=GREEDY
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### [10] ROUND_ROBIN via main-backend
+POST {{mainBaseUrl}}/api/schedule/run?strategy=ROUND_ROBIN
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+

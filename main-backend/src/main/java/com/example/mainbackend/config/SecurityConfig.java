@@ -96,8 +96,9 @@ public class SecurityConfig {
                 // Enable security headers for XSS and other protections
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp
-                                .policyDirectives("default-src 'self'; frame-ancestors 'none';"))
-                        .xssProtection(xss -> {})  // XSS protection enabled by default
+                                // Allow the frontend (5173) to connect back to the API (8080)
+                                .policyDirectives("default-src 'self'; connect-src 'self' http://localhost:8080; frame-ancestors 'none';"))
+                        .xssProtection(xss -> {})
                         .contentTypeOptions(contentTypeOptions -> {})
                         .frameOptions(frameOptions -> frameOptions.deny())
                         .httpStrictTransportSecurity(hsts -> hsts

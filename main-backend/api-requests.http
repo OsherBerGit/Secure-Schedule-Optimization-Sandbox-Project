@@ -619,3 +619,255 @@ Authorization: Bearer {{accessToken}}
   "statusId": 1
 }
 
+### ==================== SCHEDULING (main-backend → side-backend) ====================
+### These endpoints trigger the full integration:
+###   main-backend (8080) reads DB → sends to side-backend (8081) → algorithm runs → results saved to DB
+### Requires: ADMIN role. Login first (see Authentication section above).
+
+### Run scheduling with GREEDY strategy (best-fit by priority)
+### Assigns tasks to the least-loaded eligible employee
+POST {{baseUrl}}/api/schedule/run?strategy=GREEDY
+Authorization: Bearer {{accessToken}}
+
+### Run scheduling with ROUND_ROBIN strategy (fair distribution)
+### Distributes tasks evenly across all eligible employees
+POST {{baseUrl}}/api/schedule/run?strategy=ROUND_ROBIN
+Authorization: Bearer {{accessToken}}
+
+### ==================== SIDE-BACKEND DIRECT (port 8081) ====================
+### These call the side-backend sandbox directly, bypassing main-backend.
+### Useful for testing the algorithm in isolation with custom data.
+
+@sideUrl = http://localhost:8081
+
+### ✅ Happy path — GREEDY, 1 user, 1 task
+POST {{sideUrl}}/api/v1/algo/schedule
+Content-Type: {{contentType}}
+
+{
+  "strategy": "GREEDY",
+  "users": [
+    {
+      "id": 1,
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "email": "alice@example.com",
+      "dailyAvailabilityHours": 8,
+      "maxTasks": 5,
+      "roles": ["WORKER"],
+      "vacations": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Build Login Page",
+      "description": "Create the login UI",
+      "durationHours": 4,
+      "deadline": "2026-12-31T23:59:59",
+      "priority": "HIGH",
+      "priorityLevel": 3,
+      "status": "PENDING",
+      "requiredRoles": ["WORKER"],
+      "predecessorTaskIds": [],
+      "successorTaskIds": []
+    }
+  ]
+}
+
+### ✅ ROUND_ROBIN — 2 users, 3 tasks (task 3 needs DEVELOPER role)
+POST {{sideUrl}}/api/v1/algo/schedule
+Content-Type: {{contentType}}
+
+{
+  "strategy": "ROUND_ROBIN",
+  "users": [
+    {
+      "id": 1,
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "email": "alice@example.com",
+      "dailyAvailabilityHours": 8,
+      "maxTasks": 5,
+      "roles": ["WORKER", "DEVELOPER"],
+      "vacations": []
+    },
+    {
+      "id": 2,
+      "firstName": "Bob",
+      "lastName": "Jones",
+      "email": "bob@example.com",
+      "dailyAvailabilityHours": 6,
+      "maxTasks": 3,
+      "roles": ["WORKER"],
+      "vacations": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Task Alpha",
+      "durationHours": 4,
+      "deadline": "2026-12-31T23:59:59",
+      "priority": "HIGH",
+      "priorityLevel": 3,
+      "status": "PENDING",
+      "requiredRoles": ["WORKER"],
+      "predecessorTaskIds": [],
+      "successorTaskIds": []
+    },
+    {
+      "id": 2,
+      "title": "Task Beta",
+      "durationHours": 6,
+      "deadline": "2026-12-31T23:59:59",
+      "priority": "MEDIUM",
+      "priorityLevel": 2,
+      "status": "PENDING",
+      "requiredRoles": ["WORKER"],
+      "predecessorTaskIds": [],
+      "successorTaskIds": []
+    },
+    {
+      "id": 3,
+      "title": "Task Gamma (needs DEVELOPER)",
+      "durationHours": 8,
+      "deadline": "2026-12-31T23:59:59",
+      "priority": "LOW",
+      "priorityLevel": 1,
+      "status": "PENDING",
+      "requiredRoles": ["DEVELOPER"],
+      "predecessorTaskIds": [],
+      "successorTaskIds": []
+    }
+  ]
+}
+
+### ✅ Predecessor dependency — task 2 starts after task 1 finishes
+POST {{sideUrl}}/api/v1/algo/schedule
+Content-Type: {{contentType}}
+
+{
+  "strategy": "GREEDY",
+  "users": [
+    {
+      "id": 1,
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "email": "alice@example.com",
+      "dailyAvailabilityHours": 8,
+      "maxTasks": 10,
+      "roles": ["WORKER"],
+      "vacations": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Backend API",
+      "durationHours": 8,
+      "deadline": "2026-12-31T23:59:59",
+      "priority": "HIGH",
+      "priorityLevel": 3,
+      "status": "PENDING",
+      "requiredRoles": ["WORKER"],
+      "predecessorTaskIds": [],
+      "successorTaskIds": [2]
+    },
+    {
+      "id": 2,
+      "title": "Frontend UI (depends on Backend)",
+      "durationHours": 6,
+      "deadline": "2026-12-31T23:59:59",
+      "priority": "MEDIUM",
+      "priorityLevel": 2,
+      "status": "PENDING",
+      "requiredRoles": ["WORKER"],
+      "predecessorTaskIds": [1],
+      "successorTaskIds": []
+    }
+  ]
+}
+
+### ❌ Validation error — empty users list (expect 400)
+POST {{sideUrl}}/api/v1/algo/schedule
+Content-Type: {{contentType}}
+
+{
+  "strategy": "GREEDY",
+  "users": [],
+  "tasks": []
+}
+
+### ❌ Sanitization error — duplicate user IDs (expect 400)
+POST {{sideUrl}}/api/v1/algo/schedule
+Content-Type: {{contentType}}
+
+{
+  "strategy": "GREEDY",
+  "users": [
+    {
+      "id": 1,
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "email": "alice@example.com",
+      "dailyAvailabilityHours": 8,
+      "maxTasks": 5,
+      "roles": ["WORKER"],
+      "vacations": []
+    },
+    {
+      "id": 1,
+      "firstName": "Duplicate",
+      "lastName": "User",
+      "email": "dup@example.com",
+      "dailyAvailabilityHours": 8,
+      "maxTasks": 5,
+      "roles": ["WORKER"],
+      "vacations": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Task",
+      "durationHours": 4,
+      "status": "PENDING",
+      "requiredRoles": ["WORKER"],
+      "predecessorTaskIds": [],
+      "successorTaskIds": []
+    }
+  ]
+}
+
+### ❌ Sanitization error — dailyAvailabilityHours out of range (expect 400)
+POST {{sideUrl}}/api/v1/algo/schedule
+Content-Type: {{contentType}}
+
+{
+  "strategy": "GREEDY",
+  "users": [
+    {
+      "id": 1,
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "email": "alice@example.com",
+      "dailyAvailabilityHours": 999,
+      "maxTasks": 5,
+      "roles": ["WORKER"],
+      "vacations": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Task",
+      "durationHours": 4,
+      "status": "PENDING",
+      "requiredRoles": ["WORKER"],
+      "predecessorTaskIds": [],
+      "successorTaskIds": []
+    }
+  ]
+}
+
