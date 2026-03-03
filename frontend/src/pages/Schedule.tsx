@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { Task, User } from '../types'
-import { taskApi, userApi } from '../api'
+import type { Task, User, ScheduleStrategy, ScheduleResult } from '../types'
+import { taskApi, userApi, scheduleApi } from '../api'
 import { useAuth } from '../context/useAuth'
 import './Schedule.css'
 
@@ -19,6 +19,8 @@ const Schedule = () => {
     const [error, setError] = useState<string | null>(null)
     const [successMsg, setSuccessMsg] = useState<string | null>(null)
     const [viewMode, setViewMode] = useState<'gantt' | 'table'>('gantt')
+    const [strategy, setStrategy] = useState<ScheduleStrategy>('GREEDY')
+    const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null)
 
     const fetchData = useCallback(async () => {
         setIsLoading(true)
@@ -88,17 +90,20 @@ const Schedule = () => {
     const unassignedTasks = tasks.filter(t => !t.assignedWorkerId)
     const unscheduledTasks = tasks.filter(t => t.assignedWorkerId && !t.startTime)
 
-    // Simulate generate (will call real endpoint when backend is ready)
+    // Trigger the scheduling algorithm
     async function handleGenerate() {
         setIsGenerating(true)
         setError(null)
         setSuccessMsg(null)
+        setScheduleResult(null)
         try {
-            // TODO: replace with real API call when backend algorithm is ready
-            // await scheduleApi.generate()
-            await new Promise(r => setTimeout(r, 1500)) // simulate delay
-            setSuccessMsg('⚠️ Algorithm not yet implemented on the backend. This page is ready to connect.')
-            await fetchData()
+            const res = await scheduleApi.run(strategy)
+            setScheduleResult(res.data)
+            setSuccessMsg(
+                `✅ Schedule generated using ${res.data.strategyUsed} — ` +
+                `${res.data.assignedTasks} assigned, ${res.data.unassignedTasks} unassigned.`
+            )
+            await fetchData() // refresh tasks with new assignments
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Failed to generate schedule')
         } finally {
@@ -133,13 +138,24 @@ const Schedule = () => {
                         </button>
                     </div>
                     {currentUser?.role === 'ADMIN' && (
-                        <button
-                            className="btn-generate"
-                            onClick={handleGenerate}
-                            disabled={isGenerating}
-                        >
-                            {isGenerating ? '⏳ Generating...' : '⚡ Generate Schedule'}
-                        </button>
+                        <div className="schedule-generate-group">
+                            <select
+                                className="strategy-select"
+                                value={strategy}
+                                onChange={e => setStrategy(e.target.value as ScheduleStrategy)}
+                                disabled={isGenerating}
+                            >
+                                <option value="GREEDY">⚡ Greedy (Best-Fit)</option>
+                                <option value="ROUND_ROBIN">🔄 Round-Robin (Fair)</option>
+                            </select>
+                            <button
+                                className="btn-generate"
+                                onClick={handleGenerate}
+                                disabled={isGenerating}
+                            >
+                                {isGenerating ? '⏳ Generating...' : '⚡ Generate Schedule'}
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
@@ -147,6 +163,45 @@ const Schedule = () => {
             {/* Messages */}
             {error      && <div className="alert alert-error">{error}</div>}
             {successMsg && <div className="alert alert-info">{successMsg}</div>}
+
+            {/* Algorithm Result Panel */}
+            {scheduleResult && (
+                <div className="result-panel">
+                    <h3 className="result-title">📊 Last Run — {scheduleResult.strategyUsed}</h3>
+                    <div className="result-stats">
+                        <div className="result-stat">
+                            <span className="stat-value">{scheduleResult.totalTasks}</span>
+                            <span className="stat-label">Total</span>
+                        </div>
+                        <div className="result-stat result-stat--success">
+                            <span className="stat-value">{scheduleResult.assignedTasks}</span>
+                            <span className="stat-label">Assigned</span>
+                        </div>
+                        <div className="result-stat result-stat--warn">
+                            <span className="stat-value">{scheduleResult.unassignedTasks}</span>
+                            <span className="stat-label">Unassigned</span>
+                        </div>
+                    </div>
+                    <div className="result-assignments">
+                        {scheduleResult.assignments.map(a => (
+                            <div key={a.taskId} className={`result-row ${a.assignedUserId ? 'assigned' : 'unassigned'}`}>
+                                <span className="result-task">{a.taskTitle}</span>
+                                <span className="result-arrow">→</span>
+                                <span className="result-user">
+                                    {a.assignedUserFullName ?? '⚠️ Unassigned'}
+                                </span>
+                                {a.scheduledStart && (
+                                    <span className="result-dates">
+                                        {new Date(a.scheduledStart).toLocaleDateString()} –{' '}
+                                        {a.scheduledEnd ? new Date(a.scheduledEnd).toLocaleDateString() : '?'}
+                                    </span>
+                                )}
+                                <span className="result-reason">{a.reason}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {isLoading ? (
                 <div className="loading">Loading schedule data...</div>

@@ -257,3 +257,102 @@
     border: 1px solid #ffc107;
 }
 
+/* Strategy selector + generate button group */
+.schedule-generate-group {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.strategy-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: #fff;
+    cursor: pointer;
+    color: #333;
+}
+
+.strategy-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Algorithm Result Panel */
+.result-panel {
+    background: #f8f9ff;
+    border: 1px solid #d0d7ff;
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.result-title {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    color: #4a5568;
+}
+
+.result-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.result-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 1.25rem;
+    min-width: 70px;
+}
+
+.result-stat--success { border-color: #68d391; background: #f0fff4; }
+.result-stat--warn    { border-color: #fbd38d; background: #fffaf0; }
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #718096;
+    margin-top: 0.1rem;
+}
+
+.result-assignments {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.result-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+}
+
+.result-row.unassigned {
+    background: #fff5f5;
+    border-color: #fed7d7;
+}
+
+.result-task   { font-weight: 600; color: #2d3748; min-width: 160px; }
+.result-arrow  { color: #a0aec0; }
+.result-user   { color: #667eea; font-weight: 500; min-width: 130px; }
+.result-dates  { color: #718096; font-size: 0.8rem; }
+.result-reason { color: #a0aec0; font-size: 0.78rem; font-style: italic; margin-left: auto; }

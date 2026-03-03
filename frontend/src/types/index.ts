@@ -169,3 +169,26 @@ export interface AuthContextType {
   logout: () => void;
   refreshAccessToken: () => Promise<void>;
 }
+
+// ── Algorithm / Schedule types ──────────────────────────────────────────────
+
+export type ScheduleStrategy = 'GREEDY' | 'ROUND_ROBIN';
+
+export interface TaskAssignmentResult {
+  taskId: number;
+  taskTitle: string;
+  assignedUserId: number | null;
+  assignedUserFullName: string | null;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  reason: string;
+}
+
+export interface ScheduleResult {
+  strategyUsed: string;
+  totalTasks: number;
+  assignedTasks: number;
+  unassignedTasks: number;
+  assignments: TaskAssignmentResult[];
+}
+

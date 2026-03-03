@@ -74,6 +74,10 @@ const Dashboard: React.FC = () => {
             <h3>💰 Settlements</h3>
             <p>View work settlements</p>
           </div>
+          <div className="dashboard-card" onClick={() => navigate('/schedule')}>
+            <h3>📅 Schedule</h3>
+            <p>Run and view task scheduling</p>
+          </div>
         </div>
       </main>
     </div>

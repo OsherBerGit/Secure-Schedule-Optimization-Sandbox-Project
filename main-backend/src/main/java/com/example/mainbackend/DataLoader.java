@@ -13,6 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -27,6 +29,9 @@ public class DataLoader implements CommandLineRunner {
     private final VacationStatusRepository vacationStatusRepository;
     private final PriorityRepository priorityRepository;
     private final ConstraintTypeRepository constraintTypeRepository;
+    private final TaskRepository taskRepository;
+    private final TaskConstraintRepository taskConstraintRepository;
+    private final VacationRepository vacationRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -37,7 +42,13 @@ public class DataLoader implements CommandLineRunner {
         seedPriorities();
         seedConstraintTypes();
         seedRolesAndUsers();
+        seedTasks();
+        seedVacations();
     }
+
+    // -------------------------------------------------------------------------
+    // Lookup table seeds (unchanged)
+    // -------------------------------------------------------------------------
 
     private void seedTaskStatuses() {
         for (String name : TaskStatusConstants.REQUIRED_STATUSES) {
@@ -61,12 +72,8 @@ public class DataLoader implements CommandLineRunner {
         int value = 1;
         for (String priorityName : PriorityConstants.REQUIRED_PRIORITIES) {
             if (priorityRepository.findByName(priorityName).isEmpty()) {
-                Priority priority = Priority.builder()
-                        .name(priorityName)
-                        .value(value)
-                        .build();
-                priorityRepository.save(priority);
-                log.info("Created priority: {} with value {}", priorityName, value);
+                priorityRepository.save(Priority.builder().name(priorityName).value(value).build());
+                log.info("Created priority: {} (value={})", priorityName, value);
             }
             value++;
         }
@@ -79,59 +86,223 @@ public class DataLoader implements CommandLineRunner {
             "Successor cannot finish until predecessor finishes",
             "Successor cannot finish until predecessor starts"
         };
-
         for (int i = 0; i < ConstraintTypeConstants.REQUIRED_CONSTRAINT_TYPES.length; i++) {
             String typeName = ConstraintTypeConstants.REQUIRED_CONSTRAINT_TYPES[i];
             if (constraintTypeRepository.findByName(typeName).isEmpty()) {
-                ConstraintType type = ConstraintType.builder()
-                        .name(typeName)
-                        .description(descriptions[i])
-                        .build();
-                constraintTypeRepository.save(type);
+                constraintTypeRepository.save(ConstraintType.builder()
+                        .name(typeName).description(descriptions[i]).build());
                 log.info("Created constraint type: {}", typeName);
             }
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Roles + Users
+    // -------------------------------------------------------------------------
+
     @Transactional
     public void seedRolesAndUsers() {
-        // Ensure ADMIN and WORKER roles exist (create if missing)
         Role adminRole = roleRepository.findByRoleName("ADMIN")
-                .orElseGet(() -> { Role r = new Role(); r.setRoleName("ADMIN"); return roleRepository.save(r); });
-
+                .orElseGet(() -> roleRepository.save(new Role(null, "ADMIN")));
         Role workerRole = roleRepository.findByRoleName("WORKER")
-                .orElseGet(() -> { Role r = new Role(); r.setRoleName("WORKER"); return roleRepository.save(r); });
+                .orElseGet(() -> roleRepository.save(new Role(null, "WORKER")));
 
-        // Note: stale USER role is left in DB — removing it causes FK issues.
-        // The admin user below will be re-assigned to ADMIN+WORKER, fixing the 403.
+        // Admin user (also has WORKER role so the algorithm can assign tasks to him)
+        upsertUser("admin",  "Admin",   "User",    "admin@company.com",  8, 10, Set.of(adminRole, workerRole));
 
-        // Ensure admin user exists with correct roles
-        User adminUser = userRepository.findByNationalId("admin").orElseGet(() -> {
+        // Workers — different availability and maxTasks to make scheduling interesting
+        upsertUser("worker", "John",    "Doe",     "john@company.com",   8, 5,  Set.of(workerRole));
+        upsertUser("alice",  "Alice",   "Smith",   "alice@company.com",  6, 4,  Set.of(workerRole));
+        upsertUser("bob",    "Bob",     "Johnson", "bob@company.com",    7, 3,  Set.of(workerRole));
+        upsertUser("carol",  "Carol",   "Williams","carol@company.com",  5, 4,  Set.of(workerRole));
+    }
+
+    private void upsertUser(String nationalId, String firstName, String lastName,
+                             String email, int availability, int maxTasks, Set<Role> roles) {
+        User user = userRepository.findByNationalId(nationalId).orElseGet(() -> {
             User u = new User();
-            u.setNationalId("admin");
-            u.setPassword(passwordEncoder.encode("admin"));
-            log.info("Created admin user (nationalId=admin, password=admin)");
+            u.setNationalId(nationalId);
+            u.setPassword(passwordEncoder.encode(nationalId)); // password = nationalId
+            log.info("Created user: {} (password={})", nationalId, nationalId);
             return u;
         });
-        Set<Role> adminRoles = new HashSet<>();
-        adminRoles.add(adminRole);
-        adminRoles.add(workerRole);
-        adminUser.setRoles(adminRoles);
-        userRepository.save(adminUser);
-        log.info("Ensured admin user has ADMIN + WORKER roles");
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setEmail(email);
+        user.setDailyAvailabilityHours(availability);
+        user.setMaxTasks(maxTasks);
+        user.setRoles(new HashSet<>(roles));
+        userRepository.save(user);
+    }
 
-        // Ensure worker user exists with correct roles
-        User workerUser = userRepository.findByNationalId("worker").orElseGet(() -> {
-            User u = new User();
-            u.setNationalId("worker");
-            u.setPassword(passwordEncoder.encode("worker"));
-            log.info("Created worker user (nationalId=worker, password=worker)");
-            return u;
+    // -------------------------------------------------------------------------
+    // Tasks + Constraints
+    // -------------------------------------------------------------------------
+
+    @Transactional
+    public void seedTasks() {
+        // Only seed if no tasks exist yet
+        if (taskRepository.count() > 0) {
+            log.info("Tasks already exist — skipping task seed");
+            return;
+        }
+
+        Priority low      = priorityRepository.findByName(PriorityConstants.LOW).orElseThrow();
+        Priority medium   = priorityRepository.findByName(PriorityConstants.MEDIUM).orElseThrow();
+        Priority high     = priorityRepository.findByName(PriorityConstants.HIGH).orElseThrow();
+        Priority critical = priorityRepository.findByName(PriorityConstants.CRITICAL).orElseThrow();
+
+        TaskStatus pending    = taskStatusRepository.findByName(TaskStatusConstants.PENDING).orElseThrow();
+        TaskStatus inProgress = taskStatusRepository.findByName(TaskStatusConstants.IN_PROGRESS).orElseThrow();
+
+        Role workerRole = roleRepository.findByRoleName("WORKER").orElseThrow();
+        Role adminRole  = roleRepository.findByRoleName("ADMIN").orElseThrow();
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // 10 tasks — unassigned, ready for the algorithm
+        Task t1 = save(Task.builder()
+                .title("Design Database Schema")
+                .description("Design the full relational DB schema for the project")
+                .durationHours(4).deadline(now.plusDays(3))
+                .priority(high).status(pending)
+                .requiredRoles(Set.of(workerRole)).build());
+
+        save(Task.builder()
+                .title("Setup CI/CD Pipeline")
+                .description("Configure GitHub Actions for build and deploy")
+                .durationHours(6).deadline(now.plusDays(5))
+                .priority(medium).status(pending)
+                .requiredRoles(Set.of(workerRole)).build());
+
+        Task t3 = save(Task.builder()
+                .title("Implement Authentication")
+                .description("JWT-based login, refresh tokens and role guards")
+                .durationHours(8).deadline(now.plusDays(4))
+                .priority(critical).status(inProgress)
+                .requiredRoles(Set.of(workerRole, adminRole)).build());
+
+        Task t4 = save(Task.builder()
+                .title("Write Unit Tests")
+                .description("Cover all service-layer methods with JUnit 5")
+                .durationHours(5).deadline(now.plusDays(7))
+                .priority(medium).status(pending)
+                .requiredRoles(Set.of(workerRole)).build());
+
+        Task t5 = save(Task.builder()
+                .title("Build REST API — Tasks")
+                .description("CRUD endpoints for task management")
+                .durationHours(6).deadline(now.plusDays(5))
+                .priority(high).status(pending)
+                .requiredRoles(Set.of(workerRole)).build());
+
+        Task t6 = save(Task.builder()
+                .title("Build REST API — Users")
+                .description("CRUD endpoints for user management")
+                .durationHours(4).deadline(now.plusDays(4))
+                .priority(high).status(pending)
+                .requiredRoles(Set.of(workerRole)).build());
+
+        Task t7 = save(Task.builder()
+                .title("Frontend — Login Page")
+                .description("React login form with JWT storage")
+                .durationHours(3).deadline(now.plusDays(6))
+                .priority(medium).status(pending)
+                .requiredRoles(Set.of(workerRole)).build());
+
+        Task t8 = save(Task.builder()
+                .title("Frontend — Dashboard")
+                .description("Main dashboard with task and user summaries")
+                .durationHours(5).deadline(now.plusDays(8))
+                .priority(low).status(pending)
+                .requiredRoles(Set.of(workerRole)).build());
+
+        Task t9 = save(Task.builder()
+                .title("Deploy to Staging")
+                .description("Deploy latest build to staging environment")
+                .durationHours(3).deadline(now.plusDays(10))
+                .priority(high).status(pending)
+                .requiredRoles(Set.of(adminRole)).build());
+
+        Task t10 = save(Task.builder()
+                .title("Code Review & QA")
+                .description("Full code review and manual QA pass")
+                .durationHours(4).deadline(now.plusDays(9))
+                .priority(medium).status(pending)
+                .requiredRoles(Set.of(workerRole, adminRole)).build());
+
+        log.info("Seeded {} tasks", taskRepository.count());
+
+        // Constraints (Finish-to-Start dependencies)
+        ConstraintType fts = constraintTypeRepository
+                .findByName(ConstraintTypeConstants.FINISH_TO_START).orElseThrow();
+
+        // t3 (Auth) depends on t1 (DB Schema) — can't implement auth without the DB
+        addConstraint(t1, t3, fts);
+        // t5 (API Tasks) depends on t1 (DB Schema)
+        addConstraint(t1, t5, fts);
+        // t7 (Login Page) depends on t3 (Auth)
+        addConstraint(t3, t7, fts);
+        // t8 (Dashboard) depends on t7 (Login Page)
+        addConstraint(t7, t8, fts);
+        // t9 (Deploy) depends on t10 (QA)
+        addConstraint(t10, t9, fts);
+        // t4 (Unit Tests) depends on t5 (API Tasks) and t6 (API Users)
+        addConstraint(t5, t4, fts);
+        addConstraint(t6, t4, fts);
+
+        log.info("Seeded task constraints");
+    }
+
+    private Task save(Task task) {
+        return taskRepository.save(task);
+    }
+
+    private void addConstraint(Task predecessor, Task successor, ConstraintType type) {
+        TaskConstraint tc = TaskConstraint.builder()
+                .predecessorTask(predecessor)
+                .successorTask(successor)
+                .constraintType(type)
+                .build();
+        taskConstraintRepository.save(tc);
+    }
+
+    // -------------------------------------------------------------------------
+    // Vacations
+    // -------------------------------------------------------------------------
+
+    @Transactional
+    public void seedVacations() {
+        if (vacationRepository.count() > 0) {
+            log.info("Vacations already exist — skipping vacation seed");
+            return;
+        }
+
+        VacationStatus approved = vacationStatusRepository.findByName(VacationStatusConstants.APPROVED).orElseThrow();
+        VacationStatus pending  = vacationStatusRepository.findByName(VacationStatusConstants.PENDING).orElseThrow();
+
+        // Alice is on approved vacation for the next 4 days — algorithm must skip her
+        userRepository.findByNationalId("alice").ifPresent(alice -> {
+            vacationRepository.save(Vacation.builder()
+                    .worker(alice)
+                    .startDate(LocalDate.now())
+                    .endDate(LocalDate.now().plusDays(4))
+                    .status(approved)
+                    .build());
+            log.info("Seeded approved vacation for Alice ({} → {})",
+                    LocalDate.now(), LocalDate.now().plusDays(4));
         });
-        Set<Role> workerRoles = new HashSet<>();
-        workerRoles.add(workerRole);
-        workerUser.setRoles(workerRoles);
-        userRepository.save(workerUser);
-        log.info("Ensured worker user has WORKER role");
+
+        // Bob has a pending vacation request — algorithm ignores PENDING vacations
+        userRepository.findByNationalId("bob").ifPresent(bob -> {
+            vacationRepository.save(Vacation.builder()
+                    .worker(bob)
+                    .startDate(LocalDate.now().plusDays(6))
+                    .endDate(LocalDate.now().plusDays(10))
+                    .status(pending)
+                    .build());
+            log.info("Seeded pending vacation request for Bob");
+        });
     }
 }
+

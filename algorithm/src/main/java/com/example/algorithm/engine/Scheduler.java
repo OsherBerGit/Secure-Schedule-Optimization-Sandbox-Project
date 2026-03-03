@@ -1,0 +1,40 @@
+package com.example.algorithm.engine;
+
+import com.example.algorithm.db.ScheduleData;
+import com.example.algorithm.model.TaskAssignment;
+import java.util.List;
+
+/**
+ * Context class for the Strategy pattern.
+ *
+ * Holds a SchedulingStrategy and delegates execution to it.
+ * Switch strategies at runtime via setStrategy().
+ *
+ * Usage:
+ *   Scheduler scheduler = new Scheduler(new GreedySchedulingStrategy());
+ *   List<TaskAssignment> result = scheduler.run(data);
+ *
+ *   scheduler.setStrategy(new RoundRobinSchedulingStrategy());
+ *   List<TaskAssignment> result2 = scheduler.run(data);
+ */
+public class Scheduler {
+
+    private SchedulingStrategy strategy;
+
+    public Scheduler(SchedulingStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public void setStrategy(SchedulingStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public SchedulingStrategy getStrategy() {
+        return strategy;
+    }
+
+    public List<TaskAssignment> run(ScheduleData data) {
+        System.out.println("Running strategy: " + strategy.getName());
+        return strategy.schedule(data);
+    }
+}

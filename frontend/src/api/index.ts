@@ -19,6 +19,8 @@ import type {
   CreateSettlementRequest,
   Status,
   Priority,
+  ScheduleStrategy,
+  ScheduleResult,
 } from '../types';
 
 // Auth API
@@ -151,10 +153,12 @@ export const vacationApi = {
     }),
 };
 
-// Schedule API — placeholder, ready to connect when backend algorithm is implemented
+// Schedule API — calls main-backend which forwards to the algorithm service
 export const scheduleApi = {
-  // POST /api/schedule/generate — triggers the scheduling algorithm
-  generate: () =>
-    axiosInstance.post('/schedule/generate'),
+  /** Triggers the scheduling algorithm and persists results to DB.
+   *  @param strategy "GREEDY" (default) | "ROUND_ROBIN"
+   */
+  run: (strategy: ScheduleStrategy = 'GREEDY') =>
+    axiosInstance.post<ScheduleResult>(`/schedule/run?strategy=${strategy}`),
 };
 
