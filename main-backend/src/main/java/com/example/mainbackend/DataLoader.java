@@ -32,6 +32,7 @@ public class DataLoader implements CommandLineRunner {
     private final TaskRepository taskRepository;
     private final TaskConstraintRepository taskConstraintRepository;
     private final VacationRepository vacationRepository;
+    private final SettlementRepository settlementRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -44,6 +45,7 @@ public class DataLoader implements CommandLineRunner {
         seedRolesAndUsers();
         seedTasks();
         seedVacations();
+        seedSettlements();
     }
 
     // -------------------------------------------------------------------------
@@ -303,6 +305,52 @@ public class DataLoader implements CommandLineRunner {
                     .build());
             log.info("Seeded pending vacation request for Bob");
         });
+    }
+
+    // -------------------------------------------------------------------------
+    // Settlements — single source of truth for worker → task assignments
+    // -------------------------------------------------------------------------
+
+    @Transactional
+    public void seedSettlements() {
+        if (settlementRepository.count() > 0) {
+            log.info("Settlements already exist — skipping settlement seed");
+            return;
+        }
+
+        // Fetch a few tasks and workers to create sample assignments
+        taskRepository.findByStatusName(TaskStatusConstants.IN_PROGRESS).stream()
+                .findFirst()
+                .ifPresent(inProgressTask ->
+                    userRepository.findByNationalId("worker").ifPresent(john -> {
+                        settlementRepository.save(Settlement.builder()
+                                .task(inProgressTask)
+                                .worker(john)
+                                .settlementDate(LocalDateTime.now())
+                                .completionDate(null)
+                                .build());
+                        log.info("Seeded settlement: '{}' → {} {}",
+                                inProgressTask.getTitle(), john.getFirstName(), john.getLastName());
+                    })
+                );
+
+        // Assign the first PENDING task to carol as a sample completed settlement
+        taskRepository.findByStatusName(TaskStatusConstants.PENDING).stream()
+                .findFirst()
+                .ifPresent(pendingTask ->
+                    userRepository.findByNationalId("carol").ifPresent(carol -> {
+                        settlementRepository.save(Settlement.builder()
+                                .task(pendingTask)
+                                .worker(carol)
+                                .settlementDate(LocalDateTime.now().minusDays(2))
+                                .completionDate(LocalDateTime.now().minusDays(1))
+                                .build());
+                        log.info("Seeded completed settlement: '{}' → {} {}",
+                                pendingTask.getTitle(), carol.getFirstName(), carol.getLastName());
+                    })
+                );
+
+        log.info("Seeded {} settlements", settlementRepository.count());
     }
 }
 

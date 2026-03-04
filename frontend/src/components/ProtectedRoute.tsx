@@ -18,8 +18,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />;
+  if (allowedRoles && user) {
+    // Derive role defensively: use stored role field, fall back to roles array
+    // This prevents a redirect when role is undefined after a page refresh
+    const effectiveRole: 'ADMIN' | 'WORKER' =
+      user.role ?? (user.roles?.includes('ADMIN') ? 'ADMIN' : 'WORKER');
+    if (!allowedRoles.includes(effectiveRole)) {
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   return children;

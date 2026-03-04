@@ -1,5 +1,6 @@
 package com.example.algorithm.engine;
 
+import com.example.algorithm.constraint.ConstraintResult;
 import com.example.algorithm.db.ScheduleData;
 import com.example.algorithm.model.AlgoTask;
 import com.example.algorithm.model.AlgoUser;
@@ -11,8 +12,13 @@ import java.util.*;
  * Round-Robin Scheduling Strategy.
  *
  * Distributes tasks evenly across eligible employees by cycling through them in order.
- * Each task still respects: required roles, vacation availability,
- * max task limits, and dependency constraints (predecessor finish times).
+ * Each task still respects the full constraint pipeline:
+ *   - Required roles, vacation availability, max task limits (eligibility pre-filter)
+ *   - PrecedenceConstraint  — predecessor tasks must finish first
+ *   - AvailabilityConstraint — vacation overlap and maxTasks double-check
+ *
+ * If the round-robin pick fails the constraint pipeline, the next eligible
+ * candidate (in round-robin order) is tried until one passes or all are exhausted.
  */
 public class RoundRobinSchedulingStrategy extends BaseSchedulingStrategy {
 
@@ -24,7 +30,7 @@ public class RoundRobinSchedulingStrategy extends BaseSchedulingStrategy {
     @Override
     public List<TaskAssignment> schedule(ScheduleData data) {
         List<TaskAssignment> assignments = new ArrayList<>();
-        Map<Long, Integer> assignedCount = new HashMap<>();
+        Map<Long, Integer>       assignedCount   = new HashMap<>();
         Map<Long, LocalDateTime> completionTimes = new HashMap<>();
 
         List<AlgoUser> allUsers = new ArrayList<>(data.users());
@@ -36,6 +42,7 @@ public class RoundRobinSchedulingStrategy extends BaseSchedulingStrategy {
             LocalDateTime start = calcStartTime(task, completionTimes);
             LocalDateTime end   = calcEndTime(start, task);
 
+            // Pre-filter: role, vacation overlap, maxTasks limit
             List<AlgoUser> eligible = getEligibleEmployees(
                     task, allUsers, assignedCount, start, end);
 
@@ -51,8 +58,41 @@ public class RoundRobinSchedulingStrategy extends BaseSchedulingStrategy {
                 continue;
             }
 
-            AlgoUser picked = pickRoundRobin(eligible, allUsers, roundRobinIndex);
-            roundRobinIndex = (allUsers.indexOf(picked) + 1) % allUsers.size();
+            // Constraint pipeline: iterate from the current round-robin position,
+            // pick the first candidate in that order who passes all constraints
+            AlgoUser picked           = null;
+            ConstraintResult lastFail = null;
+            int size = allUsers.size();
+
+            for (int i = 0; i < size; i++) {
+                AlgoUser candidate = allUsers.get((roundRobinIndex + i) % size);
+                if (!eligible.contains(candidate)) continue;
+
+                ConstraintResult result = runConstraints(
+                        task, candidate, start, end, completionTimes, assignedCount);
+                if (result.isValid()) {
+                    picked = candidate;
+                    // Advance round-robin index past this pick
+                    roundRobinIndex = (allUsers.indexOf(picked) + 1) % size;
+                    break;
+                }
+                lastFail = result;
+            }
+
+            if (picked == null) {
+                String reason = lastFail != null
+                        ? "Constraint violation: " + lastFail.getReason()
+                        : "All candidates failed constraint checks";
+                assignments.add(TaskAssignment.builder()
+                        .task(task)
+                        .assignedEmployee(null)
+                        .scheduledStart(start)
+                        .scheduledEnd(end)
+                        .reason(reason)
+                        .build());
+                completionTimes.put(task.getId(), end);
+                continue;
+            }
 
             assignedCount.merge(picked.getId(), 1, Integer::sum);
             completionTimes.put(task.getId(), end);
@@ -69,16 +109,5 @@ public class RoundRobinSchedulingStrategy extends BaseSchedulingStrategy {
         }
 
         return assignments;
-    }
-
-    private AlgoUser pickRoundRobin(List<AlgoUser> eligible,
-                                     List<AlgoUser> allUsers,
-                                     int currentIndex) {
-        int size = allUsers.size();
-        for (int i = 0; i < size; i++) {
-            AlgoUser candidate = allUsers.get((currentIndex + i) % size);
-            if (eligible.contains(candidate)) return candidate;
-        }
-        return eligible.get(0);
     }
 }

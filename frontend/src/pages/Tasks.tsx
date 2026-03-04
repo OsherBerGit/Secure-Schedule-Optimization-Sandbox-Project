@@ -1,16 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { Task, CreateTaskRequest, UpdateTaskRequest, Status, Priority, User } from '../types'
-import { taskApi, statusApi, priorityApi, userApi } from '../api'
+import type { Task, CreateTaskRequest, UpdateTaskRequest, Status, Priority } from '../types'
+import { taskApi, statusApi, priorityApi } from '../api'
 import { useAuth } from '../context/useAuth'
 import TaskModal from '../components/TaskModal'
 import './Tasks.css'
 
 const Tasks = () => {
     const { user: currentUser } = useAuth()
+    const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.roles?.includes('ADMIN')
+
     const [tasks, setTasks] = useState<Task[]>([])
     const [statuses, setStatuses] = useState<Status[]>([])
     const [priorities, setPriorities] = useState<Priority[]>([])
-    const [workers, setWorkers] = useState<User[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [showModal, setShowModal] = useState(false)
@@ -32,7 +33,6 @@ const Tasks = () => {
         void fetchTasks()
         statusApi.getAll().then(res => setStatuses(res.data)).catch(() => {})
         priorityApi.getAll().then(res => setPriorities(res.data)).catch(() => {})
-        userApi.getByRole('WORKER').then(res => setWorkers(res.data)).catch(() => {})
     }, [fetchTasks])
 
     function handleEdit(task: Task) {
@@ -58,17 +58,14 @@ const Tasks = () => {
         }
     }
 
-    function handleAddTask() {
-        setSelectedTask(null)
-        setShowModal(true)
-    }
-
     return (
         <div className="tasks-container">
             <div className="tasks-header">
                 <h1>📋 Tasks</h1>
-                {currentUser?.role === 'ADMIN' && (
-                    <button className="btn-add" onClick={handleAddTask}>+ Add Task</button>
+                {isAdmin && (
+                    <button className="btn-add" onClick={() => { setSelectedTask(null); setShowModal(true) }}>
+                        + Add Task
+                    </button>
                 )}
             </div>
 
@@ -83,16 +80,16 @@ const Tasks = () => {
                             <th>Title</th>
                             <th>Status</th>
                             <th>Priority</th>
-                            <th>Assigned To</th>
                             <th>Deadline</th>
                             <th>Duration</th>
-                            {currentUser?.role === 'ADMIN' && <th>Actions</th>}
+                            <th>Start Time</th>
+                            {isAdmin && <th>Actions</th>}
                         </tr>
                     </thead>
                     <tbody>
                         {tasks.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="no-data">No tasks found</td>
+                                <td colSpan={isAdmin ? 7 : 6} className="no-data">No tasks found</td>
                             </tr>
                         ) : (
                             tasks.map(task => (
@@ -108,10 +105,10 @@ const Tasks = () => {
                                             {task.priorityName ?? '—'}
                                         </span>
                                     </td>
-                                    <td>{task.assignedWorkerName ?? <span className="unassigned">Unassigned</span>}</td>
                                     <td>{task.deadline ? new Date(task.deadline).toLocaleDateString() : '—'}</td>
                                     <td>{task.durationHours != null ? `${task.durationHours}h` : '—'}</td>
-                                    {currentUser?.role === 'ADMIN' && (
+                                    <td>{task.startTime ? new Date(task.startTime).toLocaleString() : <span className="unassigned">Not scheduled</span>}</td>
+                                    {isAdmin && (
                                         <td>
                                             <button className="btn-edit" onClick={() => handleEdit(task)}>Edit</button>
                                             <button className="btn-delete" onClick={() => handleDelete(task.id)}>Delete</button>
@@ -129,7 +126,6 @@ const Tasks = () => {
                     task={selectedTask}
                     statuses={statuses}
                     priorities={priorities}
-                    workers={workers}
                     onSubmit={handleSubmit}
                     onClose={() => { setShowModal(false); setSelectedTask(null) }}
                 />

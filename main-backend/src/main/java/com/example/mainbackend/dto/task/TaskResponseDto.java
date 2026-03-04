@@ -18,10 +18,10 @@ public class TaskResponseDto {
     // IDs for related entities
     private Long priorityId;
     private Long statusId;
-    private Long assignedWorkerId; // Can be null if not yet assigned
 
     // Display names for easy UI rendering
     private String priorityName;
     private String statusName;
-    private String assignedWorkerName;
+    // Assignment is now managed exclusively via Settlement.
+    // To see who is assigned, query GET /api/settlements/task/{taskId}
 }

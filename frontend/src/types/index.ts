@@ -43,10 +43,9 @@ export interface Task {
   startTime: string | null;
   priorityId: number | null;
   statusId: number | null;
-  assignedWorkerId: number | null;
   priorityName: string | null;
   statusName: string | null;
-  assignedWorkerName: string | null;
+  // Assignment is managed via Settlement — query GET /api/settlements/task/{taskId}
 }
 
 export interface CreateTaskRequest {
@@ -56,7 +55,6 @@ export interface CreateTaskRequest {
   durationHours?: number;
   priorityId: number;
   statusId: number;
-  assignedWorkerId?: number;
 }
 
 export interface UpdateTaskRequest {
@@ -66,7 +64,6 @@ export interface UpdateTaskRequest {
   durationHours?: number;
   priorityId: number;
   statusId: number;
-  assignedWorkerId?: number;
 }
 
 export interface Status {
@@ -77,6 +74,40 @@ export interface Status {
 export interface Priority {
   id: number;
   name: string;
+}
+
+export interface ConstraintType {
+  id: number;
+  name: string;
+  description: string | null;
+}
+
+export interface CreateConstraintTypeRequest {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateConstraintTypeRequest {
+  name: string;
+  description?: string;
+}
+
+export interface TaskConstraint {
+  id: number;
+  predecessorTaskId: number;
+  successorTaskId: number;
+  constraintTypeId: number;
+  lagMinutes: number | null;
+  predecessorTaskTitle: string | null;
+  successorTaskTitle: string | null;
+  constraintTypeName: string | null;
+}
+
+export interface CreateTaskConstraintRequest {
+  predecessorTaskId: number;
+  successorTaskId: number;
+  constraintTypeId: number;
+  lagMinutes?: number;
 }
 
 export interface Vacation {

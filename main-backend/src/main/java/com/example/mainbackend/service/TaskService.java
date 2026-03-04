@@ -5,12 +5,11 @@ import com.example.mainbackend.dto.task.TaskResponseDto;
 import com.example.mainbackend.entity.Priority;
 import com.example.mainbackend.entity.TaskStatus;
 import com.example.mainbackend.entity.Task;
-import com.example.mainbackend.entity.User;
 import com.example.mainbackend.mapper.TaskMapper;
 import com.example.mainbackend.repository.PriorityRepository;
+import com.example.mainbackend.repository.SettlementRepository;
 import com.example.mainbackend.repository.TaskStatusRepository;
 import com.example.mainbackend.repository.TaskRepository;
-import com.example.mainbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +25,7 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final TaskStatusRepository taskStatusRepository;
     private final PriorityRepository priorityRepository;
-    private final UserRepository userRepository;
+    private final SettlementRepository settlementRepository;
     private final TaskMapper taskMapper;
 
     @Transactional
@@ -68,10 +67,15 @@ public class TaskService {
         return false;
     }
 
+    /**
+     * Returns all tasks assigned to a worker via their Settlements.
+     * Assignment is now the single source of truth in the Settlement entity.
+     */
     @Transactional(readOnly = true)
     public List<TaskResponseDto> getTasksByWorkerId(Long workerId) {
-        return taskRepository.findByAssignedEmployeeId(workerId).stream()
-                .map(taskMapper::toDto)
+        return settlementRepository.findByWorkerId(workerId).stream()
+                .map(s -> taskMapper.toDto(s.getTask()))
+                .distinct()
                 .collect(Collectors.toList());
     }
 
@@ -101,13 +105,6 @@ public class TaskService {
         TaskStatus status = taskStatusRepository.findById(request.getStatusId())
                 .orElseThrow(() -> new RuntimeException("TaskStatus not found with id: " + request.getStatusId()));
 
-        // Fetch User (optional - can be null)
-        User assignedWorker = null;
-        if (request.getAssignedWorkerId() != null) {
-            assignedWorker = userRepository.findById(request.getAssignedWorkerId())
-                    .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getAssignedWorkerId()));
-        }
-
         // Build task - use existing task for updates to preserve ID and other fields
         Task.TaskBuilder builder = Task.builder()
                 .title(request.getTitle())
@@ -115,8 +112,7 @@ public class TaskService {
                 .deadline(request.getDeadline())
                 .durationHours(request.getDurationHours())
                 .priority(priority)
-                .status(status)
-                .assignedEmployee(assignedWorker);
+                .status(status);
 
         // Preserve ID and other fields for updates
         if (existingTask != null)

@@ -30,6 +30,5 @@ public class TaskCreateRequest {
 
     @NotNull(message = "Status is required")
     private Long statusId;
-
-    private Long assignedWorkerId; // Can be null if not yet assigned
+    // assignedWorkerId removed — use POST /api/settlements to assign a worker to a task
 }

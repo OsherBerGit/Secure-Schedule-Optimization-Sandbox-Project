@@ -7,6 +7,8 @@ import com.example.mainbackend.algorithm.dto.AlgoTaskRequest;
 import com.example.mainbackend.algorithm.dto.AlgoUserRequest;
 import com.example.mainbackend.algorithm.dto.AlgoVacationRequest;
 import com.example.mainbackend.entity.Role;
+import com.example.mainbackend.entity.Settlement;
+import com.example.mainbackend.repository.SettlementRepository;
 import com.example.mainbackend.repository.TaskRepository;
 import com.example.mainbackend.repository.UserRepository;
 import com.example.mainbackend.repository.VacationRepository;
@@ -15,14 +17,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * Orchestrates the full scheduling flow:
  *  1. Fetch all users + approved vacations + tasks from DB
- *  2. Build and send request to algorithm service
- *  3. Apply the returned assignments back to the DB (user_id + start_time)
+ *  2. Build and send an anonymous request to the algorithm service (Zero-Trust)
+ *  3. Apply returned assignments back to DB exclusively via Settlement records
+ *     — Task.assignedEmployee has been removed; Settlement is the single source of truth
  */
 @Slf4j
 @Service
@@ -32,6 +36,7 @@ public class SchedulingService {
     private final UserRepository userRepository;
     private final TaskRepository taskRepository;
     private final VacationRepository vacationRepository;
+    private final SettlementRepository settlementRepository;
     private final AlgorithmClient algorithmClient;
 
     /**
@@ -125,7 +130,7 @@ public class SchedulingService {
     }
 
     // -------------------------------------------------------------------------
-    // Apply results back to DB
+    // Apply results back to DB via Settlement (single source of truth)
     // -------------------------------------------------------------------------
 
     private void applyResults(AlgoScheduleResponse response) {
@@ -136,17 +141,36 @@ public class SchedulingService {
 
             taskRepository.findById(assignment.getTaskId()).ifPresent(task -> {
                 userRepository.findById(assignment.getAssignedUserId()).ifPresent(user -> {
-                    task.setAssignedEmployee(user);
+
+                    // Update startTime on the Task (scheduling metadata — stays on Task)
                     task.setStartTime(assignment.getScheduledStart());
                     taskRepository.save(task);
-                    log.debug("Assigned task [{}] '{}' -> user [{}] '{} {}'",
-                            task.getId(), task.getTitle(),
-                            user.getId(), user.getFirstName(), user.getLastName());
+
+                    // Create or update a Settlement record as the single source of truth
+                    // for the worker→task assignment produced by the algorithm
+                    boolean alreadySettled = settlementRepository
+                            .findByTaskId(task.getId()).stream()
+                            .anyMatch(s -> s.getWorker().getId().equals(user.getId()));
+
+                    if (!alreadySettled) {
+                        Settlement settlement = Settlement.builder()
+                                .task(task)
+                                .worker(user)
+                                .settlementDate(LocalDateTime.now())
+                                .completionDate(null) // not yet completed
+                                .build();
+                        settlementRepository.save(settlement);
+                        log.debug("Created settlement: task [{}] '{}' -> user [{}] '{} {}'",
+                                task.getId(), task.getTitle(),
+                                user.getId(), user.getFirstName(), user.getLastName());
+                    } else {
+                        log.debug("Settlement already exists for task [{}] and user [{}] — skipping",
+                                task.getId(), user.getId());
+                    }
                 });
             });
         }
 
-        log.info("Applied {} task assignments to DB", response.getAssignedTasks());
+        log.info("Applied {} task assignments as Settlements", response.getAssignedTasks());
     }
 }
-

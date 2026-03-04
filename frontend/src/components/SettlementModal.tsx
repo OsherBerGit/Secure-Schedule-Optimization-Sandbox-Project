@@ -17,11 +17,13 @@ const SettlementModal = ({ tasks, workers, onSubmit, onClose }: SettlementModalP
 
     function handleSubmit(e: FormEvent) {
         e.preventDefault()
+        // datetime-local gives "YYYY-MM-DDTHH:mm" — Spring LocalDateTime needs seconds appended
+        const toIso = (val: string) => val ? val + ':00' : val
         const data: CreateSettlementRequest = {
             taskId,
             workerId,
-            settlementDate,
-            completionDate: completionDate || undefined,
+            settlementDate: toIso(settlementDate),
+            completionDate: completionDate ? toIso(completionDate) : undefined,
         }
         onSubmit(data)
     }

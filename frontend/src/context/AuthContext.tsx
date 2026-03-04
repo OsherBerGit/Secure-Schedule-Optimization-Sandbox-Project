@@ -27,7 +27,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const storedUser = localStorage.getItem('user');
     const accessToken = localStorage.getItem('accessToken');
     if (storedUser && accessToken) {
-      setUser(JSON.parse(storedUser));
+      const parsed: User = JSON.parse(storedUser);
+      // Re-derive role in case it was missing from the stored object
+      if (!parsed.role) {
+        parsed.role = parsed.roles?.includes('ADMIN') ? 'ADMIN' : 'WORKER';
+      }
+      setUser(parsed);
     }
     setIsLoading(false);
   }, []);

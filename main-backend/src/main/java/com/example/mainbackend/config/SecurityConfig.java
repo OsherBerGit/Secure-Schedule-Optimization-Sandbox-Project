@@ -129,44 +129,37 @@ public class SecurityConfig {
                 // Authorization rules
                 .authorizeHttpRequests(auth -> auth
                         // ============================================================
-                        // DEVELOPMENT MODE: ALL ENDPOINTS PUBLIC FOR DEBUGGING
-                        // TODO: REMOVE THE LINE BELOW BEFORE PRODUCTION DEPLOYMENT
-                        // ============================================================
-                        .requestMatchers("/api/**").permitAll()
-
-                        // ============================================================
-                        // PRODUCTION AUTHORIZATION RULES (currently disabled)
-                        // TODO: REMOVE THE permitAll() LINE ABOVE AND UNCOMMENT BELOW
+                        // PRODUCTION AUTHORIZATION RULES
                         // ============================================================
 
-                        // Public endpoints - authentication and registration
-//                        .requestMatchers(
-//                                "/api/login",
-//                                "/api/register",
-//                                "/api/refresh-token"
-//                        ).permitAll()
-//
-//                        // Public endpoints - health check and status
-//                        .requestMatchers("/api/public/**", "/api/status").permitAll()
-//
-//                        // OPTIONS requests (preflight) - needed for CORS
-//                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-//
-//                        // Admin-only endpoints
-//                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-//
-//                        // User management - admin only
-//                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
-//                        .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
-//
-//                        // Task management - authenticated users
-//                        .requestMatchers("/api/tasks/**").hasAnyRole("USER", "ADMIN")
-//
-//                        // Schedule operations - authenticated users
-//                        .requestMatchers("/api/schedule/**").hasAnyRole("USER", "ADMIN")
-//
-//                        // All other requests require authentication
-//                        .anyRequest().authenticated()
+                        // Public: login and token refresh — no JWT required
+                        // FIX: paths must match AuthenticationController @RequestMapping("/api/auth")
+                        .requestMatchers(
+                                HttpMethod.POST, "/api/auth/login",
+                                "/api/auth/refresh-token"
+                        ).permitAll()
+
+                        // Public: health-check endpoint (TestController)
+                        .requestMatchers(HttpMethod.GET, "/api/status").permitAll()
+
+                        // OPTIONS preflight requests — required for CORS handshake
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // ── User management ─────────────────────────────────────────
+                        // FIX: ALL /api/users/** operations require ADMIN
+                        // (covers GET list, GET by id, GET by nationalId, PUT, DELETE, POST)
+                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+
+                        // ── Scheduling ──────────────────────────────────────────────
+                        // Only ADMIN can trigger the scheduling algorithm
+                        .requestMatchers("/api/schedule/**").hasRole("ADMIN")
+
+                        // ── Everything else under /api requires a valid JWT ──────────
+                        // Covers: /api/tasks/**, /api/vacations/**, /api/settlements/**,
+                        //         /api/priorities/**, /api/statuses/**, /api/constraint-types/**
+                        // Fine-grained ADMIN/WORKER separation is enforced by @PreAuthorize
+                        // on each controller method (defence-in-depth)
+                        .anyRequest().authenticated()
                 );
 
         return http.build();

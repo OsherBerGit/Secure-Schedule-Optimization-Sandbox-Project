@@ -4,9 +4,22 @@ import { settlementApi, taskApi, userApi } from '../api'
 import { useAuth } from '../context/useAuth'
 import SettlementModal from '../components/SettlementModal'
 import './Settlements.css'
+// Jackson may serialize LocalDateTime as an array [2025,3,4,10,30,0] or ISO string.
+// This helper handles both formats safely.
+function formatDate(value: string | number[] | null | undefined): string {
+    if (!value) return '—'
+    if (Array.isArray(value)) {
+        const [y, mo, d, h = 0, m = 0] = value as number[]
+        return new Date(y, mo - 1, d, h, m).toLocaleString()
+    }
+    const d = new Date(value as string)
+    return isNaN(d.getTime()) ? String(value) : d.toLocaleString()
+}
 
 const Settlements = () => {
     const { user: currentUser } = useAuth()
+    const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.roles?.includes('ADMIN')
+
     const [settlements, setSettlements] = useState<Settlement[]>([])
     const [tasks, setTasks] = useState<Task[]>([])
     const [workers, setWorkers] = useState<User[]>([])
@@ -48,7 +61,7 @@ const Settlements = () => {
         <div className="settlements-container">
             <div className="settlements-header">
                 <h1>💰 Settlements</h1>
-                {currentUser?.role === 'ADMIN' && (
+                {isAdmin && (
                     <button className="btn-add" onClick={() => setShowModal(true)}>+ Add Settlement</button>
                 )}
             </div>
@@ -65,27 +78,27 @@ const Settlements = () => {
                             <th>Task</th>
                             <th>Settlement Date</th>
                             <th>Completion Date</th>
-                            {currentUser?.role === 'ADMIN' && <th>Actions</th>}
+                            {isAdmin && <th>Actions</th>}
                         </tr>
                     </thead>
                     <tbody>
                         {settlements.length === 0 ? (
                             <tr>
-                                <td colSpan={5} className="no-data">No settlements found</td>
+                                <td colSpan={isAdmin ? 5 : 4} className="no-data">No settlements found</td>
                             </tr>
                         ) : (
                             settlements.map(s => (
                                 <tr key={s.id}>
                                     <td>{s.workerName}</td>
                                     <td className="task-title">{s.taskTitle}</td>
-                                    <td>{new Date(s.settlementDate).toLocaleDateString()}</td>
+                                    <td>{formatDate(s.settlementDate)}</td>
                                     <td>
                                         {s.completionDate
-                                            ? new Date(s.completionDate).toLocaleDateString()
+                                            ? formatDate(s.completionDate)
                                             : <span className="pending-badge">Pending</span>
                                         }
                                     </td>
-                                    {currentUser?.role === 'ADMIN' && (
+                                    {isAdmin && (
                                         <td>
                                             <button className="btn-delete" onClick={() => handleDelete(s.id)}>Delete</button>
                                         </td>

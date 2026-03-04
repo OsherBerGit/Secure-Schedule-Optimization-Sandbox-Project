@@ -47,6 +47,7 @@ public class UserController {
      * @return ResponseEntity with list of all users and HTTP 200 status
      */
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserDto>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
@@ -58,6 +59,7 @@ public class UserController {
      * @return ResponseEntity with the user and HTTP 200 if found, HTTP 404 if not found
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
         return userService.getUserById(id)
                 .map(ResponseEntity::ok)
@@ -71,6 +73,7 @@ public class UserController {
      * @return ResponseEntity with the user and HTTP 200 if found, HTTP 404 if not found
      */
     @GetMapping("/national-id/{nationalId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDto> getUserByNationalId(@PathVariable String nationalId) {
         return userService.getUserByNationalId(nationalId)
                 .map(ResponseEntity::ok)
@@ -84,6 +87,7 @@ public class UserController {
      * @return ResponseEntity with the user and HTTP 200 if found, HTTP 404 if not found
      */
     @GetMapping("/email/{email}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDto> getUserByEmail(@PathVariable String email) {
         return userService.getUserByEmail(email)
                 .map(ResponseEntity::ok)
@@ -110,6 +114,7 @@ public class UserController {
      * @return ResponseEntity with the updated user and HTTP 200 if found, HTTP 404 if not found
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {
         return userService.updateUser(id, userDto)
                 .map(ResponseEntity::ok)
@@ -123,6 +128,7 @@ public class UserController {
      * @return ResponseEntity with HTTP 204 if deleted, HTTP 404 if not found
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         if (userService.deleteUser(id))
             return ResponseEntity.noContent().build();

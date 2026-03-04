@@ -1,24 +1,22 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import type { Task, CreateTaskRequest, UpdateTaskRequest, Status, Priority, User } from '../types'
+import type { Task, CreateTaskRequest, UpdateTaskRequest, Status, Priority } from '../types'
 
 interface TaskModalProps {
     task: Task | null
     statuses: Status[]
     priorities: Priority[]
-    workers: User[]
     onSubmit: (data: CreateTaskRequest | UpdateTaskRequest) => void
     onClose: () => void
 }
 
-const TaskModal = ({ task, statuses, priorities, workers, onSubmit, onClose }: TaskModalProps) => {
+const TaskModal = ({ task, statuses, priorities, onSubmit, onClose }: TaskModalProps) => {
     const [title, setTitle] = useState(task?.title ?? '')
     const [description, setDescription] = useState(task?.description ?? '')
     const [deadline, setDeadline] = useState(task?.deadline ? task.deadline.substring(0, 16) : '')
     const [durationHours, setDurationHours] = useState<number | ''>(task?.durationHours ?? '')
     const [priorityId, setPriorityId] = useState<number>(task?.priorityId ?? (priorities[0]?.id ?? 0))
     const [statusId, setStatusId] = useState<number>(task?.statusId ?? (statuses[0]?.id ?? 0))
-    const [assignedWorkerId, setAssignedWorkerId] = useState<number | ''>(task?.assignedWorkerId ?? '')
 
     function handleSubmit(e: FormEvent) {
         e.preventDefault()
@@ -29,7 +27,6 @@ const TaskModal = ({ task, statuses, priorities, workers, onSubmit, onClose }: T
             durationHours: durationHours !== '' ? durationHours : undefined,
             priorityId,
             statusId,
-            assignedWorkerId: assignedWorkerId !== '' ? assignedWorkerId : undefined,
         }
         onSubmit(data)
     }
@@ -90,19 +87,6 @@ const TaskModal = ({ task, statuses, priorities, workers, onSubmit, onClose }: T
                                 min={1}
                             />
                         </div>
-                    </div>
-
-                    <div className="form-group">
-                        <label>Assign Worker</label>
-                        <select
-                            value={assignedWorkerId}
-                            onChange={e => setAssignedWorkerId(e.target.value === '' ? '' : Number(e.target.value))}
-                        >
-                            <option value="">— Unassigned —</option>
-                            {workers.map(w => (
-                                <option key={w.id} value={w.id}>{w.firstName} {w.lastName}</option>
-                            ))}
-                        </select>
                     </div>
 
                     <div className="modal-footer">

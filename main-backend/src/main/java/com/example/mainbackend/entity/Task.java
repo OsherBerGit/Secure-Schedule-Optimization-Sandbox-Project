@@ -36,12 +36,6 @@ public class Task {
     @JoinColumn(name = "task_status_id", nullable = false)
     private TaskStatus status;
 
-    // Assignment to employee
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User assignedEmployee;
-
     @Column(name = "start_time")
     private LocalDateTime startTime;
 

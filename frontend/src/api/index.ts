@@ -19,6 +19,11 @@ import type {
   CreateSettlementRequest,
   Status,
   Priority,
+  ConstraintType,
+  CreateConstraintTypeRequest,
+  UpdateConstraintTypeRequest,
+  TaskConstraint,
+  CreateTaskConstraintRequest,
   ScheduleStrategy,
   ScheduleResult,
 } from '../types';
@@ -90,12 +95,60 @@ export const taskApi = {
 export const statusApi = {
   getAll: () =>
     axiosInstance.get<Status[]>('/statuses'),
+  getById: (id: number) =>
+    axiosInstance.get<Status>(`/statuses/${id}`),
+  create: (data: { name: string }) =>
+    axiosInstance.post<Status>('/statuses', data),
+  update: (id: number, data: { name: string }) =>
+    axiosInstance.put<Status>(`/statuses/${id}`, data),
+  delete: (id: number) =>
+    axiosInstance.delete(`/statuses/${id}`),
 };
 
 // Priority API
 export const priorityApi = {
   getAll: () =>
     axiosInstance.get<Priority[]>('/priorities'),
+  getById: (id: number) =>
+    axiosInstance.get<Priority>(`/priorities/${id}`),
+  create: (data: { name: string }) =>
+    axiosInstance.post<Priority>('/priorities', data),
+  update: (id: number, data: { name: string }) =>
+    axiosInstance.put<Priority>(`/priorities/${id}`, data),
+  delete: (id: number) =>
+    axiosInstance.delete(`/priorities/${id}`),
+};
+
+// Constraint Type API
+export const constraintTypeApi = {
+  getAll: () =>
+    axiosInstance.get<ConstraintType[]>('/constraint-types'),
+  getById: (id: number) =>
+    axiosInstance.get<ConstraintType>(`/constraint-types/${id}`),
+  create: (data: CreateConstraintTypeRequest) =>
+    axiosInstance.post<ConstraintType>('/constraint-types', data),
+  update: (id: number, data: UpdateConstraintTypeRequest) =>
+    axiosInstance.put<ConstraintType>(`/constraint-types/${id}`, data),
+  delete: (id: number) =>
+    axiosInstance.delete(`/constraint-types/${id}`),
+};
+
+// Task Constraint API
+export const taskConstraintApi = {
+  getAll: () =>
+    axiosInstance.get<TaskConstraint[]>('/task-constraints'),
+  getById: (id: number) =>
+    axiosInstance.get<TaskConstraint>(`/task-constraints/${id}`),
+  create: (data: CreateTaskConstraintRequest) =>
+    axiosInstance.post<TaskConstraint>('/task-constraints', data),
+  update: (id: number, data: CreateTaskConstraintRequest) =>
+    axiosInstance.put<TaskConstraint>(`/task-constraints/${id}`, data),
+  delete: (id: number) =>
+    axiosInstance.delete(`/task-constraints/${id}`),
+  getByPredecessor: (taskId: number) =>
+    axiosInstance.get<TaskConstraint[]>(`/task-constraints/predecessor/${taskId}`),
+  getBySuccessor: (taskId: number) =>
+    axiosInstance.get<TaskConstraint[]>(`/task-constraints/successor/${taskId}`),
 };
 
 // Settlement API

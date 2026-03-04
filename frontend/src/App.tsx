@@ -10,6 +10,10 @@ import Vacations from './pages/Vacations';
 import Tasks from './pages/Tasks.tsx';
 import Settlements from './pages/Settlements';
 import Schedule from './pages/Schedule';
+import Priorities from './pages/Priorities';
+import Statuses from './pages/Statuses';
+import ConstraintTypes from './pages/ConstraintTypes';
+import TaskConstraints from './pages/TaskConstraints';
 
 import './App.css';
 
@@ -69,6 +73,42 @@ function App() {
             element={
               <ProtectedRoute>
                 <Settlements />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin-only lookup table management */}
+          <Route
+            path="/priorities"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <Priorities />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/statuses"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <Statuses />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/constraint-types"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <ConstraintTypes />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Task constraints — visible to all authenticated users, create/delete is ADMIN only (enforced in component) */}
+          <Route
+            path="/task-constraints"
+            element={
+              <ProtectedRoute>
+                <TaskConstraints />
               </ProtectedRoute>
             }
           />
