@@ -11,12 +11,9 @@ import java.util.Set;
 @AllArgsConstructor
 public class AlgoUserRequest {
     private Long id;
-    private String firstName;
-    private String lastName;
-    private String email;
     private Integer dailyAvailabilityHours;
     private Integer maxTasks;
-    private Set<String> roles;
+    private Set<Long> roles;
     private List<AlgoVacationRequest> vacations;
 }
 

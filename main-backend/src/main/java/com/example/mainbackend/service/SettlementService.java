@@ -1,13 +1,18 @@
 package com.example.mainbackend.service;
 
+import com.example.mainbackend.constants.TaskStatusConstants;
 import com.example.mainbackend.dto.settlement.SettlementCreateRequest;
 import com.example.mainbackend.dto.settlement.SettlementResponseDto;
 import com.example.mainbackend.entity.Settlement;
+import com.example.mainbackend.entity.SettlementStatus;
 import com.example.mainbackend.entity.Task;
+import com.example.mainbackend.entity.TaskStatus;
 import com.example.mainbackend.entity.User;
 import com.example.mainbackend.mapper.SettlementMapper;
 import com.example.mainbackend.repository.SettlementRepository;
+import com.example.mainbackend.repository.SettlementStatusRepository;
 import com.example.mainbackend.repository.TaskRepository;
+import com.example.mainbackend.repository.TaskStatusRepository;
 import com.example.mainbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,14 +34,13 @@ public class SettlementService {
     private final SettlementRepository settlementRepository;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final SettlementStatusRepository settlementStatusRepository;
+    private final TaskStatusRepository taskStatusRepository;
     private final SettlementMapper mapper;
 
     /**
      * Create a new settlement (assignment of worker to task).
-     *
-     * @param request the settlement creation request containing task ID and worker ID
-     * @return the created settlement as a DTO
-     * @throws IllegalArgumentException if task or worker not found
+     * Status defaults to ASSIGNED if not specified in request.
      */
     @Transactional
     public SettlementResponseDto createSettlement(SettlementCreateRequest request) {
@@ -48,10 +52,21 @@ public class SettlementService {
         User worker = userRepository.findById(request.getWorkerId())
                 .orElseThrow(() -> new IllegalArgumentException("Worker not found with ID: " + request.getWorkerId()));
 
+        // Resolve settlement status — default to PENDING
+        SettlementStatus status;
+        if (request.getStatusId() != null) {
+            status = settlementStatusRepository.findById(request.getStatusId())
+                    .orElseThrow(() -> new IllegalArgumentException("Settlement status not found: " + request.getStatusId()));
+        } else {
+            status = settlementStatusRepository.findByName(TaskStatusConstants.SETTLEMENT_PENDING)
+                    .orElseThrow(() -> new IllegalStateException("PENDING status not seeded in settlement_statuses"));
+        }
+
         // Build and save settlement
         Settlement settlement = Settlement.builder()
                 .task(task)
                 .worker(worker)
+                .status(status)
                 .settlementDate(request.getSettlementDate())
                 .completionDate(request.getCompletionDate())
                 .build();
@@ -102,6 +117,57 @@ public class SettlementService {
         return settlementRepository.findByWorkerId(workerId).stream()
                 .map(mapper::toDto)
                 .toList();
+    }
+
+    /**
+     * Returns all settlements for the currently authenticated worker (by nationalId from JWT).
+     */
+    @Transactional(readOnly = true)
+    public List<SettlementResponseDto> getMySettlements(String nationalId) {
+        return settlementRepository.findByWorker_NationalId(nationalId).stream()
+                .map(mapper::toDto)
+                .toList();
+    }
+
+    /**
+     * Marks a settlement as COMPLETED.
+     * Security: verifies the requesting worker owns this settlement (no ID-traversal).
+     *
+     * @param id         the settlement ID to complete
+     * @param nationalId the nationalId of the requesting worker
+     */
+    @Transactional
+    public SettlementResponseDto completeSettlement(Long id, String nationalId) {
+        Settlement settlement = settlementRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Settlement not found with ID: " + id));
+
+        // Security: ensure the logged-in worker owns this settlement
+        if (!settlement.getWorker().getNationalId().equals(nationalId))
+            throw new SecurityException("Access denied: this settlement does not belong to you");
+
+        SettlementStatus completed = settlementStatusRepository.findByName(TaskStatusConstants.SETTLEMENT_COMPLETED)
+                .orElseThrow(() -> new IllegalStateException("COMPLETED status not seeded in settlement_statuses"));
+
+        settlement.setStatus(completed);
+        settlement.setCompletionDate(LocalDateTime.now());
+        settlementRepository.save(settlement);
+
+        log.info("Settlement [{}] marked COMPLETED by worker '{}'", id, nationalId);
+
+        // If every settlement for this task is now COMPLETED, close the task lifecycle
+        Task task = settlement.getTask();
+        List<Settlement> allForTask = settlementRepository.findByTaskId(task.getId());
+        boolean allDone = allForTask.stream()
+                .allMatch(s -> TaskStatusConstants.SETTLEMENT_COMPLETED.equals(s.getStatus().getName()));
+        if (allDone) {
+            TaskStatus closed = taskStatusRepository.findByName(TaskStatusConstants.TASK_CLOSED)
+                    .orElseThrow(() -> new IllegalStateException("CLOSED status not seeded in task_statuses"));
+            task.setStatus(closed);
+            taskRepository.save(task);
+            log.info("Task [{}] '{}' transitioned to CLOSED — all settlements completed", task.getId(), task.getTitle());
+        }
+
+        return mapper.toDto(settlement);
     }
 
     /**

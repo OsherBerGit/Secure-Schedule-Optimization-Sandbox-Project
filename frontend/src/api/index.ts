@@ -86,9 +86,7 @@ export const taskApi = {
 
   getByWorker: (workerId: number) =>
     axiosInstance.get<Task[]>(`/tasks/worker/${workerId}`),
-
-  getByStatus: (statusName: string) =>
-    axiosInstance.get<Task[]>(`/tasks/status/${statusName}`),
+  // getByStatus removed — status is now on Settlement
 };
 
 // Status API
@@ -152,7 +150,8 @@ export const taskConstraintApi = {
 };
 
 // Settlement API
-export const settlementApi = {  getAll: () =>
+export const settlementApi = {
+  getAll: () =>
     axiosInstance.get<Settlement[]>('/settlements'),
 
   getById: (id: number) =>
@@ -166,6 +165,14 @@ export const settlementApi = {  getAll: () =>
 
   getByWorker: (workerId: number) =>
     axiosInstance.get<Settlement[]>(`/settlements/worker/${workerId}`),
+
+  /** Returns settlements for the currently authenticated worker (JWT-based). */
+  getMySettlements: () =>
+    axiosInstance.get<Settlement[]>('/settlements/worker/me'),
+
+  /** Marks a settlement as COMPLETED. Worker must own the settlement. */
+  completeSettlement: (id: number) =>
+    axiosInstance.patch<Settlement>(`/settlements/${id}/complete`),
 
   getByTask: (taskId: number) =>
     axiosInstance.get<Settlement[]>(`/settlements/task/${taskId}`),

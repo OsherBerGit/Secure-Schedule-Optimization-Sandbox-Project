@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
+import { CheckCircle } from 'lucide-react'
 import type { Settlement, CreateSettlementRequest, Task, User } from '../types'
 import { settlementApi, taskApi, userApi } from '../api'
 import { useAuth } from '../context/useAuth'
 import SettlementModal from '../components/SettlementModal'
 import './Settlements.css'
+
 // Jackson may serialize LocalDateTime as an array [2025,3,4,10,30,0] or ISO string.
 // This helper handles both formats safely.
 function formatDate(value: string | number[] | null | undefined): string {
@@ -29,15 +31,19 @@ const Settlements = () => {
 
     const fetchSettlements = useCallback(async () => {
         setIsLoading(true)
+        setError(null)
         try {
-            const res = await settlementApi.getAll()
+            // Admins see all; workers see only their own
+            const res = isAdmin
+                ? await settlementApi.getAll()
+                : await settlementApi.getMySettlements()
             setSettlements(res.data)
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Failed to load settlements')
         } finally {
             setIsLoading(false)
         }
-    }, [])
+    }, [isAdmin])
 
     useEffect(() => {
         void fetchSettlements()
@@ -49,6 +55,12 @@ const Settlements = () => {
         settlementApi.delete(id)
             .then(() => fetchSettlements())
             .catch(err => setError(err instanceof Error ? err.message : 'Failed to delete'))
+    }
+
+    function handleComplete(id: number) {
+        settlementApi.completeSettlement(id)
+            .then(() => fetchSettlements())
+            .catch(err => setError(err instanceof Error ? err.message : 'Failed to mark as done'))
     }
 
     function handleSubmit(formData: CreateSettlementRequest) {
@@ -76,35 +88,57 @@ const Settlements = () => {
                         <tr>
                             <th>Worker</th>
                             <th>Task</th>
+                            <th>Status</th>
                             <th>Settlement Date</th>
                             <th>Completion Date</th>
-                            {isAdmin && <th>Actions</th>}
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {settlements.length === 0 ? (
                             <tr>
-                                <td colSpan={isAdmin ? 5 : 4} className="no-data">No settlements found</td>
+                                <td colSpan={6} className="no-data">No settlements found</td>
                             </tr>
                         ) : (
-                            settlements.map(s => (
-                                <tr key={s.id}>
-                                    <td>{s.workerName}</td>
-                                    <td className="task-title">{s.taskTitle}</td>
-                                    <td>{formatDate(s.settlementDate)}</td>
-                                    <td>
-                                        {s.completionDate
-                                            ? formatDate(s.completionDate)
-                                            : <span className="pending-badge">Pending</span>
-                                        }
-                                    </td>
-                                    {isAdmin && (
+                            settlements.map(s => {
+                                const isCompleted = s.statusName === 'COMPLETED'
+                                return (
+                                    <tr key={s.id}>
+                                        <td>{s.workerName}</td>
+                                        <td className="task-title">{s.taskTitle}</td>
                                         <td>
-                                            <button className="btn-delete" onClick={() => handleDelete(s.id)}>Delete</button>
+                                            <span
+                                                className="status-badge"
+                                                style={s.statusColorCode ? { background: s.statusColorCode + '22', color: s.statusColorCode, border: `1px solid ${s.statusColorCode}44` } : undefined}
+                                            >
+                                                {s.statusName ?? '—'}
+                                            </span>
                                         </td>
-                                    )}
-                                </tr>
-                            ))
+                                        <td>{formatDate(s.settlementDate)}</td>
+                                        <td>
+                                            {s.completionDate
+                                                ? formatDate(s.completionDate)
+                                                : <span className="pending-badge">Pending</span>
+                                            }
+                                        </td>
+                                        <td className="actions-cell">
+                                            {!isCompleted && (
+                                                <button
+                                                    className="btn-complete"
+                                                    title="סמן כבוצע"
+                                                    onClick={() => handleComplete(s.id)}
+                                                >
+                                                    <CheckCircle size={16} />
+                                                    <span>סמן כבוצע</span>
+                                                </button>
+                                            )}
+                                            {isAdmin && (
+                                                <button className="btn-delete" onClick={() => handleDelete(s.id)}>Delete</button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                )
+                            })
                         )}
                     </tbody>
                 </table>

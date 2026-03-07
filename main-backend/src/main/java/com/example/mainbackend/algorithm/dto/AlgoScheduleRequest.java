@@ -9,9 +9,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AlgoScheduleRequest {
-    /** "GREEDY" or "ROUND_ROBIN" */
     private String strategy;
     private List<AlgoUserRequest> users;
     private List<AlgoTaskRequest> tasks;
+    private List<AlgoVacationRequest> vacations;
 }
 

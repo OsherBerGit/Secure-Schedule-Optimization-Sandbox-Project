@@ -67,16 +67,5 @@ public class TaskController {
     public ResponseEntity<List<TaskResponseDto>> getTasksByWorker(@PathVariable Long workerId) {
         return ResponseEntity.ok(taskService.getTasksByWorkerId(workerId));
     }
-
-    /**
-     * Retrieves all tasks with a specific status.
-     *
-     * @param statusName the status name to filter by
-     * @return ResponseEntity with list of tasks with the specified status and HTTP 200 status
-     */
-    @GetMapping("/status/{statusName}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
-    public ResponseEntity<List<TaskResponseDto>> getTasksByStatus(@PathVariable String statusName) {
-        return ResponseEntity.ok(taskService.getTasksByStatus(statusName));
-    }
+    // getTasksByStatus removed — status is now on Settlement, filter via GET /api/settlements
 }

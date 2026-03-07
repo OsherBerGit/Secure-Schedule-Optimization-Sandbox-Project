@@ -17,12 +17,11 @@ public class TaskMapper {
                 .deadline(task.getDeadline())
                 .durationHours(task.getDurationHours())
                 .startTime(task.getStartTime())
-                // IDs
                 .priorityId(task.getPriority() != null ? task.getPriority().getId() : null)
-                .statusId(task.getStatus() != null ? task.getStatus().getId() : null)
-                // Display names
                 .priorityName(task.getPriority() != null ? task.getPriority().getName() : null)
-                .statusName(task.getStatus() != null ? task.getStatus().getName() : null)
+                .taskStatusId(task.getStatus() != null ? task.getStatus().getId() : null)
+                .taskStatusName(task.getStatus() != null ? task.getStatus().getName() : null)
+                .taskStatusColorCode(task.getStatus() != null ? task.getStatus().getColorCode() : null)
                 .build();
     }
 }

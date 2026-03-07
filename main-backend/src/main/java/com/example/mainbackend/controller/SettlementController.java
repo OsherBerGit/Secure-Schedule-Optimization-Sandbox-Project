@@ -9,6 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -52,6 +53,32 @@ public class SettlementController {
     public ResponseEntity<List<SettlementResponseDto>> getSettlementsByWorker(@PathVariable Long workerId) {
         List<SettlementResponseDto> settlements = settlementService.getSettlementsByWorker(workerId);
         return ResponseEntity.ok(settlements);
+    }
+
+    /**
+     * GET /api/settlements/worker/me
+     * Returns all settlements for the currently authenticated worker.
+     * Extracts nationalId from the JWT via SecurityContextHolder.
+     */
+    @GetMapping("/worker/me")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
+    public ResponseEntity<List<SettlementResponseDto>> getMySettlements(Authentication authentication) {
+        String nationalId = authentication.getName();
+        List<SettlementResponseDto> settlements = settlementService.getMySettlements(nationalId);
+        return ResponseEntity.ok(settlements);
+    }
+
+    /**
+     * PATCH /api/settlements/{id}/complete
+     * Marks a settlement as COMPLETED. Only the owning worker may call this.
+     */
+    @PatchMapping("/{id}/complete")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
+    public ResponseEntity<SettlementResponseDto> completeSettlement(
+            @PathVariable Long id, Authentication authentication) {
+        String nationalId = authentication.getName();
+        SettlementResponseDto response = settlementService.completeSettlement(id, nationalId);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/task/{taskId}")

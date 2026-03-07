@@ -15,13 +15,12 @@ public class TaskResponseDto {
     private Integer durationHours;
     private LocalDateTime startTime;
 
-    // IDs for related entities
+    // Priority metadata
     private Long priorityId;
-    private Long statusId;
-
-    // Display names for easy UI rendering
     private String priorityName;
-    private String statusName;
-    // Assignment is now managed exclusively via Settlement.
-    // To see who is assigned, query GET /api/settlements/task/{taskId}
+
+    // Task lifecycle status (OPEN, LOCKED, CLOSED) — from task_statuses table
+    private Long taskStatusId;
+    private String taskStatusName;
+    private String taskStatusColorCode;
 }

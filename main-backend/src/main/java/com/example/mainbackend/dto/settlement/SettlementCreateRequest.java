@@ -20,4 +20,7 @@ public class SettlementCreateRequest {
     private LocalDateTime settlementDate;
 
     private LocalDateTime completionDate; // Optional - can be null if task not yet completed
+
+    /** Initial status ID - defaults to ASSIGNED if not provided */
+    private Long statusId;
 }

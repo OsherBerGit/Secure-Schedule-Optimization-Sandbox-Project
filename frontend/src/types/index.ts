@@ -42,10 +42,12 @@ export interface Task {
   durationHours: number | null;
   startTime: string | null;
   priorityId: number | null;
-  statusId: number | null;
   priorityName: string | null;
-  statusName: string | null;
-  // Assignment is managed via Settlement — query GET /api/settlements/task/{taskId}
+  // Task lifecycle status (category="TASK": OPEN, LOCKED, CLOSED)
+  taskStatusId: number | null;
+  taskStatusName: string | null;       // "OPEN" | "LOCKED" | "CLOSED"
+  taskStatusCategory: string | null;   // always "TASK"
+  taskStatusColorCode: string | null;  // hex colour for badge
 }
 
 export interface CreateTaskRequest {
@@ -54,7 +56,6 @@ export interface CreateTaskRequest {
   deadline?: string;
   durationHours?: number;
   priorityId: number;
-  statusId: number;
 }
 
 export interface UpdateTaskRequest {
@@ -63,12 +64,12 @@ export interface UpdateTaskRequest {
   deadline?: string;
   durationHours?: number;
   priorityId: number;
-  statusId: number;
 }
 
 export interface Status {
   id: number;
   name: string;
+  colorCode: string | null;
 }
 
 export interface Priority {
@@ -150,6 +151,10 @@ export interface Settlement {
   completionDate: string | null;
   taskTitle: string;
   workerName: string;
+  // Settlement execution status (PENDING, IN_PROGRESS, COMPLETED, FAILED) — from settlement_statuses table
+  statusId: number | null;
+  statusName: string | null;
+  statusColorCode: string | null;
 }
 
 export interface CreateSettlementRequest {
@@ -157,6 +162,7 @@ export interface CreateSettlementRequest {
   workerId: number;
   settlementDate: string;
   completionDate?: string;
+  statusId?: number;
 }
 
 export interface UpdateSettlementRequest {

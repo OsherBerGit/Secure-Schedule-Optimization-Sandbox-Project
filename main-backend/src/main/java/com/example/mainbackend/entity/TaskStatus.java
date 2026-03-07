@@ -4,9 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Lookup table for Task lifecycle statuses (e.g., PENDING, IN_PROGRESS, COMPLETED).
- * Admins can add new task statuses dynamically via the API.
- * Deliberately separate from VacationStatus — different domains, different values.
+ * Lookup table for Task lifecycle statuses: OPEN, LOCKED, CLOSED.
+ * OPEN   = available for the algorithm to pick up.
+ * LOCKED = assigned to at least one worker via Settlement.
+ * CLOSED = all settlements for this task are completed.
  */
 @Getter
 @Setter
@@ -14,7 +15,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "task_status")
+@Table(name = "task_statuses")
 public class TaskStatus {
 
     @Id
@@ -23,5 +24,8 @@ public class TaskStatus {
 
     @Column(nullable = false, unique = true)
     private String name;
-}
 
+    /** Hex colour code for frontend badge rendering (e.g. "#3B82F6"). */
+    @Column(name = "color_code")
+    private String colorCode;
+}

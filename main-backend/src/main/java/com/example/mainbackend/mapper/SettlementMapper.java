@@ -18,7 +18,9 @@ public class SettlementMapper {
                 .completionDate(settlement.getCompletionDate())
                 .taskTitle(settlement.getTask().getTitle())
                 .workerName(settlement.getWorker().getFirstName() + " " + settlement.getWorker().getLastName())
+                .statusId(settlement.getStatus() != null ? settlement.getStatus().getId() : null)
+                .statusName(settlement.getStatus() != null ? settlement.getStatus().getName() : null)
+                .statusColorCode(settlement.getStatus() != null ? settlement.getStatus().getColorCode() : null)
                 .build();
     }
 }
-

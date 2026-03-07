@@ -1,5 +1,6 @@
-package com.example.mainbackend.algorithm;
+package com.example.mainbackend.algorithm.controller;
 
+import com.example.mainbackend.algorithm.service.SchedulingService;
 import com.example.mainbackend.algorithm.dto.AlgoScheduleResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -27,8 +27,6 @@ public class TaskCreateRequest {
     // IDs for related entities
     @NotNull(message = "Priority is required")
     private Long priorityId;
-
-    @NotNull(message = "Status is required")
-    private Long statusId;
+    // statusId removed — status is now tracked on Settlement, not Task
     // assignedWorkerId removed — use POST /api/settlements to assign a worker to a task
 }

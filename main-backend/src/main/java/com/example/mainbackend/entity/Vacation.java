@@ -12,7 +12,6 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Entity
 public class Vacation {
-
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;

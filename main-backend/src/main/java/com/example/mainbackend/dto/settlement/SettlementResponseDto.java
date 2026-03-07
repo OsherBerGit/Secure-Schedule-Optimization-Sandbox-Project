@@ -17,5 +17,9 @@ public class SettlementResponseDto {
     // Display names for UI
     private String taskTitle;
     private String workerName;
-}
 
+    // Settlement execution status (PENDING, IN_PROGRESS, COMPLETED, FAILED) — from settlement_statuses table
+    private Long statusId;
+    private String statusName;
+    private String statusColorCode;
+}

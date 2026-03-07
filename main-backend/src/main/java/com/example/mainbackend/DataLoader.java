@@ -26,6 +26,7 @@ public class DataLoader implements CommandLineRunner {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final TaskStatusRepository taskStatusRepository;
+    private final SettlementStatusRepository settlementStatusRepository;
     private final VacationStatusRepository vacationStatusRepository;
     private final PriorityRepository priorityRepository;
     private final ConstraintTypeRepository constraintTypeRepository;
@@ -39,6 +40,7 @@ public class DataLoader implements CommandLineRunner {
     @Transactional
     public void run(String... args) throws Exception {
         seedTaskStatuses();
+        seedSettlementStatuses();
         seedVacationStatuses();
         seedPriorities();
         seedConstraintTypes();
@@ -53,11 +55,31 @@ public class DataLoader implements CommandLineRunner {
     // -------------------------------------------------------------------------
 
     private void seedTaskStatuses() {
-        for (String name : TaskStatusConstants.REQUIRED_STATUSES) {
-            if (taskStatusRepository.findByName(name).isEmpty()) {
-                taskStatusRepository.save(TaskStatus.builder().name(name).build());
-                log.info("Created task status: {}", name);
-            }
+        seedTaskStatus(TaskStatusConstants.TASK_OPEN,   "#3B82F6"); // blue   — available
+        seedTaskStatus(TaskStatusConstants.TASK_LOCKED, "#F59E0B"); // amber  — assigned
+        seedTaskStatus(TaskStatusConstants.TASK_CLOSED, "#10B981"); // green  — finished
+    }
+
+    private void seedTaskStatus(String name, String colorCode) {
+        if (taskStatusRepository.findByName(name).isEmpty()) {
+            taskStatusRepository.save(TaskStatus.builder()
+                    .name(name).colorCode(colorCode).build());
+            log.info("Seeded task status: {} ({})", name, colorCode);
+        }
+    }
+
+    private void seedSettlementStatuses() {
+        seedSettlementStatus(TaskStatusConstants.SETTLEMENT_PENDING,     "#6B7280"); // grey   — waiting
+        seedSettlementStatus(TaskStatusConstants.SETTLEMENT_IN_PROGRESS, "#8B5CF6"); // violet — working
+        seedSettlementStatus(TaskStatusConstants.SETTLEMENT_COMPLETED,   "#10B981"); // green  — done
+        seedSettlementStatus(TaskStatusConstants.SETTLEMENT_FAILED,      "#EF4444"); // red    — failed
+    }
+
+    private void seedSettlementStatus(String name, String colorCode) {
+        if (settlementStatusRepository.findByName(name).isEmpty()) {
+            settlementStatusRepository.save(SettlementStatus.builder()
+                    .name(name).colorCode(colorCode).build());
+            log.info("Seeded settlement status: {} ({})", name, colorCode);
         }
     }
 
@@ -154,8 +176,8 @@ public class DataLoader implements CommandLineRunner {
         Priority high     = priorityRepository.findByName(PriorityConstants.HIGH).orElseThrow();
         Priority critical = priorityRepository.findByName(PriorityConstants.CRITICAL).orElseThrow();
 
-        TaskStatus pending    = taskStatusRepository.findByName(TaskStatusConstants.PENDING).orElseThrow();
-        TaskStatus inProgress = taskStatusRepository.findByName(TaskStatusConstants.IN_PROGRESS).orElseThrow();
+        // All seeded tasks start as OPEN — ready for the algorithm to pick up
+        TaskStatus open = taskStatusRepository.findByName(TaskStatusConstants.TASK_OPEN).orElseThrow();
 
         Role workerRole = roleRepository.findByRoleName("WORKER").orElseThrow();
         Role adminRole  = roleRepository.findByRoleName("ADMIN").orElseThrow();
@@ -167,70 +189,70 @@ public class DataLoader implements CommandLineRunner {
                 .title("Design Database Schema")
                 .description("Design the full relational DB schema for the project")
                 .durationHours(4).deadline(now.plusDays(3))
-                .priority(high).status(pending)
+                .priority(high).status(open)
                 .requiredRoles(Set.of(workerRole)).build());
 
         save(Task.builder()
                 .title("Setup CI/CD Pipeline")
                 .description("Configure GitHub Actions for build and deploy")
                 .durationHours(6).deadline(now.plusDays(5))
-                .priority(medium).status(pending)
+                .priority(medium).status(open)
                 .requiredRoles(Set.of(workerRole)).build());
 
         Task t3 = save(Task.builder()
                 .title("Implement Authentication")
                 .description("JWT-based login, refresh tokens and role guards")
                 .durationHours(8).deadline(now.plusDays(4))
-                .priority(critical).status(inProgress)
+                .priority(critical).status(open)
                 .requiredRoles(Set.of(workerRole, adminRole)).build());
 
         Task t4 = save(Task.builder()
                 .title("Write Unit Tests")
                 .description("Cover all service-layer methods with JUnit 5")
                 .durationHours(5).deadline(now.plusDays(7))
-                .priority(medium).status(pending)
+                .priority(medium).status(open)
                 .requiredRoles(Set.of(workerRole)).build());
 
         Task t5 = save(Task.builder()
                 .title("Build REST API — Tasks")
                 .description("CRUD endpoints for task management")
                 .durationHours(6).deadline(now.plusDays(5))
-                .priority(high).status(pending)
+                .priority(high).status(open)
                 .requiredRoles(Set.of(workerRole)).build());
 
         Task t6 = save(Task.builder()
                 .title("Build REST API — Users")
                 .description("CRUD endpoints for user management")
                 .durationHours(4).deadline(now.plusDays(4))
-                .priority(high).status(pending)
+                .priority(high).status(open)
                 .requiredRoles(Set.of(workerRole)).build());
 
         Task t7 = save(Task.builder()
                 .title("Frontend — Login Page")
                 .description("React login form with JWT storage")
                 .durationHours(3).deadline(now.plusDays(6))
-                .priority(medium).status(pending)
+                .priority(medium).status(open)
                 .requiredRoles(Set.of(workerRole)).build());
 
         Task t8 = save(Task.builder()
                 .title("Frontend — Dashboard")
                 .description("Main dashboard with task and user summaries")
                 .durationHours(5).deadline(now.plusDays(8))
-                .priority(low).status(pending)
+                .priority(low).status(open)
                 .requiredRoles(Set.of(workerRole)).build());
 
         Task t9 = save(Task.builder()
                 .title("Deploy to Staging")
                 .description("Deploy latest build to staging environment")
                 .durationHours(3).deadline(now.plusDays(10))
-                .priority(high).status(pending)
+                .priority(high).status(open)
                 .requiredRoles(Set.of(adminRole)).build());
 
         Task t10 = save(Task.builder()
                 .title("Code Review & QA")
                 .description("Full code review and manual QA pass")
                 .durationHours(4).deadline(now.plusDays(9))
-                .priority(medium).status(pending)
+                .priority(medium).status(open)
                 .requiredRoles(Set.of(workerRole, adminRole)).build());
 
         log.info("Seeded {} tasks", taskRepository.count());
@@ -318,37 +340,44 @@ public class DataLoader implements CommandLineRunner {
             return;
         }
 
-        // Fetch a few tasks and workers to create sample assignments
-        taskRepository.findByStatusName(TaskStatusConstants.IN_PROGRESS).stream()
-                .findFirst()
-                .ifPresent(inProgressTask ->
-                    userRepository.findByNationalId("worker").ifPresent(john -> {
-                        settlementRepository.save(Settlement.builder()
-                                .task(inProgressTask)
-                                .worker(john)
-                                .settlementDate(LocalDateTime.now())
-                                .completionDate(null)
-                                .build());
-                        log.info("Seeded settlement: '{}' → {} {}",
-                                inProgressTask.getTitle(), john.getFirstName(), john.getLastName());
-                    })
-                );
+        SettlementStatus pending   = settlementStatusRepository
+                .findByName(TaskStatusConstants.SETTLEMENT_PENDING).orElseThrow();
+        SettlementStatus completed = settlementStatusRepository
+                .findByName(TaskStatusConstants.SETTLEMENT_COMPLETED).orElseThrow();
+        TaskStatus locked    = taskStatusRepository
+                .findByName(TaskStatusConstants.TASK_LOCKED).orElseThrow();
+        TaskStatus closed    = taskStatusRepository
+                .findByName(TaskStatusConstants.TASK_CLOSED).orElseThrow();
 
-        // Assign the first PENDING task to carol as a sample completed settlement
-        taskRepository.findByStatusName(TaskStatusConstants.PENDING).stream()
-                .findFirst()
-                .ifPresent(pendingTask ->
-                    userRepository.findByNationalId("carol").ifPresent(carol -> {
-                        settlementRepository.save(Settlement.builder()
-                                .task(pendingTask)
-                                .worker(carol)
-                                .settlementDate(LocalDateTime.now().minusDays(2))
-                                .completionDate(LocalDateTime.now().minusDays(1))
-                                .build());
-                        log.info("Seeded completed settlement: '{}' → {} {}",
-                                pendingTask.getTitle(), carol.getFirstName(), carol.getLastName());
-                    })
-                );
+        // First task → assigned to john (PENDING settlement, task LOCKED)
+        taskRepository.findAll().stream().findFirst().ifPresent(firstTask ->
+            userRepository.findByNationalId("worker").ifPresent(john -> {
+                firstTask.setStatus(locked);
+                taskRepository.save(firstTask);
+                settlementRepository.save(Settlement.builder()
+                        .task(firstTask).worker(john)
+                        .status(pending)
+                        .settlementDate(LocalDateTime.now())
+                        .completionDate(null)
+                        .build());
+                log.info("Seeded settlement (PENDING/LOCKED): '{}' → {}", firstTask.getTitle(), john.getFirstName());
+            })
+        );
+
+        // Second task → assigned to carol (COMPLETED settlement, task CLOSED)
+        taskRepository.findAll().stream().skip(1).findFirst().ifPresent(secondTask ->
+            userRepository.findByNationalId("carol").ifPresent(carol -> {
+                secondTask.setStatus(closed);
+                taskRepository.save(secondTask);
+                settlementRepository.save(Settlement.builder()
+                        .task(secondTask).worker(carol)
+                        .status(completed)
+                        .settlementDate(LocalDateTime.now().minusDays(2))
+                        .completionDate(LocalDateTime.now().minusDays(1))
+                        .build());
+                log.info("Seeded settlement (COMPLETED/CLOSED): '{}' → {}", secondTask.getTitle(), carol.getFirstName());
+            })
+        );
 
         log.info("Seeded {} settlements", settlementRepository.count());
     }

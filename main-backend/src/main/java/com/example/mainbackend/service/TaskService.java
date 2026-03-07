@@ -1,15 +1,16 @@
 package com.example.mainbackend.service;
 
+import com.example.mainbackend.constants.TaskStatusConstants;
 import com.example.mainbackend.dto.task.TaskCreateRequest;
 import com.example.mainbackend.dto.task.TaskResponseDto;
 import com.example.mainbackend.entity.Priority;
-import com.example.mainbackend.entity.TaskStatus;
 import com.example.mainbackend.entity.Task;
+import com.example.mainbackend.entity.TaskStatus;
 import com.example.mainbackend.mapper.TaskMapper;
 import com.example.mainbackend.repository.PriorityRepository;
 import com.example.mainbackend.repository.SettlementRepository;
-import com.example.mainbackend.repository.TaskStatusRepository;
 import com.example.mainbackend.repository.TaskRepository;
+import com.example.mainbackend.repository.TaskStatusRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,16 +24,14 @@ import java.util.stream.Collectors;
 public class TaskService {
 
     private final TaskRepository taskRepository;
-    private final TaskStatusRepository taskStatusRepository;
     private final PriorityRepository priorityRepository;
+    private final TaskStatusRepository taskStatusRepository;
     private final SettlementRepository settlementRepository;
     private final TaskMapper taskMapper;
 
     @Transactional
     public TaskResponseDto createTask(TaskCreateRequest request) {
-        Task task = buildTaskFromRequest(request, null);
-        Task savedTask = taskRepository.save(task);
-        return taskMapper.toDto(savedTask);
+        return taskMapper.toDto(taskRepository.save(buildTaskFromRequest(request, null)));
     }
 
     @Transactional(readOnly = true)
@@ -44,27 +43,22 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public Optional<TaskResponseDto> getTaskById(Long id) {
-        return taskRepository.findById(id)
-                .map(taskMapper::toDto);
+        return taskRepository.findById(id).map(taskMapper::toDto);
     }
 
     @Transactional
     public Optional<TaskResponseDto> updateTask(Long id, TaskCreateRequest request) {
-        return taskRepository.findById(id)
-                .map(existingTask -> {
-                    Task updatedTask = buildTaskFromRequest(request, existingTask);
-                    Task savedTask = taskRepository.save(updatedTask);
-                    return taskMapper.toDto(savedTask);
-                });
+        return taskRepository.findById(id).map(existing -> {
+            Task updated = buildTaskFromRequest(request, existing);
+            return taskMapper.toDto(taskRepository.save(updated));
+        });
     }
 
     @Transactional
     public boolean deleteTask(Long id) {
-        if (taskRepository.existsById(id)) {
-            taskRepository.deleteById(id);
-            return true;
-        }
-        return false;
+        if (!taskRepository.existsById(id)) return false;
+        taskRepository.deleteById(id);
+        return true;
     }
 
     /**
@@ -79,48 +73,38 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Returns only OPEN tasks for the scheduling algorithm.
+     * No category check needed — task_statuses table holds only task lifecycle statuses.
+     */
     @Transactional(readOnly = true)
-    public List<TaskResponseDto> getTasksByStatus(String statusName) {
-        return taskRepository.findByStatusName(statusName).stream()
-                .map(taskMapper::toDto)
-                .collect(Collectors.toList());
+    public List<Task> getOpenTasksForScheduling() {
+        return taskRepository.findByStatusName(TaskStatusConstants.TASK_OPEN);
     }
 
-    /**
-     * Helper method to build a Task entity from TaskCreateRequest.
-     * Fetches related entities (Priority, Status, User) from database and validates they exist.
-     * Preserves existing relationships and fields when updating.
-     *
-     * @param request the task creation/update request
-     * @param existingTask the existing task for updates (null for new tasks)
-     * @return Task entity ready to be saved
-     * @throws RuntimeException if any required related entity is not found
-     */
-    private Task buildTaskFromRequest(TaskCreateRequest request, Task existingTask) {
-        // Fetch Priority (required)
+    private Task buildTaskFromRequest(TaskCreateRequest request, Task existing) {
         Priority priority = priorityRepository.findById(request.getPriorityId())
-                .orElseThrow(() -> new RuntimeException("Priority not found with id: " + request.getPriorityId()));
+                .orElseThrow(() -> new RuntimeException("Priority not found: " + request.getPriorityId()));
 
-        // Fetch TaskStatus (required)
-        TaskStatus status = taskStatusRepository.findById(request.getStatusId())
-                .orElseThrow(() -> new RuntimeException("TaskStatus not found with id: " + request.getStatusId()));
+        // Default status for new tasks is OPEN
+        TaskStatus openStatus = taskStatusRepository.findByName(TaskStatusConstants.TASK_OPEN)
+                .orElseThrow(() -> new IllegalStateException("OPEN status not seeded in task_statuses"));
 
-        // Build task - use existing task for updates to preserve ID and other fields
-        Task.TaskBuilder builder = Task.builder()
+        Task.Builder builder = Task.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .deadline(request.getDeadline())
                 .durationHours(request.getDurationHours())
                 .priority(priority)
-                .status(status);
+                .status(openStatus);
 
-        // Preserve ID and other fields for updates
-        if (existingTask != null)
-            builder.id(existingTask.getId())
-                    .startTime(existingTask.getStartTime())
-                    .requiredRoles(existingTask.getRequiredRoles())
-                    .outgoingConstraints(existingTask.getOutgoingConstraints())
-                    .incomingConstraints(existingTask.getIncomingConstraints());
+        if (existing != null)
+            builder.id(existing.getId())
+                    .startTime(existing.getStartTime())
+                    .status(existing.getStatus())            // preserve lifecycle on update
+                    .requiredRoles(existing.getRequiredRoles())
+                    .outgoingConstraints(existing.getOutgoingConstraints())
+                    .incomingConstraints(existing.getIncomingConstraints());
 
         return builder.build();
     }
