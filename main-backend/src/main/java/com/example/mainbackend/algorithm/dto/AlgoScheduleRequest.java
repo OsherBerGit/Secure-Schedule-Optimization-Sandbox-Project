@@ -10,8 +10,8 @@ import java.util.List;
 @AllArgsConstructor
 public class AlgoScheduleRequest {
     private String strategy;
+    private SchedulingConfigurationDto config;
     private List<AlgoUserRequest> users;
     private List<AlgoTaskRequest> tasks;
-    private List<AlgoVacationRequest> vacations;
 }
 

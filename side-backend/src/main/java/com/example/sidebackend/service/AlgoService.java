@@ -10,11 +10,11 @@ import com.example.algorithm.model.AlgoUser;
 import com.example.algorithm.model.AlgoVacation;
 import com.example.algorithm.model.TaskAssignment;
 import com.example.sidebackend.dto.SchedulingRequestDto;
-import com.example.sidebackend.dto.SchedulingRequestDto.TaskDto;
-import com.example.sidebackend.dto.SchedulingRequestDto.VacationDto;
-import com.example.sidebackend.dto.SchedulingRequestDto.UserDto;
 import com.example.sidebackend.dto.SchedulingResponseDto;
 import com.example.sidebackend.dto.SchedulingResponseDto.AssignmentDto;
+import com.example.sidebackend.dto.TaskDto;
+import com.example.sidebackend.dto.UserDto;
+import com.example.sidebackend.dto.VacationDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -85,7 +85,7 @@ public class AlgoService {
      *   <li>durationHours is positive and does not exceed 8760 (one year in hours).</li>
      *   <li>priorityLevel, if present, is non-negative.</li>
      *   <li>Vacation dates: startDate must not be after endDate.</li>
-     *   <li>Predecessor/successor task IDs must reference existing task IDs.</li>
+     *   <li>Predecessor task IDs must reference existing task IDs (no dangling refs, no self-loops).</li>
      * </ul>
      *
      * @throws IllegalArgumentException with a descriptive message on first violation found
@@ -162,17 +162,23 @@ public class AlgoService {
 
     // ─── Step 2: DTO → Model mapping ─────────────────────────────────────────
 
+    /**
+     * Maps anonymous UserDtos to AlgoUser models.
+     * Zero-Trust: no names or emails are set — the algorithm only needs capacity and role IDs.
+     * Role IDs (Long) are used directly; the algorithm compares IDs for role matching.
+     */
     private List<AlgoUser> mapUsers(List<UserDto> userDtos) {
         List<AlgoUser> users = new ArrayList<>(userDtos.size());
         for (UserDto dto : userDtos) {
             users.add(AlgoUser.builder()
                     .id(dto.id())
-                    .firstName(dto.firstName())
-                    .lastName(dto.lastName())
-                    .email(dto.email())
                     .dailyAvailabilityHours(dto.dailyAvailabilityHours())
                     .maxTasks(dto.maxTasks())
-                    .roles(dto.roles() != null ? dto.roles() : Collections.emptySet())
+                    .roles(dto.roleIds() != null
+                            ? dto.roleIds().stream()
+                                    .map(Object::toString)
+                                    .collect(java.util.stream.Collectors.toSet())
+                            : Collections.emptySet())
                     .vacations(mapVacations(dto.id(), dto.vacations()))
                     .build());
         }
@@ -182,7 +188,7 @@ public class AlgoService {
     private List<AlgoVacation> mapVacations(Long userId, List<VacationDto> vacationDtos) {
         if (vacationDtos == null || vacationDtos.isEmpty()) return Collections.emptyList();
         List<AlgoVacation> result = new ArrayList<>(vacationDtos.size());
-        for (VacationDto dto : vacationDtos) {
+        for (VacationDto dto : vacationDtos)
             result.add(AlgoVacation.builder()
                     .id(dto.id())
                     .userId(userId)
@@ -190,28 +196,35 @@ public class AlgoService {
                     .endDate(dto.endDate())
                     .status("APPROVED")
                     .build());
-        }
+
         return result;
     }
 
+    /**
+     * Maps anonymous TaskDtos to AlgoTask models.
+     * Zero-Trust: no titles, descriptions, or status strings are set.
+     * requiredRoleIds (Long) are converted to String for compatibility with AlgoTask.requiredRoles.
+     */
     private List<AlgoTask> mapTasks(List<TaskDto> taskDtos) {
         List<AlgoTask> tasks = new ArrayList<>(taskDtos.size());
-        for (TaskDto dto : taskDtos) {
+        for (TaskDto dto : taskDtos)
             tasks.add(AlgoTask.builder()
                     .id(dto.id())
-                    .title(dto.title())
-                    .description(dto.description())
                     .durationHours(dto.durationHours())
                     .deadline(dto.deadline())
-                    .priority(dto.priority())
                     .priorityLevel(dto.priorityLevel() != null ? dto.priorityLevel() : 0)
-                    .status(dto.status() != null ? dto.status() : "PENDING")
-                    .requiredRoles(dto.requiredRoles() != null ? dto.requiredRoles() : Collections.emptySet())
-                    .predecessorTaskIds(dto.predecessorTaskIds() != null ? dto.predecessorTaskIds() : Collections.emptyList())
-                    .successorTaskIds(dto.successorTaskIds() != null ? dto.successorTaskIds() : Collections.emptyList())
+                    .requiredRoles(dto.requiredRoleIds() != null
+                            ? dto.requiredRoleIds().stream()
+                                    .map(Object::toString)
+                                    .collect(java.util.stream.Collectors.toSet())
+                            : Collections.emptySet())
+                    .predecessorTaskIds(dto.predecessorTaskIds() != null
+                            ? dto.predecessorTaskIds()
+                            : Collections.emptyList())
+                    .successorTaskIds(Collections.emptyList())
                     .assignedEmployee(null)
                     .build());
-        }
+
         return tasks;
     }
 
@@ -227,6 +240,10 @@ public class AlgoService {
 
     // ─── Step 4: Model → Response DTO mapping ────────────────────────────────
 
+    /**
+     * Maps TaskAssignment results to the anonymous outbound response DTO.
+     * Zero-Trust: no names or task titles are included in the response.
+     */
     private SchedulingResponseDto buildResponse(String strategyName, int totalTasks,
                                                 List<TaskAssignment> assignments) {
         List<AssignmentDto> dtos = new ArrayList<>(assignments.size());
@@ -236,19 +253,11 @@ public class AlgoService {
             boolean isAssigned = (a.getAssignedEmployee() != null);
             if (isAssigned) assigned++;
 
-            Long userId = isAssigned ? a.getAssignedEmployee().getId() : null;
-            String fullName = isAssigned
-                    ? a.getAssignedEmployee().getFirstName() + " " + a.getAssignedEmployee().getLastName()
-                    : null;
-
             dtos.add(new AssignmentDto(
                     a.getTask().getId(),
-                    a.getTask().getTitle(),
-                    userId,        // assignedUserId
-                    fullName,      // assignedUserFullName
+                    isAssigned ? a.getAssignedEmployee().getId() : null,
                     a.getScheduledStart(),
-                    a.getScheduledEnd(),
-                    a.getReason()
+                    a.getScheduledEnd()
             ));
         }
 

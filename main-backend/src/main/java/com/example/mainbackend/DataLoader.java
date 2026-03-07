@@ -55,9 +55,10 @@ public class DataLoader implements CommandLineRunner {
     // -------------------------------------------------------------------------
 
     private void seedTaskStatuses() {
-        seedTaskStatus(TaskStatusConstants.TASK_OPEN,   "#3B82F6"); // blue   — available
-        seedTaskStatus(TaskStatusConstants.TASK_LOCKED, "#F59E0B"); // amber  — assigned
-        seedTaskStatus(TaskStatusConstants.TASK_CLOSED, "#10B981"); // green  — finished
+        seedTaskStatus(TaskStatusConstants.TASK_OPEN,      "#3B82F6"); // blue   — available
+        seedTaskStatus(TaskStatusConstants.TASK_LOCKED,    "#F59E0B"); // amber  — assigned (manual lock)
+        seedTaskStatus(TaskStatusConstants.TASK_SCHEDULED, "#A855F7"); // purple — assigned by algorithm
+        seedTaskStatus(TaskStatusConstants.TASK_CLOSED,    "#10B981"); // green  — finished
     }
 
     private void seedTaskStatus(String name, String colorCode) {
@@ -70,6 +71,7 @@ public class DataLoader implements CommandLineRunner {
 
     private void seedSettlementStatuses() {
         seedSettlementStatus(TaskStatusConstants.SETTLEMENT_PENDING,     "#6B7280"); // grey   — waiting
+        seedSettlementStatus(TaskStatusConstants.SETTLEMENT_ASSIGNED,    "#3B82F6"); // blue   — assigned by algo
         seedSettlementStatus(TaskStatusConstants.SETTLEMENT_IN_PROGRESS, "#8B5CF6"); // violet — working
         seedSettlementStatus(TaskStatusConstants.SETTLEMENT_COMPLETED,   "#10B981"); // green  — done
         seedSettlementStatus(TaskStatusConstants.SETTLEMENT_FAILED,      "#EF4444"); // red    — failed

@@ -9,6 +9,9 @@ import java.time.LocalDateTime;
  * Execution states: PENDING → IN_PROGRESS → COMPLETED (or FAILED).
  * Uses a manual Builder for consistency with Task.java.
  */
+
+// TODO: Replace the manual implementation with JPA annotations and Lombok once the entity design is finalized and stable.
+
 @Entity
 public class Settlement {
 

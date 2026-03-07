@@ -1,5 +1,7 @@
 package com.example.mainbackend.mapper;
 
+import com.example.mainbackend.algorithm.dto.AlgoUserRequest;
+import com.example.mainbackend.algorithm.dto.AlgoVacationRequest;
 import com.example.mainbackend.dto.user.CreateUserRequest;
 import com.example.mainbackend.dto.user.UserDto;
 import com.example.mainbackend.entity.Role;
@@ -7,6 +9,7 @@ import com.example.mainbackend.entity.User;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -106,6 +109,43 @@ public class UserMapper {
                 .address(request.getAddress())
                 .dailyAvailabilityHours(request.getDailyAvailabilityHours())
                 .maxTasks(request.getMaxTasks())
+                .build();
+    }
+
+    /**
+     * Maps a User entity to an anonymous AlgoUserRequest.
+     * Zero-Trust: only scheduling-relevant IDs and capacity data are included.
+     * No names, nationalIds, emails, or any PII are transmitted to the algorithm engine.
+     *
+     * Vacations are filtered to APPROVED status only — pending/rejected vacations
+     * are irrelevant to the scheduling engine's availability calculation.
+     *
+     * @param user the User entity (must have roles already loaded)
+     * @return anonymous AlgoUserRequest for the algorithm engine
+     */
+    public static AlgoUserRequest toAlgoRequest(User user) {
+        if (user == null) return null;
+
+        List<AlgoVacationRequest> approvedVacations = user.getVacations() != null
+                ? user.getVacations().stream()
+                        .filter(v -> v.getStatus() != null
+                                && "APPROVED".equalsIgnoreCase(v.getStatus().getName()))
+                        .map(v -> AlgoVacationRequest.builder()
+                                .id(v.getId())
+                                .startDate(v.getStartDate())
+                                .endDate(v.getEndDate())
+                                .build())
+                        .collect(Collectors.toList())
+                : Collections.emptyList();
+
+        return AlgoUserRequest.builder()
+                .id(user.getId())
+                .dailyAvailabilityHours(user.getDailyAvailabilityHours())
+                .maxTasks(user.getMaxTasks())
+                .roles(user.getRoles() != null
+                        ? user.getRoles().stream().map(Role::getId).collect(Collectors.toSet())
+                        : Collections.emptySet())
+                .vacations(approvedVacations)
                 .build();
     }
 }
