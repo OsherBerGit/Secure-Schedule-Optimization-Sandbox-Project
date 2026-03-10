@@ -41,6 +41,23 @@ public class TaskMapper {
      * @return anonymous AlgoTaskRequest for the algorithm engine
      */
     public static AlgoTaskRequest toAlgoRequest(Task task) {
+        return toAlgoRequest(task, null);
+    }
+
+    /**
+     * Maps a Task entity to an anonymous AlgoTaskRequest, filtering out predecessor IDs
+     * that are not present in {@code openTaskIds}.
+     *
+     * This prevents the algorithm from rejecting a task because its predecessor is already
+     * SCHEDULED/LOCKED/CLOSED and therefore not included in the current scheduling run.
+     * If a predecessor is not OPEN it has already been handled and the dependency is irrelevant.
+     *
+     * @param task        the Task entity (must have requiredRoles and incomingConstraints already loaded)
+     * @param openTaskIds set of task IDs being sent in this scheduling request; pass
+     *                    {@code null} to skip filtering (all predecessors are kept as-is)
+     * @return anonymous AlgoTaskRequest for the algorithm engine
+     */
+    public static AlgoTaskRequest toAlgoRequest(Task task, Set<Long> openTaskIds) {
         if (task == null) return null;
 
         Set<Long> requiredRoleIds = task.getRequiredRoles() != null
@@ -51,6 +68,7 @@ public class TaskMapper {
                 ? task.getIncomingConstraints().stream()
                         .map(TaskConstraint::getPredecessorTask)
                         .map(Task::getId)
+                        .filter(predId -> openTaskIds == null || openTaskIds.contains(predId))
                         .collect(Collectors.toList())
                 : Collections.emptyList();
 

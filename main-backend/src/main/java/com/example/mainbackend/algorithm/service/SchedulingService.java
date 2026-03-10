@@ -147,8 +147,16 @@ public class SchedulingService {
 
         log.info("Sending {} OPEN tasks to algorithm (LOCKED/SCHEDULED/CLOSED excluded)", mergedTasks.size());
 
+        // Build the set of OPEN task IDs so the mapper can strip predecessor references
+        // that point to tasks not in this scheduling run (already SCHEDULED/LOCKED/CLOSED).
+        // Without this filter the algorithm rejects any task whose predecessor has already
+        // been scheduled (it receives an ID it has never seen).
+        Set<Long> openTaskIds = mergedTasks.stream()
+                .map(Task::getId)
+                .collect(Collectors.toSet());
+
         return mergedTasks.stream()
-                .map(TaskMapper::toAlgoRequest)
+                .map(task -> TaskMapper.toAlgoRequest(task, openTaskIds))
                 .collect(Collectors.toList());
     }
 

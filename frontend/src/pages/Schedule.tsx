@@ -81,14 +81,19 @@ const Schedule = () => {
         }
     }
 
-    // Build worker → tasks map
+    // Build a taskId → assignedUserId map from the latest schedule result
+    const assignmentMap = new Map<number, number | null>(
+        scheduleResult?.assignments.map(a => [a.taskId, a.assignedUserId]) ?? []
+    )
+
+    // Build worker → tasks map using the assignment map
     const workerSchedules: WorkerSchedule[] = workers.map(w => ({
         worker: w,
-        tasks: scheduledTasks.filter(t => t.assignedWorkerId === w.id),
+        tasks: scheduledTasks.filter(t => assignmentMap.get(t.id) === w.id),
     }))
 
-    const unassignedTasks = tasks.filter(t => !t.assignedWorkerId)
-    const unscheduledTasks = tasks.filter(t => t.assignedWorkerId && !t.startTime)
+    const unassignedTasks  = tasks.filter(t => !assignmentMap.has(t.id) || assignmentMap.get(t.id) == null)
+    const unscheduledTasks = tasks.filter(t => assignmentMap.get(t.id) != null && !t.startTime)
 
     // Trigger the scheduling algorithm
     async function handleGenerate() {
@@ -147,6 +152,7 @@ const Schedule = () => {
                             >
                                 <option value="GREEDY">⚡ Greedy (Best-Fit)</option>
                                 <option value="ROUND_ROBIN">🔄 Round-Robin (Fair)</option>
+                                <option value="MEMETIC">🧬 Memetic (Optimised)</option>
                             </select>
                             <button
                                 className="btn-generate"
@@ -280,7 +286,7 @@ const Schedule = () => {
                                                     ...getBarStyle(task),
                                                     background: getPriorityColor(task.priorityName),
                                                 }}
-                                                title={`${task.title}\nStatus: ${task.statusName}\nPriority: ${task.priorityName}\nDuration: ${task.durationHours}h`}
+                                                title={`${task.title}\nStatus: ${task.taskStatusName}\nPriority: ${task.priorityName}\nDuration: ${task.durationHours}h`}
                                             >
                                                 <span className="bar-label">{task.title}</span>
                                             </div>
@@ -309,7 +315,14 @@ const Schedule = () => {
                                 {scheduledTasks.map(task => (
                                     <tr key={task.id}>
                                         <td className="task-title-cell">{task.title}</td>
-                                        <td>{task.assignedWorkerName ?? '—'}</td>
+                                        <td>{
+                                            (() => {
+                                                const uid = assignmentMap.get(task.id)
+                                                if (uid == null) return '—'
+                                                const w = workers.find(w => w.id === uid)
+                                                return w ? `${w.firstName ?? ''} ${w.lastName ?? ''}`.trim() || `Worker #${uid}` : `Worker #${uid}`
+                                            })()
+                                        }</td>
                                         <td>{task.startTime ? new Date(task.startTime).toLocaleString() : '—'}</td>
                                         <td>{task.deadline ? new Date(task.deadline).toLocaleString() : '—'}</td>
                                         <td>{task.durationHours != null ? `${task.durationHours}h` : '—'}</td>
@@ -321,8 +334,8 @@ const Schedule = () => {
                                             {task.priorityName ?? '—'}
                                         </td>
                                         <td>
-                                            <span className={`status-badge status-${task.statusName?.toLowerCase().replace('_', '-')}`}>
-                                                {task.statusName ?? '—'}
+                                            <span className={`status-badge status-${task.taskStatusName?.toLowerCase().replace('_', '-')}`}>
+                                                {task.taskStatusName ?? '—'}
                                             </span>
                                         </td>
                                     </tr>

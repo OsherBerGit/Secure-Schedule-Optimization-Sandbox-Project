@@ -209,7 +209,7 @@ export interface AuthContextType {
 
 // ── Algorithm / Schedule types ──────────────────────────────────────────────
 
-export type ScheduleStrategy = 'GREEDY' | 'ROUND_ROBIN';
+export type ScheduleStrategy = 'GREEDY' | 'ROUND_ROBIN' | 'MEMETIC';
 
 export interface TaskAssignmentResult {
   taskId: number;

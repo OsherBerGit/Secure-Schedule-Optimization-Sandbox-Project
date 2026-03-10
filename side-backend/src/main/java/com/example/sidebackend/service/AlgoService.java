@@ -2,6 +2,7 @@ package com.example.sidebackend.service;
 
 import com.example.algorithm.db.ScheduleData;
 import com.example.algorithm.engine.GreedySchedulingStrategy;
+import com.example.algorithm.engine.MemeticSchedulingStrategy;
 import com.example.algorithm.engine.RoundRobinSchedulingStrategy;
 import com.example.algorithm.engine.Scheduler;
 import com.example.algorithm.engine.SchedulingStrategy;
@@ -58,7 +59,7 @@ public class AlgoService {
         ScheduleData data = new ScheduleData(mapped.users(), mapped.tasks());
 
         // 3. Select and execute strategy
-        SchedulingStrategy strategy = resolveStrategy(request.strategy());
+        SchedulingStrategy strategy = resolveStrategy(request.strategy(), mapped.config());
         log.info("[AlgoService] Running strategy '{}' with {} user(s) and {} task(s)",
                 strategy.getName(), mapped.users().size(), mapped.tasks().size());
 
@@ -158,9 +159,13 @@ public class AlgoService {
 
     // ─── Step 3: Strategy selection ──────────────────────────────────────────
 
-    private SchedulingStrategy resolveStrategy(String strategyName) {
+    private SchedulingStrategy resolveStrategy(String strategyName,
+                                               com.example.algorithm.model.AlgoSchedulingConfiguration config) {
         String name = (strategyName != null) ? strategyName.toUpperCase().trim() : DEFAULT_STRATEGY;
         return switch (name) {
+            case "MEMETIC"     -> MemeticSchedulingStrategy.withDefaults(
+                                      config != null ? config : new com.example.algorithm.model.AlgoSchedulingConfiguration(
+                                              1.0, 1.0, 1.0, 50, 100));
             case "ROUND_ROBIN" -> new RoundRobinSchedulingStrategy();
             default            -> new GreedySchedulingStrategy();
         };
