@@ -5,9 +5,6 @@ import com.example.algorithm.engine.GreedySchedulingStrategy;
 import com.example.algorithm.engine.RoundRobinSchedulingStrategy;
 import com.example.algorithm.engine.Scheduler;
 import com.example.algorithm.engine.SchedulingStrategy;
-import com.example.algorithm.model.AlgoTask;
-import com.example.algorithm.model.AlgoUser;
-import com.example.algorithm.model.AlgoVacation;
 import com.example.algorithm.model.TaskAssignment;
 import com.example.sidebackend.dto.SchedulingRequestDto;
 import com.example.sidebackend.dto.SchedulingResponseDto;
@@ -15,12 +12,12 @@ import com.example.sidebackend.dto.SchedulingResponseDto.AssignmentDto;
 import com.example.sidebackend.dto.TaskDto;
 import com.example.sidebackend.dto.UserDto;
 import com.example.sidebackend.dto.VacationDto;
+import com.example.sidebackend.service.AlgoMapper.MappedRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -56,21 +53,20 @@ public class AlgoService {
         // 1. Sanitization — business-level safety checks
         sanitize(request);
 
-        // 2. Map DTOs → algorithm models
-        List<AlgoUser> users = mapUsers(request.users());
-        List<AlgoTask> tasks = mapTasks(request.tasks());
-        ScheduleData data = new ScheduleData(users, tasks);
+        // 2. Map DTOs → algorithm models (via AlgoMapper)
+        MappedRequest mapped = AlgoMapper.toModels(request);
+        ScheduleData data = new ScheduleData(mapped.users(), mapped.tasks());
 
         // 3. Select and execute strategy
         SchedulingStrategy strategy = resolveStrategy(request.strategy());
         log.info("[AlgoService] Running strategy '{}' with {} user(s) and {} task(s)",
-                strategy.getName(), users.size(), tasks.size());
+                strategy.getName(), mapped.users().size(), mapped.tasks().size());
 
         Scheduler scheduler = new Scheduler(strategy);
         List<TaskAssignment> assignments = scheduler.run(data);
 
         // 4. Map results → response DTO
-        return buildResponse(strategy.getName(), tasks.size(), assignments);
+        return buildResponse(strategy.getName(), mapped.tasks().size(), assignments);
     }
 
     // ─── Step 1: Sanitization ─────────────────────────────────────────────────
@@ -158,74 +154,6 @@ public class AlgoService {
 
         log.debug("[AlgoService] Sanitization passed for {} user(s) and {} task(s)",
                 request.users().size(), request.tasks().size());
-    }
-
-    // ─── Step 2: DTO → Model mapping ─────────────────────────────────────────
-
-    /**
-     * Maps anonymous UserDtos to AlgoUser models.
-     * Zero-Trust: no names or emails are set — the algorithm only needs capacity and role IDs.
-     * Role IDs (Long) are used directly; the algorithm compares IDs for role matching.
-     */
-    private List<AlgoUser> mapUsers(List<UserDto> userDtos) {
-        List<AlgoUser> users = new ArrayList<>(userDtos.size());
-        for (UserDto dto : userDtos) {
-            users.add(AlgoUser.builder()
-                    .id(dto.id())
-                    .dailyAvailabilityHours(dto.dailyAvailabilityHours())
-                    .maxTasks(dto.maxTasks())
-                    .roles(dto.roleIds() != null
-                            ? dto.roleIds().stream()
-                                    .map(Object::toString)
-                                    .collect(java.util.stream.Collectors.toSet())
-                            : Collections.emptySet())
-                    .vacations(mapVacations(dto.id(), dto.vacations()))
-                    .build());
-        }
-        return users;
-    }
-
-    private List<AlgoVacation> mapVacations(Long userId, List<VacationDto> vacationDtos) {
-        if (vacationDtos == null || vacationDtos.isEmpty()) return Collections.emptyList();
-        List<AlgoVacation> result = new ArrayList<>(vacationDtos.size());
-        for (VacationDto dto : vacationDtos)
-            result.add(AlgoVacation.builder()
-                    .id(dto.id())
-                    .userId(userId)
-                    .startDate(dto.startDate())
-                    .endDate(dto.endDate())
-                    .status("APPROVED")
-                    .build());
-
-        return result;
-    }
-
-    /**
-     * Maps anonymous TaskDtos to AlgoTask models.
-     * Zero-Trust: no titles, descriptions, or status strings are set.
-     * requiredRoleIds (Long) are converted to String for compatibility with AlgoTask.requiredRoles.
-     */
-    private List<AlgoTask> mapTasks(List<TaskDto> taskDtos) {
-        List<AlgoTask> tasks = new ArrayList<>(taskDtos.size());
-        for (TaskDto dto : taskDtos)
-            tasks.add(AlgoTask.builder()
-                    .id(dto.id())
-                    .durationHours(dto.durationHours())
-                    .deadline(dto.deadline())
-                    .priorityLevel(dto.priorityLevel() != null ? dto.priorityLevel() : 0)
-                    .requiredRoles(dto.requiredRoleIds() != null
-                            ? dto.requiredRoleIds().stream()
-                                    .map(Object::toString)
-                                    .collect(java.util.stream.Collectors.toSet())
-                            : Collections.emptySet())
-                    .predecessorTaskIds(dto.predecessorTaskIds() != null
-                            ? dto.predecessorTaskIds()
-                            : Collections.emptyList())
-                    .successorTaskIds(Collections.emptyList())
-                    .assignedEmployee(null)
-                    .build());
-
-        return tasks;
     }
 
     // ─── Step 3: Strategy selection ──────────────────────────────────────────

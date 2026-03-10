@@ -1,25 +1,41 @@
 package com.example.algorithm.model;
 
-import lombok.*;
-
 import java.time.LocalDate;
 
 /**
- * Represents an approved vacation period for an employee.
- * Used by the algorithm to block out unavailable days.
+ * Represents an approved vacation window for a worker.
+ *
+ * <p>Status is intentionally absent — the algorithm treats every vacation in this
+ * list as a fully blocked availability window (only APPROVED vacations are ever
+ * forwarded by the main-backend).</p>
+ *
+ * <p>Pure Java: no Spring, Jackson, or Lombok annotations.
+ * Immutable: all fields are final.</p>
  */
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@ToString
-public class AlgoVacation {
+public final class AlgoVacation {
 
-    private Long id;
-    private Long userId;
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private String status;
+    private final Long id;
+    private final Long userId;
+    private final LocalDate startDate;
+    private final LocalDate endDate;
+
+    public AlgoVacation(Long id, Long userId, LocalDate startDate, LocalDate endDate) {
+        this.id        = id;
+        this.userId    = userId;
+        this.startDate = startDate;
+        this.endDate   = endDate;
+    }
+
+    public Long getId()            { return id; }
+    public Long getUserId()        { return userId; }
+    public LocalDate getStartDate() { return startDate; }
+    public LocalDate getEndDate()   { return endDate; }
+
+    @Override
+    public String toString() {
+        return "AlgoVacation{id=" + id
+                + ", userId=" + userId
+                + ", startDate=" + startDate
+                + ", endDate=" + endDate + '}';
+    }
 }
-

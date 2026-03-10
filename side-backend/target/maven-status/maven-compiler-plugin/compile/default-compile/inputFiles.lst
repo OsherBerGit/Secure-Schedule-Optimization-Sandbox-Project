@@ -1,6 +1,11 @@
 C:\Users\Osher\Documents\GitHub\Secure-Schedule-Optimization-Sandbox-Project\side-backend\src\main\java\com\example\sidebackend\controller\AlgoController.java
+C:\Users\Osher\Documents\GitHub\Secure-Schedule-Optimization-Sandbox-Project\side-backend\src\main\java\com\example\sidebackend\dto\SchedulingConfigurationDto.java
 C:\Users\Osher\Documents\GitHub\Secure-Schedule-Optimization-Sandbox-Project\side-backend\src\main\java\com\example\sidebackend\dto\SchedulingRequestDto.java
 C:\Users\Osher\Documents\GitHub\Secure-Schedule-Optimization-Sandbox-Project\side-backend\src\main\java\com\example\sidebackend\dto\SchedulingResponseDto.java
+C:\Users\Osher\Documents\GitHub\Secure-Schedule-Optimization-Sandbox-Project\side-backend\src\main\java\com\example\sidebackend\dto\TaskDto.java
+C:\Users\Osher\Documents\GitHub\Secure-Schedule-Optimization-Sandbox-Project\side-backend\src\main\java\com\example\sidebackend\dto\UserDto.java
+C:\Users\Osher\Documents\GitHub\Secure-Schedule-Optimization-Sandbox-Project\side-backend\src\main\java\com\example\sidebackend\dto\VacationDto.java
 C:\Users\Osher\Documents\GitHub\Secure-Schedule-Optimization-Sandbox-Project\side-backend\src\main\java\com\example\sidebackend\exception\GlobalExceptionHandler.java
+C:\Users\Osher\Documents\GitHub\Secure-Schedule-Optimization-Sandbox-Project\side-backend\src\main\java\com\example\sidebackend\service\AlgoMapper.java
 C:\Users\Osher\Documents\GitHub\Secure-Schedule-Optimization-Sandbox-Project\side-backend\src\main\java\com\example\sidebackend\service\AlgoService.java
 C:\Users\Osher\Documents\GitHub\Secure-Schedule-Optimization-Sandbox-Project\side-backend\src\main\java\com\example\sidebackend\SideBackendApplication.java

@@ -1,47 +1,85 @@
 package com.example.algorithm.model;
 
-import lombok.*;
-
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 /**
  * Represents a Task as seen by the scheduling algorithm.
- * Populated from the database via DatabaseReader.
+ *
+ * <p>Zero-Trust compliant: no titles, descriptions, or status strings —
+ * only scheduling-relevant numeric and temporal data.
+ * Pure Java: no Spring, Jackson, or Lombok annotations.</p>
+ *
+ * <p>Immutable by design — fields are set once via the constructor and exposed
+ * through read-only getters to prevent accidental mutation inside the engine.</p>
+ *
+ * <p>Field alignment with {@code TaskDto}:</p>
+ * <ul>
+ *   <li>{@code id}                — direct copy from {@code TaskDto.id}</li>
+ *   <li>{@code durationHours}     — direct copy from {@code TaskDto.durationHours}</li>
+ *   <li>{@code deadline}          — direct copy from {@code TaskDto.deadline}</li>
+ *   <li>{@code priorityLevel}     — direct copy from {@code TaskDto.priorityLevel} (defaults to 0)</li>
+ *   <li>{@code requiredRoles}     — {@code TaskDto.requiredRoleIds} converted to {@code Set<String>}</li>
+ *   <li>{@code predecessorTaskIds}— direct copy from {@code TaskDto.predecessorTaskIds}</li>
+ * </ul>
  */
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@ToString
-public class AlgoTask {
+public final class AlgoTask {
 
-    private Long id;
-    private String title;
-    private String description;
-    private Integer durationHours;
-    private LocalDateTime deadline;
-    private LocalDateTime startTime;
+    private final Long id;
+    private final Integer durationHours;
+    private final LocalDateTime deadline;
+    private final Integer priorityLevel;
 
-    /** Priority name (e.g. "HIGH", "MEDIUM", "LOW") */
-    private String priority;
-    private Integer priorityLevel;
+    /**
+     * Opaque role identifiers required to perform this task.
+     * Stored as Strings of role IDs (e.g. "42") for compatibility with AlgoUser.roles.
+     */
+    private final Set<String> requiredRoles;
 
-    /** Status name (e.g. "PENDING", "IN_PROGRESS", "DONE") */
-    private String status;
+    /** IDs of tasks that must complete before this task can start. */
+    private final List<Long> predecessorTaskIds;
 
-    /** The employee assigned to this task (null if unassigned) */
-    private AlgoUser assignedEmployee;
+    public AlgoTask(Long id,
+                    Integer durationHours,
+                    LocalDateTime deadline,
+                    Integer priorityLevel,
+                    Set<String> requiredRoles,
+                    List<Long> predecessorTaskIds) {
+        this.id                 = id;
+        this.durationHours      = durationHours;
+        this.deadline           = deadline;
+        this.priorityLevel      = priorityLevel != null ? priorityLevel : 0;
+        this.requiredRoles      = requiredRoles != null
+                ? Collections.unmodifiableSet(requiredRoles)
+                : Collections.emptySet();
+        this.predecessorTaskIds = predecessorTaskIds != null
+                ? Collections.unmodifiableList(predecessorTaskIds)
+                : Collections.emptyList();
+    }
 
-    /** Roles required to perform this task */
-    private Set<String> requiredRoles;
+    public Long getId()                      { return id; }
+    public Integer getDurationHours()        { return durationHours; }
+    public LocalDateTime getDeadline()       { return deadline; }
+    public Integer getPriorityLevel()        { return priorityLevel; }
+    public Set<String> getRequiredRoles()    { return requiredRoles; }
+    public List<Long> getPredecessorTaskIds(){ return predecessorTaskIds; }
 
-    /** IDs of tasks that must finish before this task can start */
-    private List<Long> predecessorTaskIds;
+    /**
+     * Convenience alias kept for backward compatibility with BaseSchedulingStrategy,
+     * which checks status to skip COMPLETED/CANCELLED tasks.
+     * Since DTOs never carry status, this always returns null (engine will not skip it).
+     */
+    public String getStatus() { return null; }
 
-    /** IDs of tasks that depend on this task */
-    private List<Long> successorTaskIds;
+    @Override
+    public String toString() {
+        return "AlgoTask{id=" + id
+                + ", durationHours=" + durationHours
+                + ", deadline=" + deadline
+                + ", priorityLevel=" + priorityLevel
+                + ", requiredRoles=" + requiredRoles
+                + ", predecessorTaskIds=" + predecessorTaskIds + '}';
+    }
 }
-

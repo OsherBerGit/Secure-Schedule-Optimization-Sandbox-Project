@@ -4,6 +4,7 @@ import com.example.algorithm.constraint.AvailabilityConstraint;
 import com.example.algorithm.constraint.ConstraintChecker;
 import com.example.algorithm.constraint.ConstraintContext;
 import com.example.algorithm.constraint.ConstraintResult;
+import com.example.algorithm.constraint.DeadlineConstraint;
 import com.example.algorithm.constraint.PrecedenceConstraint;
 import com.example.algorithm.model.AlgoTask;
 import com.example.algorithm.model.AlgoUser;
@@ -27,6 +28,7 @@ abstract class BaseSchedulingStrategy implements SchedulingStrategy {
      */
     protected final List<ConstraintChecker> constraints = List.of(
             new PrecedenceConstraint(),
+            new DeadlineConstraint(),
             new AvailabilityConstraint()
     );
 

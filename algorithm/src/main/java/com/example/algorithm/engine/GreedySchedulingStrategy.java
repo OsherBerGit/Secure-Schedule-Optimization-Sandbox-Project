@@ -5,34 +5,37 @@ import com.example.algorithm.db.ScheduleData;
 import com.example.algorithm.model.AlgoTask;
 import com.example.algorithm.model.AlgoUser;
 import com.example.algorithm.model.TaskAssignment;
+
 import java.time.LocalDateTime;
 import java.util.*;
 
 /**
  * Greedy Scheduling Strategy.
  *
- * Processes tasks in priority order (CRITICAL first, earliest deadline as tiebreak).
- * For each task, picks the least-loaded eligible employee who passes ALL constraint checks:
- *   - Has a required role for the task          (eligibility pre-filter)
- *   - Is not on vacation during the task window (eligibility pre-filter + AvailabilityConstraint)
- *   - Has not exceeded their maxTasks limit     (eligibility pre-filter + AvailabilityConstraint)
- *   - All predecessor tasks have finished       (PrecedenceConstraint)
+ * <p>Processes tasks in priority order (highest priority first, earliest deadline as tiebreak).
+ * For each task, picks the least-loaded eligible employee who passes ALL constraint checks:</p>
+ * <ul>
+ *   <li>Has a required role for the task          (eligibility pre-filter)</li>
+ *   <li>Is not on vacation during the task window (eligibility pre-filter + AvailabilityConstraint)</li>
+ *   <li>Has not exceeded their maxTasks limit     (eligibility pre-filter + AvailabilityConstraint)</li>
+ *   <li>All predecessor tasks have finished       (PrecedenceConstraint)</li>
+ * </ul>
  *
- * If the best candidate fails the constraint pipeline, the next least-loaded
+ * <p>If the best candidate fails the constraint pipeline, the next least-loaded
  * candidate is tried. If no candidate passes, the task is recorded as unassigned
- * with the constraint violation reason.
+ * with the constraint violation reason.</p>
  */
 public class GreedySchedulingStrategy extends BaseSchedulingStrategy {
 
     @Override
     public String getName() {
-        return "Greedy (Best-Fit by Priority)";
+        return "GREEDY";
     }
 
     @Override
     public List<TaskAssignment> schedule(ScheduleData data) {
-        List<TaskAssignment> assignments = new ArrayList<>();
-        Map<Long, Integer>       assignedCount   = new HashMap<>();
+        List<TaskAssignment>     assignments   = new ArrayList<>();
+        Map<Long, Integer>       assignedCount = new HashMap<>();
         Map<Long, LocalDateTime> completionTimes = new HashMap<>();
 
         List<AlgoTask> sortedTasks = getSortedUnassignedTasks(data.tasks());
@@ -44,6 +47,9 @@ public class GreedySchedulingStrategy extends BaseSchedulingStrategy {
             // Pre-filter: role, vacation overlap, maxTasks limit
             List<AlgoUser> eligible = getEligibleEmployees(
                     task, data.users(), assignedCount, start, end);
+
+            // Sort eligible workers by current workload (least-loaded first)
+            eligible.sort(Comparator.comparingInt(u -> assignedCount.getOrDefault(u.getId(), 0)));
 
             if (eligible.isEmpty()) {
                 assignments.add(TaskAssignment.builder()
@@ -57,26 +63,21 @@ public class GreedySchedulingStrategy extends BaseSchedulingStrategy {
                 continue;
             }
 
-            // Sort eligible candidates by current load (least-loaded first)
-            eligible.sort(Comparator.comparingInt(
-                    u -> assignedCount.getOrDefault(u.getId(), 0)));
-
-            // Constraint pipeline: pick first candidate that passes all constraints
-            AlgoUser best             = null;
+            // Constraint pipeline: iterate least-loaded first, pick the first that passes
+            AlgoUser picked   = null;
             ConstraintResult lastFail = null;
 
             for (AlgoUser candidate : eligible) {
                 ConstraintResult result = runConstraints(
                         task, candidate, start, end, completionTimes, assignedCount);
                 if (result.isValid()) {
-                    best = candidate;
+                    picked = candidate;
                     break;
                 }
-                lastFail = result; // keep last failure reason for reporting
+                lastFail = result;
             }
 
-            if (best == null) {
-                // All candidates failed the constraint pipeline
+            if (picked == null) {
                 String reason = lastFail != null
                         ? "Constraint violation: " + lastFail.getReason()
                         : "All candidates failed constraint checks";
@@ -91,17 +92,15 @@ public class GreedySchedulingStrategy extends BaseSchedulingStrategy {
                 continue;
             }
 
-            int prevCount = assignedCount.getOrDefault(best.getId(), 0);
-            assignedCount.merge(best.getId(), 1, Integer::sum);
-            completionTimes.put(task.getId(), end);
+            assignedCount.merge(picked.getId(), 1, Integer::sum);
+            completionTimes.put(task.getId(), end); // ← required: lets dependent tasks resolve this predecessor
 
             assignments.add(TaskAssignment.builder()
                     .task(task)
-                    .assignedEmployee(best)
+                    .assignedEmployee(picked)
                     .scheduledStart(start)
                     .scheduledEnd(end)
-                    .reason(String.format(
-                            "Greedy: least loaded (%d task(s) before this)", prevCount))
+                    .reason("Greedy: least-loaded eligible employee")
                     .build());
         }
 

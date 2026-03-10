@@ -1,10 +1,9 @@
-com\example\sidebackend\dto\SchedulingRequestDto$UserDto.class
-com\example\sidebackend\dto\SchedulingResponseDto$AssignmentDto.class
 com\example\sidebackend\exception\GlobalExceptionHandler.class
-com\example\sidebackend\dto\SchedulingRequestDto$TaskDto.class
-com\example\sidebackend\controller\AlgoController.class
-com\example\sidebackend\dto\SchedulingRequestDto$VacationDto.class
 com\example\sidebackend\dto\SchedulingResponseDto.class
-com\example\sidebackend\service\AlgoService.class
 com\example\sidebackend\dto\SchedulingRequestDto.class
+com\example\sidebackend\service\AlgoMapper.class
+com\example\sidebackend\dto\SchedulingResponseDto$AssignmentDto.class
+com\example\sidebackend\controller\AlgoController.class
+com\example\sidebackend\service\AlgoMapper$MappedRequest.class
+com\example\sidebackend\service\AlgoService.class
 com\example\sidebackend\SideBackendApplication.class
