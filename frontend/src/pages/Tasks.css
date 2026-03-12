@@ -70,6 +70,25 @@
 .status-in-progress   { background: #e3f2fd; color: #1565c0; }
 .status-completed     { background: #e8f5e9; color: #2e7d32; }
 .status-cancelled     { background: #fce4ec; color: #c62828; }
+.status-on-hold       { background: #f3e5f5; color: #6a1b9a; }
+
+/* Department column */
+.dept-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+}
+
+.dept-general {
+    color: #bbb;
+    font-style: italic;
+    font-size: 0.85rem;
+}
 
 /* Priority colors */
 .priority-low      { background: #e8f5e9; color: #2e7d32; }

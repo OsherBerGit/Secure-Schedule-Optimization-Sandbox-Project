@@ -7,6 +7,7 @@ import type {
   User,
   CreateUserRequest,
   UpdateUserRequest,
+  Department,
   Task,
   CreateTaskRequest,
   UpdateTaskRequest,
@@ -18,6 +19,7 @@ import type {
   Settlement,
   CreateSettlementRequest,
   Status,
+  SettlementStatus,
   Priority,
   ConstraintType,
   CreateConstraintTypeRequest,
@@ -26,6 +28,7 @@ import type {
   CreateTaskConstraintRequest,
   ScheduleStrategy,
   ScheduleResult,
+  SaveScheduleRequest,
 } from '../types';
 
 // Auth API
@@ -54,6 +57,7 @@ export const userApi = {
   create: (data: CreateUserRequest) =>
     axiosInstance.post<User>('/users', data),
 
+  // Backend PUT /users/{id} accepts UserDto — forward the full shape
   update: (id: number, data: UpdateUserRequest) =>
     axiosInstance.put<User>(`/users/${id}`, data),
 
@@ -65,6 +69,24 @@ export const userApi = {
 
   getByEmail: (email: string) =>
     axiosInstance.get<User>(`/users/email/${email}`),
+};
+
+// Department API
+export const departmentApi = {
+  getAll: () =>
+    axiosInstance.get<Department[]>('/departments'),
+
+  getById: (id: number) =>
+    axiosInstance.get<Department>(`/departments/${id}`),
+
+  create: (name: string) =>
+    axiosInstance.post<Department>('/departments', { name }),
+
+  update: (id: number, name: string) =>
+    axiosInstance.put<Department>(`/departments/${id}`, { name }),
+
+  delete: (id: number) =>
+    axiosInstance.delete(`/departments/${id}`),
 };
 
 // Task API
@@ -101,6 +123,12 @@ export const statusApi = {
     axiosInstance.put<Status>(`/statuses/${id}`, data),
   delete: (id: number) =>
     axiosInstance.delete(`/statuses/${id}`),
+};
+
+// Settlement Status API — read-only, values are system-seeded
+export const settlementStatusApi = {
+  getAll: () =>
+    axiosInstance.get<SettlementStatus[]>('/settlement-statuses'),
 };
 
 // Priority API
@@ -215,10 +243,20 @@ export const vacationApi = {
 
 // Schedule API — calls main-backend which forwards to the algorithm service
 export const scheduleApi = {
-  /** Triggers the scheduling algorithm and persists results to DB.
-   *  @param strategy "GREEDY" (default) | "ROUND_ROBIN"
+  /** PHASE 1: Generates a draft schedule preview. Nothing is saved to the DB.
+   *  @param strategy      "GREEDY" (default) | "ROUND_ROBIN" | "MEMETIC"
+   *  @param departmentId  Optional ADMIN-only scope — omit for global scheduling
    */
-  run: (strategy: ScheduleStrategy = 'GREEDY') =>
-    axiosInstance.post<ScheduleResult>(`/schedule/run?strategy=${strategy}`),
+  run: (strategy: ScheduleStrategy = 'GREEDY', departmentId?: number | null) => {
+    const params = new URLSearchParams({ strategy });
+    if (departmentId != null) params.append('departmentId', String(departmentId));
+    return axiosInstance.post<ScheduleResult>(`/schedule/run?${params.toString()}`);
+  },
+
+  /** PHASE 2: Persists the admin-approved draft assignments to the DB.
+   *  Tasks are marked SCHEDULED and Settlements are created as ASSIGNED.
+   */
+  save: (data: SaveScheduleRequest) =>
+    axiosInstance.post<void>('/schedule/save', data),
 };
 

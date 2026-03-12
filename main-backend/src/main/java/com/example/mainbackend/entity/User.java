@@ -41,8 +41,20 @@ public class User {
     private String phoneNumber;
     private Double salary;
     private String address;
-    private Integer dailyAvailabilityHours;
     private Integer maxTasks;
+
+    /**
+     * The department this user belongs to.
+     * Nullable — users not yet assigned to a department (e.g. a global admin) have no department.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
+
+    /** Weekly availability windows (shifts) that define when this worker can be scheduled. */
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<WorkerAvailability> availabilities = new ArrayList<>();
 
     // Relationship Roles - EAGER is acceptable for roles (usually small set)
     // Ensure that a user can have a role only once, the user_id and role_id combination must be unique
@@ -66,3 +78,5 @@ public class User {
     @Builder.Default
     private List<Vacation> vacations = new ArrayList<>();
 }
+
+

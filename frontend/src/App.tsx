@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.tsx';
 import ProtectedRoute from './components/ProtectedRoute';
+import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Unauthorized from './pages/Unauthorized';
@@ -14,6 +15,7 @@ import Priorities from './pages/Priorities';
 import Statuses from './pages/Statuses';
 import ConstraintTypes from './pages/ConstraintTypes';
 import TaskConstraints from './pages/TaskConstraints';
+import Departments from './pages/Departments';
 
 import './App.css';
 
@@ -21,7 +23,8 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <Routes>
+        <Layout>
+          <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
@@ -102,6 +105,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/departments"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <Departments />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Task constraints — visible to all authenticated users, create/delete is ADMIN only (enforced in component) */}
           <Route
@@ -119,6 +130,7 @@ function App() {
           {/* Catch-all - redirect to dashboard */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
+        </Layout>
       </Router>
     </AuthProvider>
   );

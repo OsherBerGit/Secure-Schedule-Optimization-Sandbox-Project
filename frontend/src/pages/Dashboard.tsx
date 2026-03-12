@@ -10,6 +10,13 @@ const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const isAdmin = user?.role === 'ADMIN' || user?.roles?.includes('ADMIN');
+  // MANAGER is a future role — check via the roles array to stay type-safe
+  const isManager = user?.roles?.includes('MANAGER') ?? false;
+
+  // Build a context-aware greeting subtitle
+  const greetingSuffix = isManager && user?.departmentName
+    ? ` — ${user.departmentName} Department`
+    : '';
 
   const [mySettlements, setMySettlements] = useState<Settlement[]>([]);
   const [settlementsLoading, setSettlementsLoading] = useState(false);
@@ -58,7 +65,7 @@ const Dashboard: React.FC = () => {
 
       <main className="dashboard-main">
         <div className="welcome-section">
-          <h2>Welcome back, {user?.firstName}!</h2>
+          <h2>Welcome back, {user?.firstName}{greetingSuffix}!</h2>
           <p>Role: {user?.role}</p>
           <p>Email: {user?.email}</p>
         </div>
@@ -101,7 +108,7 @@ const Dashboard: React.FC = () => {
                           {!isCompleted && (
                             <button className="btn-complete-dash" onClick={() => handleComplete(s.id)}>
                               <CheckCircle size={15} />
-                              <span>סמן כבוצע</span>
+                            <span>Mark as Done</span>
                             </button>
                           )}
                           {isCompleted && <span className="done-text">✓ Done</span>}
@@ -116,6 +123,12 @@ const Dashboard: React.FC = () => {
         )}
 
         <div className="dashboard-grid">
+          {/* ── Hero card — Schedule is the primary action of the system ── */}
+          <div className="dashboard-card hero-card" onClick={() => navigate('/schedule')}>
+            <h3>📅 Schedule</h3>
+            <p>Run the scheduling algorithm, review Gantt charts, and approve assignments</p>
+          </div>
+
           {isAdmin && (
             <>
               <div className="dashboard-card" onClick={() => navigate('/users')}>
@@ -123,16 +136,20 @@ const Dashboard: React.FC = () => {
                 <p>Manage system users</p>
               </div>
               <div className="dashboard-card" onClick={() => navigate('/priorities')}>
-                <h3>⭐ Priorities</h3>
+                <h3>⭐ Task Priorities</h3>
                 <p>Manage task priorities</p>
               </div>
               <div className="dashboard-card" onClick={() => navigate('/statuses')}>
-                <h3>📊 Statuses</h3>
-                <p>Manage task statuses</p>
+                <h3>📊 Task Statuses</h3>
+                <p>Manage task &amp; assignment statuses</p>
               </div>
               <div className="dashboard-card" onClick={() => navigate('/constraint-types')}>
                 <h3>🔗 Constraint Types</h3>
                 <p>Manage constraint types</p>
+              </div>
+              <div className="dashboard-card" onClick={() => navigate('/departments')}>
+                <h3>🏢 Departments</h3>
+                <p>Manage company departments</p>
               </div>
             </>
           )}
@@ -151,10 +168,6 @@ const Dashboard: React.FC = () => {
           <div className="dashboard-card" onClick={() => navigate('/settlements')}>
             <h3>💰 Settlements</h3>
             <p>View work settlements</p>
-          </div>
-          <div className="dashboard-card" onClick={() => navigate('/schedule')}>
-            <h3>📅 Schedule</h3>
-            <p>Run and view task scheduling</p>
           </div>
         </div>
       </main>

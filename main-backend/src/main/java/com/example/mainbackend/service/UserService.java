@@ -2,9 +2,13 @@ package com.example.mainbackend.service;
 
 import com.example.mainbackend.dto.user.CreateUserRequest;
 import com.example.mainbackend.dto.user.UserDto;
+import com.example.mainbackend.dto.user.WorkerAvailabilityDto;
+import com.example.mainbackend.entity.Department;
 import com.example.mainbackend.entity.Role;
 import com.example.mainbackend.entity.User;
+import com.example.mainbackend.entity.WorkerAvailability;
 import com.example.mainbackend.mapper.UserMapper;
+import com.example.mainbackend.repository.DepartmentRepository;
 import com.example.mainbackend.repository.RoleRepository;
 import com.example.mainbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +30,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
+    private final DepartmentRepository departmentRepository;
 
     // Create
     @Transactional
@@ -51,6 +56,25 @@ public class UserService {
             roleRepository.findByRoleName("WORKER").ifPresent(roles::add);
 
         user.setRoles(roles);
+
+        // Set department by name if provided
+        if (request.getDepartmentName() != null && !request.getDepartmentName().isBlank()) {
+            departmentRepository.findByName(request.getDepartmentName())
+                    .ifPresent(user::setDepartment);
+        }
+
+        // Set availabilities if provided
+        if (request.getAvailabilities() != null) {
+            for (WorkerAvailabilityDto dto : request.getAvailabilities()) {
+                WorkerAvailability av = WorkerAvailability.builder()
+                        .dayOfWeek(dto.getDayOfWeek())
+                        .startTime(dto.getStartTime())
+                        .endTime(dto.getEndTime())
+                        .user(user)
+                        .build();
+                user.getAvailabilities().add(av);
+            }
+        }
 
         User savedUser = userRepository.save(user);
         return userMapper.toDto(savedUser);
@@ -99,11 +123,12 @@ public class UserService {
         return userRepository.findById(id)
                 .map(existingUser -> {
                     // Check if nationalId is taken by another user
-                    userRepository.findByNationalId(userDto.getNationalId())
-                            .filter(user -> !user.getId().equals(id))
-                            .ifPresent(user -> {
-                                throw new IllegalArgumentException("National ID already exists: " + userDto.getNationalId());
-                            });
+                    if (userDto.getNationalId() != null)
+                        userRepository.findByNationalId(userDto.getNationalId())
+                                .filter(user -> !user.getId().equals(id))
+                                .ifPresent(user -> {
+                                    throw new IllegalArgumentException("National ID already exists: " + userDto.getNationalId());
+                                });
 
                     // Check if email is taken by another user (if provided)
                     if (userDto.getEmail() != null)
@@ -113,8 +138,42 @@ public class UserService {
                                     throw new IllegalArgumentException("Email already exists: " + userDto.getEmail());
                                 });
 
-                    // Use mapper to update entity fields
+                    // Use mapper to update basic entity fields
                     userMapper.updateEntityFromDto(existingUser, userDto);
+
+                    // Update department by name
+                    if (userDto.getDepartmentName() != null && !userDto.getDepartmentName().isBlank()) {
+                        Department dept = departmentRepository.findByName(userDto.getDepartmentName())
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                        "Department not found: " + userDto.getDepartmentName()));
+                        existingUser.setDepartment(dept);
+                    } else {
+                        existingUser.setDepartment(null);
+                    }
+
+                    // Update role if provided
+                    if (userDto.getRoles() != null && !userDto.getRoles().isEmpty()) {
+                        String roleName = userDto.getRoles().iterator().next().toUpperCase();
+                        Set<Role> roles = new HashSet<>();
+                        roleRepository.findByRoleName(roleName).ifPresent(roles::add);
+                        if ("ADMIN".equals(roleName))
+                            roleRepository.findByRoleName("WORKER").ifPresent(roles::add);
+                        existingUser.setRoles(roles);
+                    }
+
+                    // Replace availabilities
+                    if (userDto.getAvailabilities() != null) {
+                        existingUser.getAvailabilities().clear();
+                        for (WorkerAvailabilityDto dto : userDto.getAvailabilities()) {
+                            WorkerAvailability av = WorkerAvailability.builder()
+                                    .dayOfWeek(dto.getDayOfWeek())
+                                    .startTime(dto.getStartTime())
+                                    .endTime(dto.getEndTime())
+                                    .user(existingUser)
+                                    .build();
+                            existingUser.getAvailabilities().add(av);
+                        }
+                    }
 
                     User updatedUser = userRepository.save(existingUser);
                     return userMapper.toDto(updatedUser);

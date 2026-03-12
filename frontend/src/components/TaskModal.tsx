@@ -16,7 +16,7 @@ const TaskModal = ({ task, statuses, priorities, onSubmit, onClose }: TaskModalP
     const [deadline, setDeadline] = useState(task?.deadline ? task.deadline.substring(0, 16) : '')
     const [durationHours, setDurationHours] = useState<number | ''>(task?.durationHours ?? '')
     const [priorityId, setPriorityId] = useState<number>(task?.priorityId ?? (priorities[0]?.id ?? 0))
-    const [statusId, setStatusId] = useState<number>(task?.statusId ?? (statuses[0]?.id ?? 0))
+    const [statusId, setStatusId] = useState<number>(task?.taskStatusId ?? (statuses[0]?.id ?? 0))
 
     function handleSubmit(e: FormEvent) {
         e.preventDefault()
@@ -26,7 +26,6 @@ const TaskModal = ({ task, statuses, priorities, onSubmit, onClose }: TaskModalP
             deadline: deadline || undefined,
             durationHours: durationHours !== '' ? durationHours : undefined,
             priorityId,
-            statusId,
         }
         onSubmit(data)
     }

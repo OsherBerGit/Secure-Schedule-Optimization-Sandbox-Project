@@ -8,6 +8,7 @@ import './Users.css'
 const Users = () => {
     const { user: currentUser } = useAuth()
     const [users, setUsers] = useState<User[]>([])
+    const [search, setSearch] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [showModal, setShowModal] = useState(false)
@@ -81,6 +82,16 @@ const Users = () => {
 
             {error && <div className="error-message">{error}</div>}
 
+            <div className="users-search-bar">
+                <input
+                    type="text"
+                    className="users-search-input"
+                    placeholder="🔍 Search by name, role, or department…"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                />
+            </div>
+
             {isLoading ? (
                 <div className="loading">Loading...</div>
             ) : (
@@ -93,27 +104,41 @@ const Users = () => {
                             <th>Email</th>
                             <th>Phone</th>
                             <th>Role</th>
+                            <th>Department</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map(user => {
-                            const role = user.role ?? (user.roles?.includes('ADMIN') ? 'ADMIN' : 'WORKER')
-                            return (
-                                <tr key={user.id}>
-                                    <td>{user.nationalId}</td>
-                                    <td>{user.firstName ?? '—'}</td>
-                                    <td>{user.lastName ?? '—'}</td>
-                                    <td>{user.email ?? '—'}</td>
-                                    <td>{user.phoneNumber ?? '—'}</td>
-                                    <td><span className={`role-badge role-${role.toLowerCase()}`}>{role}</span></td>
-                                    <td>
-                                        <button className="btn-edit" onClick={() => handleEdit(user)}>Edit</button>
-                                        <button className="btn-delete" onClick={() => handleDelete(user.id)}>Delete</button>
-                                    </td>
-                                </tr>
-                            )
-                        })}
+                        {users
+                            .filter(u => {
+                                if (!search.trim()) return true
+                                const q = search.toLowerCase()
+                                const role = u.role ?? (u.roles?.includes('ADMIN') ? 'ADMIN' : 'WORKER')
+                                return (
+                                    (u.firstName ?? '').toLowerCase().includes(q) ||
+                                    (u.lastName ?? '').toLowerCase().includes(q) ||
+                                    role.toLowerCase().includes(q) ||
+                                    (u.departmentName ?? '').toLowerCase().includes(q)
+                                )
+                            })
+                            .map(user => {
+                                const role = user.role ?? (user.roles?.includes('ADMIN') ? 'ADMIN' : 'WORKER')
+                                return (
+                                    <tr key={user.id}>
+                                        <td>{user.nationalId}</td>
+                                        <td>{user.firstName ?? '—'}</td>
+                                        <td>{user.lastName ?? '—'}</td>
+                                        <td>{user.email ?? '—'}</td>
+                                        <td>{user.phoneNumber ?? '—'}</td>
+                                        <td><span className={`role-badge role-${role.toLowerCase()}`}>{role}</span></td>
+                                        <td>{user.departmentName ?? <span className="dept-unassigned">—</span>}</td>
+                                        <td>
+                                            <button className="btn-edit" onClick={() => handleEdit(user)}>Edit</button>
+                                            <button className="btn-delete" onClick={() => handleDelete(user.id)}>Delete</button>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                     </tbody>
                 </table>
             )}

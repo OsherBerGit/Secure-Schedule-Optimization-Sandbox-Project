@@ -3,6 +3,7 @@ package com.example.mainbackend.dto.user;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -18,8 +19,13 @@ public class UserDto {
 
     private Double salary;
     private String address;
-    private Integer dailyAvailabilityHours;
     private Integer maxTasks;
+
+    /** Weekly availability windows (shifts) for this worker. */
+    private List<WorkerAvailabilityDto> availabilities;
+
+    /** Name of the department this user belongs to (null if unassigned). */
+    private String departmentName;
 
     // Roles as role names (not full entity to avoid circular references)
     private Set<String> roles;

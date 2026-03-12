@@ -6,6 +6,7 @@ import com.example.algorithm.constraint.ConstraintContext;
 import com.example.algorithm.constraint.ConstraintResult;
 import com.example.algorithm.constraint.DeadlineConstraint;
 import com.example.algorithm.constraint.PrecedenceConstraint;
+import com.example.algorithm.constraint.ShiftConstraint;
 import com.example.algorithm.model.AlgoTask;
 import com.example.algorithm.model.AlgoUser;
 import com.example.algorithm.model.AlgoVacation;
@@ -29,7 +30,8 @@ abstract class BaseSchedulingStrategy implements SchedulingStrategy {
     protected final List<ConstraintChecker> constraints = List.of(
             new PrecedenceConstraint(),
             new DeadlineConstraint(),
-            new AvailabilityConstraint()
+            new AvailabilityConstraint(),
+            new ShiftConstraint()
     );
 
     // -------------------------------------------------------------------------
@@ -79,8 +81,8 @@ abstract class BaseSchedulingStrategy implements SchedulingStrategy {
      * Calculates the earliest start time for a task.
      * Respects predecessor task end times and defaults to now if no dependencies.
      *
-     * @param task        the task to schedule
-     * @param assignments map of taskId -> already-computed TaskAssignment (for dependency lookup)
+     * @param task             the task to schedule
+     * @param completionTimes  map of taskId → computed end time for already-scheduled tasks
      */
     protected LocalDateTime calcStartTime(AlgoTask task, Map<Long, LocalDateTime> completionTimes) {
         LocalDateTime earliest = LocalDateTime.now();

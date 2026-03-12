@@ -5,6 +5,18 @@ import { useAuth } from '../context/useAuth'
 import TaskModal from '../components/TaskModal'
 import './Tasks.css'
 
+/** Map any status name string → a stable CSS modifier for color-coding. */
+function statusClass(name: string | null): string {
+    if (!name) return ''
+    const n = name.toLowerCase().replace(/[\s_]+/g, '-')
+    if (n.includes('complet') || n.includes('done') || n.includes('closed'))  return 'status-completed'
+    if (n.includes('progress') || n.includes('active') || n.includes('open')) return 'status-in-progress'
+    if (n.includes('cancel') || n.includes('reject') || n.includes('fail'))   return 'status-cancelled'
+    if (n.includes('hold') || n.includes('block') || n.includes('wait'))      return 'status-on-hold'
+    if (n.includes('pend') || n.includes('new') || n.includes('todo'))        return 'status-pending'
+    return `status-${n}`
+}
+
 const Tasks = () => {
     const { user: currentUser } = useAuth()
     const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.roles?.includes('ADMIN')
@@ -80,6 +92,7 @@ const Tasks = () => {
                             <th>Title</th>
                             <th>Status</th>
                             <th>Priority</th>
+                            <th>Department</th>
                             <th>Deadline</th>
                             <th>Duration</th>
                             <th>Start Time</th>
@@ -89,21 +102,33 @@ const Tasks = () => {
                     <tbody>
                         {tasks.length === 0 ? (
                             <tr>
-                                <td colSpan={isAdmin ? 7 : 6} className="no-data">No tasks found</td>
+                                <td colSpan={isAdmin ? 8 : 7} className="no-data">No tasks found</td>
                             </tr>
                         ) : (
                             tasks.map(task => (
                                 <tr key={task.id}>
                                     <td className="task-title">{task.title}</td>
                                     <td>
-                                        <span className={`status-badge status-${task.statusName?.toLowerCase().replace(' ', '-')}`}>
-                                            {task.statusName ?? '—'}
+                                        <span className={`status-badge ${statusClass(task.taskStatusName)}`}
+                                              style={
+                                                  // Fall back to the API-supplied colour code if present
+                                                  task.taskStatusColorCode
+                                                      ? { background: task.taskStatusColorCode + '22', color: task.taskStatusColorCode, border: `1px solid ${task.taskStatusColorCode}55` }
+                                                      : undefined
+                                              }
+                                        >
+                                            {task.taskStatusName ?? '—'}
                                         </span>
                                     </td>
                                     <td>
                                         <span className={`priority-badge priority-${task.priorityName?.toLowerCase()}`}>
                                             {task.priorityName ?? '—'}
                                         </span>
+                                    </td>
+                                    <td>
+                                        {task.departmentName
+                                            ? <span className="dept-badge">{task.departmentName}</span>
+                                            : <span className="dept-general">General / All</span>}
                                     </td>
                                     <td>{task.deadline ? new Date(task.deadline).toLocaleDateString() : '—'}</td>
                                     <td>{task.durationHours != null ? `${task.durationHours}h` : '—'}</td>
@@ -135,3 +160,6 @@ const Tasks = () => {
 }
 
 export default Tasks
+
+
+

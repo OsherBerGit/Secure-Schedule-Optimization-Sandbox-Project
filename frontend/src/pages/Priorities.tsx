@@ -62,7 +62,7 @@ const Priorities = () => {
     return (
         <div className="lookup-container">
             <div className="lookup-header">
-                <h1>⭐ Priorities</h1>
+                <h1>⭐ Task Priorities</h1>
             </div>
 
             {error && <div className="error-message">{error}</div>}

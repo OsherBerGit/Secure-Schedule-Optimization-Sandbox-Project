@@ -4,6 +4,7 @@ import com.example.algorithm.model.AlgoSchedulingConfiguration;
 import com.example.algorithm.model.AlgoTask;
 import com.example.algorithm.model.AlgoUser;
 import com.example.algorithm.model.AlgoVacation;
+import com.example.algorithm.model.AlgoWorkerAvailability;
 import com.example.sidebackend.dto.SchedulingConfigurationDto;
 import com.example.sidebackend.dto.SchedulingRequestDto;
 import com.example.sidebackend.dto.TaskDto;
@@ -80,19 +81,44 @@ public final class AlgoMapper {
         return result;
     }
 
+    // ── WorkerAvailabilityDto → AlgoWorkerAvailability ────────────────────────
+
+    /**
+     * Converts a single inlined {@link UserDto.WorkerAvailabilityDto} to an
+     * {@link AlgoWorkerAvailability} model.
+     */
+    public static AlgoWorkerAvailability toModel(UserDto.WorkerAvailabilityDto dto) {
+        return new AlgoWorkerAvailability(dto.dayOfWeek(), dto.startTime(), dto.endTime());
+    }
+
+    /**
+     * Converts a (possibly null) list of availability windows.
+     * Returns an empty list when the input is null or empty.
+     */
+    public static List<AlgoWorkerAvailability> toAvailabilityModels(
+            List<UserDto.WorkerAvailabilityDto> dtos) {
+        if (dtos == null || dtos.isEmpty()) return Collections.emptyList();
+        List<AlgoWorkerAvailability> result = new ArrayList<>(dtos.size());
+        for (UserDto.WorkerAvailabilityDto dto : dtos)
+            result.add(toModel(dto));
+        return result;
+    }
+
     // ── UserDto → AlgoUser ────────────────────────────────────────────────────
 
     /**
      * Converts a single {@link UserDto} to an {@link AlgoUser} model.
      * Vacations are read directly from {@code dto.vacations()}.
+     * Availability windows are mapped from {@code dto.availabilities()}.
      *
      * @param dto source DTO (must not be null)
      * @return immutable {@link AlgoUser}
      */
     public static AlgoUser toModel(UserDto dto) {
-        Set<String> roles = roleIdsToStrings(dto.roleIds());
+        Set<String> roles          = roleIdsToStrings(dto.roleIds());
         List<AlgoVacation> vacations = toVacationModels(dto.vacations(), dto.id());
-        return new AlgoUser(dto.id(), dto.dailyAvailabilityHours(), dto.maxTasks(), roles, vacations);
+        List<AlgoWorkerAvailability> availabilities = toAvailabilityModels(dto.availabilities());
+        return new AlgoUser(dto.id(), availabilities, dto.maxTasks(), roles, vacations);
     }
 
     /**

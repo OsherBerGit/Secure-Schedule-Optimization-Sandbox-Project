@@ -90,7 +90,7 @@ public class TaskService {
         TaskStatus openStatus = taskStatusRepository.findByName(TaskStatusConstants.TASK_OPEN)
                 .orElseThrow(() -> new IllegalStateException("OPEN status not seeded in task_statuses"));
 
-        Task.Builder builder = Task.builder()
+        Task.TaskBuilder builder = Task.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .deadline(request.getDeadline())

@@ -107,6 +107,47 @@
   font-size: 0.95rem;
 }
 
+/* ── Hero card — Schedule CTA ───────────────────────────────────────────── */
+.hero-card {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #eef2ff 0%, #ede9fe 60%, #ddd6fe 100%);
+  border: 1px solid #c7d2fe;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 2.5rem 3rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card::before {
+  content: '📅';
+  position: absolute;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 5rem;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.hero-card h3 {
+  font-size: 2rem;
+  color: #4338ca;
+  margin-bottom: 0.6rem;
+}
+
+.hero-card p {
+  font-size: 1.05rem;
+  color: #5b21b6;
+  max-width: 540px;
+}
+
+.hero-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px rgba(102, 126, 234, 0.3);
+}
+
 /* ── My Assignments section (worker view) ───────────────────────────── */
 .my-assignments-section {
   background: white;

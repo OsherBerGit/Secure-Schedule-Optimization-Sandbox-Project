@@ -16,7 +16,6 @@ import lombok.*;
 @Entity
 @Table(name = "vacation_status")
 public class VacationStatus {
-
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;

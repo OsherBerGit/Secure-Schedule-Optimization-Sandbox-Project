@@ -66,8 +66,8 @@ public class AlgoService {
         Scheduler scheduler = new Scheduler(strategy);
         List<TaskAssignment> assignments = scheduler.run(data);
 
-        // 4. Map results → response DTO
-        return buildResponse(strategy.getName(), mapped.tasks().size(), assignments);
+        // 4. Map results → response DTO (pass strategy so fitnessHistory can be extracted)
+        return buildResponse(strategy, mapped.tasks().size(), assignments);
     }
 
     // ─── Step 1: Sanitization ─────────────────────────────────────────────────
@@ -78,7 +78,8 @@ public class AlgoService {
      * <p>Checks include:</p>
      * <ul>
      *   <li>No duplicate worker or task IDs.</li>
-     *   <li>dailyAvailabilityHours and maxTasks are within sensible bounds (1–24 / 1–100).</li>
+     *   <li>Each availability window has startTime strictly before endTime.</li>
+     *   <li>maxTasks is within sensible bounds (1–100).</li>
      *   <li>durationHours is positive and does not exceed 8760 (one year in hours).</li>
      *   <li>priorityLevel, if present, is non-negative.</li>
      *   <li>Vacation dates: startDate must not be after endDate.</li>
@@ -103,10 +104,15 @@ public class AlgoService {
 
         // ── User field bounds ─────────────────────────────────────────────────
         for (UserDto u : request.users()) {
-            if (u.dailyAvailabilityHours() < 1 || u.dailyAvailabilityHours() > 24) {
-                throw new IllegalArgumentException(
-                        "User [id=" + u.id() + "] has invalid dailyAvailabilityHours: "
-                        + u.dailyAvailabilityHours() + ". Must be between 1 and 24.");
+            if (u.availabilities() != null) {
+                for (UserDto.WorkerAvailabilityDto a : u.availabilities()) {
+                    if (a.startTime() != null && a.endTime() != null
+                            && !a.startTime().isBefore(a.endTime())) {
+                        throw new IllegalArgumentException(
+                                "User [id=" + u.id() + "] has an availability window where startTime ["
+                                + a.startTime() + "] is not before endTime [" + a.endTime() + "].");
+                    }
+                }
             }
             if (u.maxTasks() < 1 || u.maxTasks() > 100) {
                 throw new IllegalArgumentException(
@@ -175,26 +181,42 @@ public class AlgoService {
 
     /**
      * Maps TaskAssignment results to the anonymous outbound response DTO.
-     * Zero-Trust: no names or task titles are included in the response.
+     * Extracts fitnessHistory from MemeticSchedulingStrategy if applicable.
+     * Zero-Trust: no names or task titles are included in the response — only IDs and reasons.
      */
-    private SchedulingResponseDto buildResponse(String strategyName, int totalTasks,
+    private SchedulingResponseDto buildResponse(SchedulingStrategy strategy, int totalTasks,
                                                 List<TaskAssignment> assignments) {
         List<AssignmentDto> dtos = new ArrayList<>(assignments.size());
+        List<SchedulingResponseDto.UnscheduledTaskDto> unscheduled = new ArrayList<>();
         int assigned = 0;
 
         for (TaskAssignment a : assignments) {
             boolean isAssigned = (a.getAssignedEmployee() != null);
-            if (isAssigned) assigned++;
-
-            dtos.add(new AssignmentDto(
-                    a.getTask().getId(),
-                    isAssigned ? a.getAssignedEmployee().getId() : null,
-                    a.getScheduledStart(),
-                    a.getScheduledEnd()
-            ));
+            if (isAssigned) {
+                assigned++;
+                dtos.add(new AssignmentDto(
+                        a.getTask().getId(),
+                        a.getAssignedEmployee().getId(),
+                        a.getScheduledStart(),
+                        a.getScheduledEnd(),
+                        a.getReason()
+                ));
+            } else {
+                unscheduled.add(new SchedulingResponseDto.UnscheduledTaskDto(
+                        a.getTask().getId(),
+                        a.getReason()
+                ));
+            }
         }
 
-        return new SchedulingResponseDto(strategyName, totalTasks, assigned, totalTasks - assigned, dtos);
+        // Extract convergence data — only MemeticSchedulingStrategy populates this
+        List<Double> fitnessHistory = (strategy instanceof MemeticSchedulingStrategy memetic)
+                ? new ArrayList<>(memetic.getFitnessHistory())
+                : null;
+
+        return new SchedulingResponseDto(
+                strategy.getName(), totalTasks, assigned, totalTasks - assigned,
+                dtos, unscheduled, fitnessHistory);
     }
 }
 

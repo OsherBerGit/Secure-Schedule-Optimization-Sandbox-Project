@@ -23,4 +23,7 @@ public class TaskResponseDto {
     private Long taskStatusId;
     private String taskStatusName;
     private String taskStatusColorCode;
+
+    /** Name of the department this task belongs to (null if unassigned). */
+    private String departmentName;
 }

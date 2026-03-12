@@ -16,6 +16,7 @@ import com.example.mainbackend.repository.TaskStatusRepository;
 import com.example.mainbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,40 +78,29 @@ public class SettlementService {
 
     /**
      * Retrieve a settlement by its ID.
-     *
-     * @param id the settlement ID
-     * @return the settlement as a DTO
-     * @throws IllegalArgumentException if settlement not found
      */
     @Transactional(readOnly = true)
     public SettlementResponseDto getSettlementById(Long id) {
-        Settlement settlement = settlementRepository.findById(id)
+        Settlement settlement = settlementRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new IllegalArgumentException("Settlement not found with ID: " + id));
         return mapper.toDto(settlement);
     }
 
     /**
-     * Retrieve all settlements.
-     *
-     * @return list of all settlements as DTOs
+     * Retrieve all settlements (eagerly loaded to prevent LazyInitializationException).
      */
     @Transactional(readOnly = true)
     public List<SettlementResponseDto> getAllSettlements() {
-        return settlementRepository.findAll().stream()
+        return settlementRepository.findAllWithDetails().stream()
                 .map(mapper::toDto)
                 .toList();
     }
 
     /**
      * Retrieve all settlements for a specific worker.
-     *
-     * @param workerId the worker ID
-     * @return list of settlements for the worker
-     * @throws IllegalArgumentException if worker not found
      */
     @Transactional(readOnly = true)
     public List<SettlementResponseDto> getSettlementsByWorker(Long workerId) {
-        // Validate worker exists
         if (!userRepository.existsById(workerId))
             throw new IllegalArgumentException("Worker not found with ID: " + workerId);
 
@@ -131,19 +121,24 @@ public class SettlementService {
 
     /**
      * Marks a settlement as COMPLETED.
-     * Security: verifies the requesting worker owns this settlement (no ID-traversal).
-     *
-     * @param id         the settlement ID to complete
-     * @param nationalId the nationalId of the requesting worker
+     * <ul>
+     *   <li>WORKER — must own the settlement (no IDOR traversal).</li>
+     *   <li>ADMIN  — may complete any settlement (management override).</li>
+     * </ul>
      */
     @Transactional
     public SettlementResponseDto completeSettlement(Long id, String nationalId) {
-        Settlement settlement = settlementRepository.findById(id)
+        Settlement settlement = settlementRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new IllegalArgumentException("Settlement not found with ID: " + id));
 
-        // Security: ensure the logged-in worker owns this settlement
-        if (!settlement.getWorker().getNationalId().equals(nationalId))
+        // Determine if the caller is an ADMIN — skip ownership check if so
+        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isAdmin && !settlement.getWorker().getNationalId().equals(nationalId)) {
             throw new SecurityException("Access denied: this settlement does not belong to you");
+        }
 
         SettlementStatus completed = settlementStatusRepository.findByName(TaskStatusConstants.SETTLEMENT_COMPLETED)
                 .orElseThrow(() -> new IllegalStateException("COMPLETED status not seeded in settlement_statuses"));
@@ -152,7 +147,7 @@ public class SettlementService {
         settlement.setCompletionDate(LocalDateTime.now());
         settlementRepository.save(settlement);
 
-        log.info("Settlement [{}] marked COMPLETED by worker '{}'", id, nationalId);
+        log.info("Settlement [{}] marked COMPLETED by '{}' (admin={})", id, nationalId, isAdmin);
 
         // If every settlement for this task is now COMPLETED, close the task lifecycle
         Task task = settlement.getTask();
@@ -172,14 +167,9 @@ public class SettlementService {
 
     /**
      * Retrieve all settlements for a specific task.
-     *
-     * @param taskId the task ID
-     * @return list of settlements for the task
-     * @throws IllegalArgumentException if task not found
      */
     @Transactional(readOnly = true)
     public List<SettlementResponseDto> getSettlementsByTask(Long taskId) {
-        // Validate task exists
         if (!taskRepository.existsById(taskId))
             throw new IllegalArgumentException("Task not found with ID: " + taskId);
 

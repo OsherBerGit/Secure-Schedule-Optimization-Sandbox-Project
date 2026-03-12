@@ -1,5 +1,17 @@
 // TypeScript interfaces matching backend DTOs
 
+export interface Department {
+  id: number;
+  name: string;
+}
+
+export interface WorkerAvailability {
+  id: number | null;
+  dayOfWeek: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+  startTime: string; // ISO LocalTime, e.g. "09:00:00"
+  endTime: string;   // ISO LocalTime, e.g. "17:00:00"
+}
+
 export interface User {
   id: number;
   nationalId: string;
@@ -9,8 +21,9 @@ export interface User {
   phoneNumber: string | null;
   salary: number | null;
   address: string | null;
-  dailyAvailabilityHours: number | null;
+  availabilities: WorkerAvailability[];
   maxTasks: number | null;
+  departmentName: string | null;
   roles: string[]; // e.g. ["ADMIN"] or ["WORKER"]
   // helper getter — derived on frontend
   role?: 'ADMIN' | 'WORKER';
@@ -24,6 +37,8 @@ export interface CreateUserRequest {
   email?: string;
   phoneNumber?: string;
   role: 'ADMIN' | 'WORKER';
+  departmentName?: string;
+  availabilities?: WorkerAvailability[];
 }
 
 export interface UpdateUserRequest {
@@ -32,6 +47,9 @@ export interface UpdateUserRequest {
   email?: string;
   phoneNumber?: string;
   role?: 'ADMIN' | 'WORKER';
+  roles?: string[];
+  departmentName?: string | null;
+  availabilities?: WorkerAvailability[];
 }
 
 export interface Task {
@@ -43,6 +61,7 @@ export interface Task {
   startTime: string | null;
   priorityId: number | null;
   priorityName: string | null;
+  departmentName: string | null;
   // Task lifecycle status (category="TASK": OPEN, LOCKED, CLOSED)
   taskStatusId: number | null;
   taskStatusName: string | null;       // "OPEN" | "LOCKED" | "CLOSED"
@@ -67,6 +86,13 @@ export interface UpdateTaskRequest {
 }
 
 export interface Status {
+  id: number;
+  name: string;
+  colorCode: string | null;
+}
+
+/** Lookup values for Settlement execution lifecycle (PENDING, ASSIGNED, IN_PROGRESS, COMPLETED, FAILED). */
+export interface SettlementStatus {
   id: number;
   name: string;
   colorCode: string | null;
@@ -221,11 +247,35 @@ export interface TaskAssignmentResult {
   reason: string;
 }
 
+/** A task that the algorithm failed to schedule, with an explainability reason. */
+export interface UnscheduledTaskResult {
+  taskId: number;
+  taskName: string;
+  reason: string;
+}
+
+/** A single approved assignment to persist via POST /api/schedule/save. */
+export interface SaveTaskAssignment {
+  taskId: number;
+  assignedUserId: number | null;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+}
+
+/** Request body for POST /api/schedule/save. */
+export interface SaveScheduleRequest {
+  assignments: SaveTaskAssignment[];
+}
+
 export interface ScheduleResult {
   strategyUsed: string;
   totalTasks: number;
   assignedTasks: number;
   unassignedTasks: number;
   assignments: TaskAssignmentResult[];
+  /** Best fitness score recorded at each generation (Memetic algorithm only). */
+  fitnessHistory?: number[];
+  /** Tasks the algorithm could not assign, with human-readable failure reasons. */
+  unscheduledTasks?: UnscheduledTaskResult[];
 }
 

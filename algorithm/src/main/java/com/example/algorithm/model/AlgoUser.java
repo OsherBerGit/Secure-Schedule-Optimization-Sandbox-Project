@@ -16,7 +16,10 @@ import java.util.Set;
 public final class AlgoUser {
 
     private final Long id;
-    private final Integer dailyAvailabilityHours;
+
+    /** Specific weekly shift windows defining when this worker is available. */
+    private final List<AlgoWorkerAvailability> availabilities;
+
     private final Integer maxTasks;
 
     /** Opaque role identifiers (stored as strings of role IDs) */
@@ -26,27 +29,29 @@ public final class AlgoUser {
     private final List<AlgoVacation> vacations;
 
     public AlgoUser(Long id,
-                    Integer dailyAvailabilityHours,
+                    List<AlgoWorkerAvailability> availabilities,
                     Integer maxTasks,
                     Set<String> roles,
                     List<AlgoVacation> vacations) {
-        this.id                    = id;
-        this.dailyAvailabilityHours = dailyAvailabilityHours;
-        this.maxTasks              = maxTasks;
-        this.roles                 = roles != null ? Collections.unmodifiableSet(roles) : Collections.emptySet();
-        this.vacations             = vacations != null ? Collections.unmodifiableList(vacations) : Collections.emptyList();
+        this.id             = id;
+        this.availabilities = availabilities != null
+                ? Collections.unmodifiableList(availabilities)
+                : Collections.emptyList();
+        this.maxTasks       = maxTasks;
+        this.roles          = roles != null ? Collections.unmodifiableSet(roles) : Collections.emptySet();
+        this.vacations      = vacations != null ? Collections.unmodifiableList(vacations) : Collections.emptyList();
     }
 
-    public Long getId()                      { return id; }
-    public Integer getDailyAvailabilityHours() { return dailyAvailabilityHours; }
-    public Integer getMaxTasks()             { return maxTasks; }
-    public Set<String> getRoles()            { return roles; }
-    public List<AlgoVacation> getVacations() { return vacations; }
+    public Long getId()                                    { return id; }
+    public List<AlgoWorkerAvailability> getAvailabilities() { return availabilities; }
+    public Integer getMaxTasks()                           { return maxTasks; }
+    public Set<String> getRoles()                          { return roles; }
+    public List<AlgoVacation> getVacations()               { return vacations; }
 
     @Override
     public String toString() {
         return "AlgoUser{id=" + id
-                + ", dailyAvailabilityHours=" + dailyAvailabilityHours
+                + ", availabilities=" + availabilities
                 + ", maxTasks=" + maxTasks
                 + ", roles=" + roles
                 + ", vacations=" + vacations + '}';

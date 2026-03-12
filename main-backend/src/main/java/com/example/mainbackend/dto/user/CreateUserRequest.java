@@ -1,8 +1,11 @@
 package com.example.mainbackend.dto.user;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
 import lombok.Data;
+
+import java.util.List;
 
 @Data
 @Builder
@@ -36,9 +39,9 @@ public class CreateUserRequest {
     @Size(max = 255, message = "Address cannot exceed 255 characters")
     private String address;
 
-    @Positive(message = "Daily availability hours must be positive")
-    @Max(value = 24, message = "Daily availability hours cannot exceed 24")
-    private Integer dailyAvailabilityHours;
+    /** Weekly availability windows (shifts) for this worker. Optional at creation time. */
+    @Valid
+    private List<WorkerAvailabilityDto> availabilities;
 
     @Positive(message = "Max tasks must be positive")
     private Integer maxTasks;
@@ -48,4 +51,7 @@ public class CreateUserRequest {
      * Defaults to WORKER if not provided.
      */
     private String role;
+
+    /** Optional: name of the department to assign this user to on creation. */
+    private String departmentName;
 }

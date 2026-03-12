@@ -18,21 +18,50 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     @Query("SELECT t FROM Task t WHERE t.status.name = :statusName")
     List<Task> findByStatusName(@Param("statusName") String statusName);
 
+    /** All tasks scoped to a specific department (any status). */
+    List<Task> findAllByDepartmentId(Long departmentId);
+
+    // ── ADMIN scope (all departments) ────────────────────────────────────────
+
     /**
-     * Fetches OPEN tasks with their requiredRoles and incomingConstraints eagerly loaded
-     * in a single DB round-trip to avoid N+1 queries in the scheduling engine.
-     *
-     * Two separate queries are required because JOIN FETCH on two collections
-     * in a single query causes a Cartesian product (HHH90003004 warning).
+     * Fetches ALL OPEN tasks with their requiredRoles eagerly loaded.
+     * Used by SchedulingService (ADMIN scope).
      */
     @Query("SELECT DISTINCT t FROM Task t " +
            "LEFT JOIN FETCH t.requiredRoles " +
            "WHERE t.status.name = :statusName")
     List<Task> findOpenTasksWithRoles(@Param("statusName") String statusName);
 
+    /**
+     * Fetches ALL OPEN tasks with their incomingConstraints eagerly loaded.
+     * Used by SchedulingService (ADMIN scope).
+     */
     @Query("SELECT DISTINCT t FROM Task t " +
            "LEFT JOIN FETCH t.incomingConstraints ic " +
            "LEFT JOIN FETCH ic.predecessorTask " +
            "WHERE t.status.name = :statusName")
     List<Task> findOpenTasksWithConstraints(@Param("statusName") String statusName);
+
+    // ── MANAGER scope (single department) ────────────────────────────────────
+
+    /**
+     * Fetches OPEN tasks for a specific department with their requiredRoles eagerly loaded.
+     * Used by SchedulingService (MANAGER scope).
+     */
+    @Query("SELECT DISTINCT t FROM Task t " +
+           "LEFT JOIN FETCH t.requiredRoles " +
+           "WHERE t.status.name = :statusName AND t.department.id = :departmentId")
+    List<Task> findOpenTasksWithRolesByDepartment(@Param("statusName") String statusName,
+                                                  @Param("departmentId") Long departmentId);
+
+    /**
+     * Fetches OPEN tasks for a specific department with their incomingConstraints eagerly loaded.
+     * Used by SchedulingService (MANAGER scope).
+     */
+    @Query("SELECT DISTINCT t FROM Task t " +
+           "LEFT JOIN FETCH t.incomingConstraints ic " +
+           "LEFT JOIN FETCH ic.predecessorTask " +
+           "WHERE t.status.name = :statusName AND t.department.id = :departmentId")
+    List<Task> findOpenTasksWithConstraintsByDepartment(@Param("statusName") String statusName,
+                                                        @Param("departmentId") Long departmentId);
 }

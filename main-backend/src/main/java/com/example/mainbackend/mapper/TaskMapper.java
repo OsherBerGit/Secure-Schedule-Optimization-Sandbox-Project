@@ -30,6 +30,7 @@ public class TaskMapper {
                 .taskStatusId(task.getStatus() != null ? task.getStatus().getId() : null)
                 .taskStatusName(task.getStatus() != null ? task.getStatus().getName() : null)
                 .taskStatusColorCode(task.getStatus() != null ? task.getStatus().getColorCode() : null)
+                .departmentName(task.getDepartment() != null ? task.getDepartment().getName() : null)
                 .build();
     }
 

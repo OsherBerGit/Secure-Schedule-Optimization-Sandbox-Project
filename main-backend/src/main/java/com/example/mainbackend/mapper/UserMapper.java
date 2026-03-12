@@ -4,6 +4,7 @@ import com.example.mainbackend.algorithm.dto.AlgoUserRequest;
 import com.example.mainbackend.algorithm.dto.AlgoVacationRequest;
 import com.example.mainbackend.dto.user.CreateUserRequest;
 import com.example.mainbackend.dto.user.UserDto;
+import com.example.mainbackend.dto.user.WorkerAvailabilityDto;
 import com.example.mainbackend.entity.Role;
 import com.example.mainbackend.entity.User;
 import org.springframework.stereotype.Component;
@@ -27,8 +28,18 @@ public class UserMapper {
                 .phoneNumber(user.getPhoneNumber())
                 .salary(user.getSalary())
                 .address(user.getAddress())
-                .dailyAvailabilityHours(user.getDailyAvailabilityHours())
                 .maxTasks(user.getMaxTasks())
+                .availabilities(user.getAvailabilities() != null
+                        ? user.getAvailabilities().stream()
+                                .map(a -> WorkerAvailabilityDto.builder()
+                                        .id(a.getId())
+                                        .dayOfWeek(a.getDayOfWeek())
+                                        .startTime(a.getStartTime())
+                                        .endTime(a.getEndTime())
+                                        .build())
+                                .collect(Collectors.toList())
+                        : Collections.emptyList())
+                .departmentName(user.getDepartment() != null ? user.getDepartment().getName() : null)
                 .roles(user.getRoles() != null
                         ? user.getRoles().stream().map(Role::getRoleName).collect(Collectors.toSet())
                         : Collections.emptySet())
@@ -53,9 +64,8 @@ public class UserMapper {
         existingUser.setPhoneNumber(userDto.getPhoneNumber());
         existingUser.setSalary(userDto.getSalary());
         existingUser.setAddress(userDto.getAddress());
-        existingUser.setDailyAvailabilityHours(userDto.getDailyAvailabilityHours());
         existingUser.setMaxTasks(userDto.getMaxTasks());
-        // Note: roles, vacations, settlements are not updated here
+        // Note: roles, vacations, settlements, availabilities are not updated here
         // They should be handled separately by dedicated service methods
     }
 
@@ -79,7 +89,6 @@ public class UserMapper {
                 .phoneNumber(userDto.getPhoneNumber())
                 .salary(userDto.getSalary())
                 .address(userDto.getAddress())
-                .dailyAvailabilityHours(userDto.getDailyAvailabilityHours())
                 .maxTasks(userDto.getMaxTasks())
                 // Note: roles, vacations, settlements are not set here
                 // They should be fetched from DB by service layer using the IDs/names
@@ -107,9 +116,11 @@ public class UserMapper {
                 .phoneNumber(request.getPhoneNumber())
                 .salary(request.getSalary())
                 .address(request.getAddress())
-                .dailyAvailabilityHours(request.getDailyAvailabilityHours())
                 .maxTasks(request.getMaxTasks())
                 .build();
+        // Note: availabilities from the request are not mapped here because they require
+        // back-references to the saved User entity. The service layer should save the User
+        // first, then persist the WorkerAvailability entries with the correct user_id.
     }
 
     /**
@@ -138,9 +149,20 @@ public class UserMapper {
                         .collect(Collectors.toList())
                 : Collections.emptyList();
 
+        List<WorkerAvailabilityDto> availabilities = user.getAvailabilities() != null
+                ? user.getAvailabilities().stream()
+                        .map(a -> WorkerAvailabilityDto.builder()
+                                .id(a.getId())
+                                .dayOfWeek(a.getDayOfWeek())
+                                .startTime(a.getStartTime())
+                                .endTime(a.getEndTime())
+                                .build())
+                        .collect(Collectors.toList())
+                : Collections.emptyList();
+
         return AlgoUserRequest.builder()
                 .id(user.getId())
-                .dailyAvailabilityHours(user.getDailyAvailabilityHours())
+                .availabilities(availabilities)
                 .maxTasks(user.getMaxTasks())
                 .roles(user.getRoles() != null
                         ? user.getRoles().stream().map(Role::getId).collect(Collectors.toSet())

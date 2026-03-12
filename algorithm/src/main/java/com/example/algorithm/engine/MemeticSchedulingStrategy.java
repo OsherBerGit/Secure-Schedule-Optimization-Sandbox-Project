@@ -61,6 +61,9 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
     private final MemeticLocalSearch          localSearch;
     private final Random                      random = new Random();
 
+    /** Best fitness score recorded at each generation. Populated after {@link #schedule} runs. */
+    private final List<Double> fitnessHistory = new ArrayList<>();
+
     /**
      * @param config    GA weights and parameters (population size, generations, fitness weights)
      * @param evaluator the fitness evaluator wired with the same constraint pipeline
@@ -103,6 +106,11 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
         return "MEMETIC";
     }
 
+    /** Returns the best fitness score recorded per generation. Only valid after {@link #schedule} runs. */
+    public List<Double> getFitnessHistory() {
+        return java.util.Collections.unmodifiableList(fitnessHistory);
+    }
+
     /**
      * Runs the Memetic Algorithm and returns the decoded list of task assignments.
      *
@@ -124,6 +132,7 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
 
         // ── 1. Initialisation ────────────────────────────────────────────────
         List<Individual> population = initializePopulation(popSize, tasks.size(), users.size());
+        fitnessHistory.clear();
 
         // ── 2. Evolution loop ────────────────────────────────────────────────
         for (int generation = 0; generation < maxGenerations; generation++) {
@@ -133,6 +142,9 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
 
             // Sort population: highest fitness first.
             population.sort(Comparator.comparingDouble(Individual::getFitness).reversed());
+
+            // Record the best fitness of this generation for convergence tracking.
+            fitnessHistory.add(population.get(0).getFitness());
 
             List<Individual> nextGeneration = new ArrayList<>();
 

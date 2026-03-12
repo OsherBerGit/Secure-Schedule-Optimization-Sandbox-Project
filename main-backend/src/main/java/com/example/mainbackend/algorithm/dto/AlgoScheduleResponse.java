@@ -9,10 +9,14 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AlgoScheduleResponse {
-    private String strategyUsed;
-    private int totalTasks;
-    private int assignedTasks;
-    private int unassignedTasks;
-    private List<AlgoTaskAssignmentResponse> assignments;
+    private String                          strategyUsed;
+    private int                             totalTasks;
+    private int                             assignedTasks;
+    private int                             unassignedTasks;
+    private List<AlgoTaskAssignmentResponse>     assignments;
+    /** Tasks the algorithm could not schedule, with human-readable failure reasons. */
+    private List<AlgoUnscheduledTaskResponse>    unscheduledTasks;
+    /** Best fitness score per generation (Memetic algorithm only). */
+    private List<Double>                         fitnessHistory;
 }
 

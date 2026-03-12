@@ -166,3 +166,10 @@
     font-size: 1rem;
 }
 
+.lookup-empty {
+    text-align: center;
+    color: #aaa;
+    padding: 2rem;
+    font-size: 0.95rem;
+}
+

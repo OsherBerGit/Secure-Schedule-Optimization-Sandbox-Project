@@ -125,11 +125,11 @@ const Settlements = () => {
                                             {!isCompleted && (
                                                 <button
                                                     className="btn-complete"
-                                                    title="סמן כבוצע"
+                                                    title="Mark as Done"
                                                     onClick={() => handleComplete(s.id)}
                                                 >
                                                     <CheckCircle size={16} />
-                                                    <span>סמן כבוצע</span>
+                                                    <span>Mark as Done</span>
                                                 </button>
                                             )}
                                             {isAdmin && (
