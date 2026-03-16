@@ -47,6 +47,14 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
+        <!-- Choco Solver (Explicitly included to fix NoClassDefFoundError at runtime) -->
+        <dependency>
+            <groupId>org.choco-solver</groupId>
+            <artifactId>choco-solver</artifactId>
+            <version>4.10.14</version>
+        </dependency>
+
+
         <!-- Spring Boot Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

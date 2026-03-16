@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Memetic Algorithm Scheduling Strategy.
+ * Memetic Algorithm (Hybrid Genetic Algorithm + Local Search).
  *
  * <p>Combines a Genetic Algorithm (population-based global search) with a
  * Hill-Climbing Local Search (individual refinement) to find high-quality
@@ -48,6 +48,29 @@ import java.util.Random;
  * </ol>
  *
  * <p>Pure Java: no Spring, Jackson, or Lombok annotations.</p>
+ *
+ * <h3>Complexity Analysis</h3>
+ * <ul>
+ *   <li><b>Time Complexity:</b> O(G · P · (T + L))</li>
+ *   <li><b>Variables:</b>
+ *     <ul>
+ *       <li>G = Number of Generations (Max Generations)</li>
+ *       <li>P = Population Size</li>
+ *       <li>T = Number of Tasks</li>
+ *       <li>L = Local Search Iterations (Refinement steps per child)</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>Explanation:</b>
+ *     <ul>
+ *       <li>Initialization creates P individuals, each with T genes: O(P · T).</li>
+ *       <li>For each generation (G), we evaluate fitness for P individuals. Fitness evaluation is O(T) per individual.</li>
+ *       <li>Crossover and Mutation operate on genes: O(T).</li>
+ *       <li>Local Search performs L iterations of hill-climbing on the offspring: O(L · T).</li>
+ *       <li>Sorting the population takes O(P log P).</li>
+ *       <li>As G and P scale up, this becomes significantly more expensive than Greedy strategies, but offers better optimization.</li>
+ *     </ul>
+ *   </li>
+ * </ul>
  */
 public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
 
@@ -123,9 +146,8 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
         List<AlgoUser> users = data.users();
 
         // Graceful early exit: nothing to schedule.
-        if (tasks.isEmpty() || users.isEmpty()) {
+        if (tasks.isEmpty() || users.isEmpty())
             return new ArrayList<>();
-        }
 
         int popSize        = config.getPopulationSize()  != null ? config.getPopulationSize()  : 50;
         int maxGenerations = config.getMaxGenerations()  != null ? config.getMaxGenerations()  : 100;
@@ -193,9 +215,8 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
         List<Individual> population = new ArrayList<>();
         for (int i = 0; i < popSize; i++) {
             Individual ind = new Individual(numTasks);
-            for (int t = 0; t < numTasks; t++) {
+            for (int t = 0; t < numTasks; t++)
                 ind.setGene(t, random.nextInt(numUsers));
-            }
             population.add(ind);
         }
         return population;
@@ -212,11 +233,9 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
     private void evaluatePopulation(List<Individual> population,
                                     List<AlgoTask> tasks,
                                     List<AlgoUser> users) {
-        for (Individual ind : population) {
-            if (!ind.isFitnessCalculated()) {
+        for (Individual ind : population)
+            if (!ind.isFitnessCalculated())
                 ind.setFitness(fitnessEvaluator.evaluate(ind, tasks, users));
-            }
-        }
     }
 
     // -------------------------------------------------------------------------
@@ -235,9 +254,8 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
         Individual best = population.get(random.nextInt(population.size()));
         for (int i = 1; i < TOURNAMENT_SIZE; i++) {
             Individual competitor = population.get(random.nextInt(population.size()));
-            if (competitor.getFitness() > best.getFitness()) {
+            if (competitor.getFitness() > best.getFitness())
                 best = competitor;
-            }
         }
         return best;
     }
@@ -302,9 +320,8 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
             LocalDateTime proposedStart = workerNextFree.get(assignedUser.getId());
             for (Long predId : task.getPredecessorTaskIds()) {
                 LocalDateTime predEnd = completionTimes.get(predId);
-                if (predEnd != null && predEnd.isAfter(proposedStart)) {
+                if (predEnd != null && predEnd.isAfter(proposedStart))
                     proposedStart = predEnd;
-                }
             }
             LocalDateTime proposedEnd = calcEndTime(proposedStart, task);
 
@@ -343,3 +360,4 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
         return assignments;
     }
 }
+

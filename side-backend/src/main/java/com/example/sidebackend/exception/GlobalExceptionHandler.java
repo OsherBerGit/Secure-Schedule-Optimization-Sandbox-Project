@@ -55,11 +55,11 @@ public class GlobalExceptionHandler {
 
     // ─── 500: Unexpected errors ───────────────────────────────────────────────
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
-        log.error("[GlobalExceptionHandler] Unexpected error", ex);
+    @ExceptionHandler(Throwable.class)
+    public ResponseEntity<Map<String, Object>> handleAll(Throwable ex) {
+        log.error("[GlobalExceptionHandler] Critical/Unexpected error", ex);
         return buildError(HttpStatus.INTERNAL_SERVER_ERROR,
-                "An unexpected error occurred in the sandbox", List.of());
+                "Critical error: " + ex.getMessage(), List.of(ex.toString()));
     }
 
     // ─── Helper ───────────────────────────────────────────────────────────────
@@ -76,4 +76,3 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(body);
     }
 }
-

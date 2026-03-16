@@ -244,7 +244,7 @@ export const vacationApi = {
 // Schedule API — calls main-backend which forwards to the algorithm service
 export const scheduleApi = {
   /** PHASE 1: Generates a draft schedule preview. Nothing is saved to the DB.
-   *  @param strategy      "GREEDY" (default) | "ROUND_ROBIN" | "MEMETIC"
+   *  @param strategy      "GREEDY" (default) | "ROUND_ROBIN" | "MEMETIC" | "CONSTRAINT_PROGRAMMING"
    *  @param departmentId  Optional ADMIN-only scope — omit for global scheduling
    */
   run: (strategy: ScheduleStrategy = 'GREEDY', departmentId?: number | null) => {

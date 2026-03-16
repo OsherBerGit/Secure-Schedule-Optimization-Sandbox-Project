@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * Greedy Scheduling Strategy.
+ * Simple "First-Fit" Greedy scheduling strategy.
  *
  * <p>Processes tasks in priority order (highest priority first, earliest deadline as tiebreak).
  * For each task, picks the least-loaded eligible employee who passes ALL constraint checks:</p>
@@ -24,6 +24,26 @@ import java.util.*;
  * <p>If the best candidate fails the constraint pipeline, the next least-loaded
  * candidate is tried. If no candidate passes, the task is recorded as unassigned
  * with the constraint violation reason.</p>
+ *
+ * <h3>Complexity Analysis</h3>
+ * <ul>
+ *   <li><b>Time Complexity:</b> O(T log T + T · W)</li>
+ *   <li><b>Variables:</b>
+ *     <ul>
+ *       <li>T = Number of Tasks</li>
+ *       <li>W = Number of Workers</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>Explanation:</b>
+ *     <ul>
+ *       <li>Sorting tasks by priority/deadline takes O(T log T).</li>
+ *       <li>Iterating through sorted tasks takes O(T).</li>
+ *       <li>For each task, we iterate through all workers (W) to find the best fit, performing constant-time checks (availability, roles) for each.</li>
+ *       <li>Thus, the scheduling loop is O(T · W).</li>
+ *       <li>Overall growth is linear with respect to workers and quasi-linear with respect to tasks.</li>
+ *     </ul>
+ *   </li>
+ * </ul>
  */
 public class GreedySchedulingStrategy extends BaseSchedulingStrategy {
 

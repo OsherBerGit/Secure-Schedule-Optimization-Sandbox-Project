@@ -216,6 +216,7 @@ const Schedule = () => {
                                 <option value="GREEDY">⚡ Greedy (Best-Fit)</option>
                                 <option value="ROUND_ROBIN">🔄 Round-Robin (Fair)</option>
                                 <option value="MEMETIC">🧬 Memetic (Optimised)</option>
+                                <option value="CONSTRAINT_PROGRAMMING">📏 Constraint Programming (Choco)</option>
                             </select>
                             <select
                                 className="strategy-select"

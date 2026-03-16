@@ -27,6 +27,14 @@
 
     <dependencies>
 
+        <!-- Choco Solver for Constraint Programming Strategy -->
+        <dependency>
+            <groupId>org.choco-solver</groupId>
+            <artifactId>choco-solver</artifactId>
+            <version>4.10.14</version>
+        </dependency>
+
+
         <!-- Lombok — used by model classes (@Builder, @Getter, @Setter, etc.) -->
         <dependency>
             <groupId>org.projectlombok</groupId>

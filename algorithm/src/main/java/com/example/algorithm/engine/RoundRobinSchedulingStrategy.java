@@ -9,16 +9,36 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * Round-Robin Scheduling Strategy.
+ * Simple Round-Robin Strategy.
  *
- * Distributes tasks evenly across eligible employees by cycling through them in order.
+ * <p>Distributes tasks evenly across eligible employees by cycling through them in order.
  * Each task still respects the full constraint pipeline:
  *   - Required roles, vacation availability, max task limits (eligibility pre-filter)
  *   - PrecedenceConstraint  — predecessor tasks must finish first
  *   - AvailabilityConstraint — vacation overlap and maxTasks double-check
- *
+ * </p>
+ * <p>Uses a persistent index to cycle through the full employee list.
  * If the round-robin pick fails the constraint pipeline, the next eligible
- * candidate (in round-robin order) is tried until one passes or all are exhausted.
+ * candidate (in round-robin order) is tried until one passes or all are exhausted.</p>
+ *
+ * <h3>Complexity Analysis</h3>
+ * <ul>
+ *   <li><b>Time Complexity:</b> O(T log T + T · W)</li>
+ *   <li><b>Variables:</b>
+ *     <ul>
+ *       <li>T = Number of Tasks</li>
+ *       <li>W = Number of Workers</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>Explanation:</b>
+ *     <ul>
+ *       <li>Sorting tasks by priority/deadline takes O(T log T).</li>
+ *       <li>Iterating through sorted tasks takes O(T).</li>
+ *       <li>For each task, we iterate through the workers (W) <i>in a circular fashion</i>. In the worst case (when many workers are ineligible), we may check all W workers for a single task.</li>
+ *       <li>Assuming worst-case eligibility checks, the complexity remains O(T · W), similar to Greedy.</li>
+ *     </ul>
+ *   </li>
+ * </ul>
  */
 public class RoundRobinSchedulingStrategy extends BaseSchedulingStrategy {
 

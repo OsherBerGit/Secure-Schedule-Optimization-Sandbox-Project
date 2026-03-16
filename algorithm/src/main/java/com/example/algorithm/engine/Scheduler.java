@@ -2,7 +2,9 @@ package com.example.algorithm.engine;
 
 import com.example.algorithm.db.ScheduleData;
 import com.example.algorithm.model.TaskAssignment;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Context class for the Strategy pattern.
@@ -35,6 +37,20 @@ public class Scheduler {
 
     public List<TaskAssignment> run(ScheduleData data) {
         System.out.println("Running strategy: " + strategy.getName());
-        return strategy.schedule(data);
+        try {
+            return strategy.schedule(data);
+        } catch (Throwable e) {
+            System.err.println("CRITICAL ERROR in Scheduler [" + strategy.getName() + "]: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Global Fail-Safe: If any algorithm crashes, return tasks as "Unscheduled"
+            if (data.tasks() == null) return Collections.emptyList();
+            return data.tasks().stream()
+                    .map(t -> TaskAssignment.builder()
+                            .task(t)
+                            .reason("Algorithm Failed (" + strategy.getName() + "): " + e.getMessage())
+                            .build())
+                    .collect(Collectors.toList());
+        }
     }
 }

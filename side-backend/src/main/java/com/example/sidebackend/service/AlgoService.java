@@ -2,6 +2,7 @@ package com.example.sidebackend.service;
 
 import com.example.algorithm.db.ScheduleData;
 import com.example.algorithm.engine.GreedySchedulingStrategy;
+import com.example.algorithm.engine.ConstraintProgrammingStrategy;
 import com.example.algorithm.engine.MemeticSchedulingStrategy;
 import com.example.algorithm.engine.RoundRobinSchedulingStrategy;
 import com.example.algorithm.engine.Scheduler;
@@ -92,69 +93,55 @@ public class AlgoService {
 
         // ── User ID uniqueness ────────────────────────────────────────────────
         List<Long> userIds = request.users().stream().map(UserDto::id).toList();
-        if (userIds.stream().distinct().count() != userIds.size()) {
+        if (userIds.stream().distinct().count() != userIds.size())
             throw new IllegalArgumentException("Duplicate user IDs detected in the request.");
-        }
 
         // ── Task ID uniqueness ────────────────────────────────────────────────
         List<Long> taskIds = request.tasks().stream().map(TaskDto::id).toList();
-        if (taskIds.stream().distinct().count() != taskIds.size()) {
+        if (taskIds.stream().distinct().count() != taskIds.size())
             throw new IllegalArgumentException("Duplicate task IDs detected in the request.");
-        }
 
         // ── User field bounds ─────────────────────────────────────────────────
         for (UserDto u : request.users()) {
-            if (u.availabilities() != null) {
-                for (UserDto.WorkerAvailabilityDto a : u.availabilities()) {
-                    if (a.startTime() != null && a.endTime() != null
-                            && !a.startTime().isBefore(a.endTime())) {
-                        throw new IllegalArgumentException(
-                                "User [id=" + u.id() + "] has an availability window where startTime ["
+            if (u.availabilities() != null)
+                for (UserDto.WorkerAvailabilityDto a : u.availabilities())
+                    if (a.startTime() != null && a.endTime() != null && !a.startTime().isBefore(a.endTime()))
+                        throw new IllegalArgumentException("User [id=" + u.id() + "] has an availability window where startTime ["
                                 + a.startTime() + "] is not before endTime [" + a.endTime() + "].");
-                    }
-                }
-            }
-            if (u.maxTasks() < 1 || u.maxTasks() > 100) {
-                throw new IllegalArgumentException(
-                        "User [id=" + u.id() + "] has invalid maxTasks: "
+
+            if (u.maxTasks() < 1 || u.maxTasks() > 100)
+                throw new IllegalArgumentException("User [id=" + u.id() + "] has invalid maxTasks: "
                         + u.maxTasks() + ". Must be between 1 and 100.");
-            }
-            if (u.vacations() != null) {
-                for (VacationDto v : u.vacations()) {
-                    if (v.startDate() != null && v.endDate() != null
-                            && v.startDate().isAfter(v.endDate())) {
-                        throw new IllegalArgumentException(
-                                "User [id=" + u.id() + "] has a vacation where startDate ["
+
+            if (u.vacations() != null)
+                for (VacationDto v : u.vacations())
+                    if (v.startDate() != null && v.endDate() != null && v.startDate().isAfter(v.endDate()))
+                        throw new IllegalArgumentException("User [id=" + u.id() + "] has a vacation where startDate ["
                                 + v.startDate() + "] is after endDate [" + v.endDate() + "].");
-                    }
-                }
-            }
         }
 
         // ── Task field bounds ─────────────────────────────────────────────────
         for (TaskDto t : request.tasks()) {
-            if (t.durationHours() <= 0) {
+            if (t.durationHours() <= 0)
                 throw new IllegalArgumentException(
                         "Task [id=" + t.id() + "] has non-positive durationHours: " + t.durationHours());
-            }
-            if (t.durationHours() > 8760) {
+
+            if (t.durationHours() > 8760)
                 throw new IllegalArgumentException(
                         "Task [id=" + t.id() + "] durationHours exceeds 8760 (one year): " + t.durationHours());
-            }
-            if (t.priorityLevel() != null && t.priorityLevel() < 0) {
+
+            if (t.priorityLevel() != null && t.priorityLevel() < 0)
                 throw new IllegalArgumentException(
                         "Task [id=" + t.id() + "] has a negative priorityLevel: " + t.priorityLevel());
-            }
+
             if (t.predecessorTaskIds() != null) {
                 for (Long predId : t.predecessorTaskIds()) {
-                    if (!taskIds.contains(predId)) {
+                    if (!taskIds.contains(predId))
                         throw new IllegalArgumentException(
                                 "Task [id=" + t.id() + "] references unknown predecessor task id: " + predId);
-                    }
-                    if (predId.equals(t.id())) {
+                    if (predId.equals(t.id()))
                         throw new IllegalArgumentException(
                                 "Task [id=" + t.id() + "] lists itself as a predecessor (circular reference).");
-                    }
                 }
             }
         }
@@ -173,6 +160,7 @@ public class AlgoService {
                                       config != null ? config : new com.example.algorithm.model.AlgoSchedulingConfiguration(
                                               1.0, 1.0, 1.0, 50, 100));
             case "ROUND_ROBIN" -> new RoundRobinSchedulingStrategy();
+            case "CONSTRAINT_PROGRAMMING" -> new ConstraintProgrammingStrategy();
             default            -> new GreedySchedulingStrategy();
         };
     }

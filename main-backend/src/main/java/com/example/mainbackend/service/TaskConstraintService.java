@@ -143,7 +143,26 @@ public class TaskConstraintService {
      * Validates that adding a constraint from predecessorId to successorId
      * will not create a circular dependency in the task graph.
      *
-     * Uses DFS (Depth-First Search) to detect cycles.
+     * <p>Uses DFS (Depth-First Search) to detect cycles.</p>
+     *
+     * <h3>Complexity Analysis</h3>
+     * <ul>
+     *   <li><b>Time Complexity:</b> O(V + E)</li>
+     *   <li><b>Variables:</b>
+     *     <ul>
+     *       <li>V = Vertices (Tasks)</li>
+     *       <li>E = Edges (Dependencies/Constraints)</li>
+     *     </ul>
+     *   </li>
+     *   <li><b>Explanation:</b>
+     *     <ul>
+     *       <li>Building the graph takes O(E).</li>
+     *       <li>The DFS traversal visits every node and edge at most once.</li>
+     *       <li>We maintain a <code>visited</code> set to avoid recounting nodes and a <code>recursionStack</code> to detect back-edges (cycles) in the current path.</li>
+     *       <li>This ensures linear time complexity relative to the size of the graph.</li>
+     *     </ul>
+     *   </li>
+     * </ul>
      */
     private void validateNoCircularDependency(Long predecessorId, Long successorId) {
         // Build adjacency list of the constraint graph
