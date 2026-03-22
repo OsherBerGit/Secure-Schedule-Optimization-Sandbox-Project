@@ -5,7 +5,7 @@ import com.example.algorithm.constraint.ConstraintChecker;
 import com.example.algorithm.constraint.ConstraintResult;
 import com.example.algorithm.constraint.DeadlineConstraint;
 import com.example.algorithm.constraint.PrecedenceConstraint;
-import com.example.algorithm.db.ScheduleData;
+import com.example.algorithm.model.ScheduleData;
 import com.example.algorithm.engine.core.EvolutionaryOperators;
 import com.example.algorithm.engine.core.FitnessEvaluator;
 import com.example.algorithm.engine.core.Individual;

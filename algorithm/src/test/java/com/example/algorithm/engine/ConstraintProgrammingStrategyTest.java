@@ -1,11 +1,10 @@
 package com.example.algorithm.engine;
 
-import com.example.algorithm.db.ScheduleData;
+import com.example.algorithm.model.ScheduleData;
 import com.example.algorithm.model.*;
 import org.junit.jupiter.api.Test;
 
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;

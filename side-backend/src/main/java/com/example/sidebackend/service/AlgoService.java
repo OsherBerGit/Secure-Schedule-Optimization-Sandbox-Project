@@ -1,6 +1,6 @@
 package com.example.sidebackend.service;
 
-import com.example.algorithm.db.ScheduleData;
+import com.example.algorithm.model.ScheduleData;
 import com.example.algorithm.engine.GreedySchedulingStrategy;
 import com.example.algorithm.engine.ConstraintProgrammingStrategy;
 import com.example.algorithm.engine.MemeticSchedulingStrategy;

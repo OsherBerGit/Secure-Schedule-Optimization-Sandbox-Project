@@ -1,7 +1,7 @@
 package com.example.algorithm.engine;
 
 import com.example.algorithm.constraint.ConstraintResult;
-import com.example.algorithm.db.ScheduleData;
+import com.example.algorithm.model.ScheduleData;
 import com.example.algorithm.model.AlgoTask;
 import com.example.algorithm.model.AlgoUser;
 import com.example.algorithm.model.TaskAssignment;

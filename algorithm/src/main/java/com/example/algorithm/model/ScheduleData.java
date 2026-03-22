@@ -1,7 +1,4 @@
-package com.example.algorithm.db;
-
-import com.example.algorithm.model.AlgoTask;
-import com.example.algorithm.model.AlgoUser;
+package com.example.algorithm.model;
 
 import java.util.List;
 

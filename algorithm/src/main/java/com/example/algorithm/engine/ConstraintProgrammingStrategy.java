@@ -1,6 +1,6 @@
 package com.example.algorithm.engine;
 
-import com.example.algorithm.db.ScheduleData;
+import com.example.algorithm.model.ScheduleData;
 import com.example.algorithm.model.*;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solution;
