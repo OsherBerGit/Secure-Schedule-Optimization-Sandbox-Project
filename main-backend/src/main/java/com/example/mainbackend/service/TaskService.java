@@ -7,10 +7,7 @@ import com.example.mainbackend.entity.Priority;
 import com.example.mainbackend.entity.Task;
 import com.example.mainbackend.entity.TaskStatus;
 import com.example.mainbackend.mapper.TaskMapper;
-import com.example.mainbackend.repository.PriorityRepository;
-import com.example.mainbackend.repository.SettlementRepository;
-import com.example.mainbackend.repository.TaskRepository;
-import com.example.mainbackend.repository.TaskStatusRepository;
+import com.example.mainbackend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +24,7 @@ public class TaskService {
     private final PriorityRepository priorityRepository;
     private final TaskStatusRepository taskStatusRepository;
     private final SettlementRepository settlementRepository;
+    private final RoleRepository roleRepository;
     private final TaskMapper taskMapper;
 
     @Transactional
@@ -96,15 +94,25 @@ public class TaskService {
                 .deadline(request.getDeadline())
                 .durationHours(request.getDurationHours())
                 .priority(priority)
-                .status(openStatus);
+                .status(existing != null ? existing.getStatus() : openStatus);
 
-        if (existing != null)
+        // Handle required roles
+        if (request.getRequiredRoleIds() != null) {
+            java.util.Set<com.example.mainbackend.entity.Role> roles = new java.util.HashSet<>(
+                    roleRepository.findAllById(request.getRequiredRoleIds())
+            );
+            builder.requiredRoles(roles);
+        } else if (existing != null) {
+            // If request doesn't specify roles (null), keep existing roles
+            builder.requiredRoles(existing.getRequiredRoles());
+        }
+
+        if (existing != null) {
             builder.id(existing.getId())
                     .startTime(existing.getStartTime())
-                    .status(existing.getStatus())            // preserve lifecycle on update
-                    .requiredRoles(existing.getRequiredRoles())
                     .outgoingConstraints(existing.getOutgoingConstraints())
                     .incomingConstraints(existing.getIncomingConstraints());
+        }
 
         return builder.build();
     }

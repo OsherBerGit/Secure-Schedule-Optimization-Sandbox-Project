@@ -130,11 +130,19 @@ const Dashboard: React.FC = () => {
           </div>
 
           {isAdmin && (
+            <div className="dashboard-card" onClick={() => navigate('/users')}>
+              <h3>👥 Users</h3>
+              <p>Manage system users</p>
+            </div>
+          )}
+
+          <div className="dashboard-card" onClick={() => navigate('/tasks')}>
+            <h3>📋 Tasks</h3>
+            <p>View and manage tasks</p>
+          </div>
+
+          {isAdmin && (
             <>
-              <div className="dashboard-card" onClick={() => navigate('/users')}>
-                <h3>👥 Users</h3>
-                <p>Manage system users</p>
-              </div>
               <div className="dashboard-card" onClick={() => navigate('/priorities')}>
                 <h3>⭐ Task Priorities</h3>
                 <p>Manage task priorities</p>
@@ -153,10 +161,6 @@ const Dashboard: React.FC = () => {
               </div>
             </>
           )}
-          <div className="dashboard-card" onClick={() => navigate('/tasks')}>
-            <h3>📋 Tasks</h3>
-            <p>View and manage tasks</p>
-          </div>
           <div className="dashboard-card" onClick={() => navigate('/task-constraints')}>
             <h3>⚙️ Task Constraints</h3>
             <p>View task constraints</p>

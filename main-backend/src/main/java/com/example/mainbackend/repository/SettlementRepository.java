@@ -26,6 +26,9 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
     @Query("SELECT s FROM Settlement s JOIN FETCH s.task JOIN FETCH s.worker JOIN FETCH s.status WHERE s.task.id = :taskId")
     List<Settlement> findByTaskId(@Param("taskId") Long taskId);
 
+    @Query("SELECT s FROM Settlement s JOIN FETCH s.task JOIN FETCH s.worker JOIN FETCH s.status WHERE s.task.id IN :taskIds")
+    List<Settlement> findByTaskIdIn(@Param("taskIds") java.util.Collection<Long> taskIds);
+
     @Query("SELECT s FROM Settlement s JOIN FETCH s.task JOIN FETCH s.worker JOIN FETCH s.status WHERE s.settlementDate BETWEEN :start AND :end")
     List<Settlement> findBySettlementDateBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 

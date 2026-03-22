@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
-import type { Task, CreateTaskRequest, UpdateTaskRequest, Status, Priority } from '../types'
-import { taskApi, statusApi, priorityApi } from '../api'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import type { Task, CreateTaskRequest, UpdateTaskRequest, Status, Priority, Department } from '../types'
+import { taskApi, statusApi, priorityApi, departmentApi } from '../api'
 import { useAuth } from '../context/useAuth'
 import TaskModal from '../components/TaskModal'
 import './Tasks.css'
@@ -24,10 +24,16 @@ const Tasks = () => {
     const [tasks, setTasks] = useState<Task[]>([])
     const [statuses, setStatuses] = useState<Status[]>([])
     const [priorities, setPriorities] = useState<Priority[]>([])
+    const [departments, setDepartments] = useState<Department[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [showModal, setShowModal] = useState(false)
     const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+
+    // Filter states
+    const [filterDepartment, setFilterDepartment] = useState<string>('')
+    const [filterStatus, setFilterStatus] = useState<string>('')
+    const [filterPriority, setFilterPriority] = useState<string>('')
 
     const fetchTasks = useCallback(async () => {
         setIsLoading(true)
@@ -45,7 +51,20 @@ const Tasks = () => {
         void fetchTasks()
         statusApi.getAll().then(res => setStatuses(res.data)).catch(() => {})
         priorityApi.getAll().then(res => setPriorities(res.data)).catch(() => {})
+        departmentApi.getAll().then(res => setDepartments(res.data)).catch(() => {})
     }, [fetchTasks])
+
+    const filteredTasks = useMemo(() => {
+        return tasks.filter(t => {
+            // Department Filter
+            if (filterDepartment && t.departmentName !== filterDepartment) return false
+            // Status Filter
+            if (filterStatus && (t.taskStatusName || '') !== filterStatus) return false
+            // Priority Filter
+            if (filterPriority && (t.priorityName || '') !== filterPriority) return false
+            return true
+        })
+    }, [tasks, filterDepartment, filterStatus, filterPriority])
 
     function handleEdit(task: Task) {
         setSelectedTask(task)
@@ -83,6 +102,43 @@ const Tasks = () => {
 
             {error && <div className="error-message">{error}</div>}
 
+            {isAdmin && (
+                <div className="filter-row">
+                    <select
+                        className="modern-select"
+                        value={filterDepartment}
+                        onChange={e => setFilterDepartment(e.target.value)}
+                    >
+                        <option value="">All Departments</option>
+                        {departments.map(d => (
+                            <option key={d.id} value={d.name}>{d.name}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        className="modern-select"
+                        value={filterStatus}
+                        onChange={e => setFilterStatus(e.target.value)}
+                    >
+                        <option value="">All Statuses</option>
+                        {statuses.map(s => (
+                            <option key={s.id} value={s.name}>{s.name}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        className="modern-select"
+                        value={filterPriority}
+                        onChange={e => setFilterPriority(e.target.value)}
+                    >
+                        <option value="">All Priorities</option>
+                        {priorities.map(p => (
+                            <option key={p.id} value={p.name}>{p.name}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
             {isLoading ? (
                 <div className="loading">Loading...</div>
             ) : (
@@ -100,12 +156,12 @@ const Tasks = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {tasks.length === 0 ? (
+                        {filteredTasks.length === 0 ? (
                             <tr>
                                 <td colSpan={isAdmin ? 8 : 7} className="no-data">No tasks found</td>
                             </tr>
                         ) : (
-                            tasks.map(task => (
+                            filteredTasks.map(task => (
                                 <tr key={task.id}>
                                     <td className="task-title">{task.title}</td>
                                     <td>
@@ -160,6 +216,4 @@ const Tasks = () => {
 }
 
 export default Tasks
-
-
 

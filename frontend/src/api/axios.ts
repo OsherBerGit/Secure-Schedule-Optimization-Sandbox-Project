@@ -33,6 +33,19 @@ axiosInstance.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+    // Handle 409 Conflict (Optimistic Locking)
+    if (error.response?.status === 409) {
+      alert("Data Conflict: The schedule has been modified by another user. Please refresh the page to get the latest version.");
+      return Promise.reject(error);
+    }
+
+    // Handle 422 Unprocessable Entity (Batch Validation)
+    if (error.response?.status === 422 && error.response.data) {
+      // Ensure the component receives the structured error details
+      // We pass the error through, but the component will inspect error.response.data.details
+      console.warn("Batch validation failed:", error.response.data);
+    }
+
     // If error is 401 (expired) or 403 (blacklisted/invalid) and we haven't retried yet
     if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
       originalRequest._retry = true;

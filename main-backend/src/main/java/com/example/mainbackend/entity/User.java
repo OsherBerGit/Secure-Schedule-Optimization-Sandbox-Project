@@ -22,10 +22,9 @@ public class User {
     // Authentication Details
 
     /**
-     * Israeli National ID (Teudat Zehut).
      * Unique identifier for authentication and business operations.
      */
-    @Column(name = "teudat_zehut", unique = true, nullable = false)
+    @Column(unique = true, nullable = false)
     private String nationalId; // Person ID
 
     @Column(nullable = false)

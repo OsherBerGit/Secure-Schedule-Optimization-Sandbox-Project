@@ -89,6 +89,11 @@ export const departmentApi = {
     axiosInstance.delete(`/departments/${id}`),
 };
 
+// Role API
+export const roleApi = {
+  getAll: () => axiosInstance.get<import('../types').Role[]>('/roles'),
+};
+
 // Task API
 export const taskApi = {
   getAll: () =>
@@ -259,4 +264,3 @@ export const scheduleApi = {
   save: (data: SaveScheduleRequest) =>
     axiosInstance.post<void>('/schedule/save', data),
 };
-

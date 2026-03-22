@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,6 +22,7 @@ public class ErrorResponse {
     private String message;
     private String path;
     private Map<String, String> validationErrors; // For field-level validation errors
+    private List<String> details; // For list-based errors (e.g. batch validation)
 
     public ErrorResponse(LocalDateTime timestamp, int status, String error, String message, String path) {
         this.timestamp = timestamp;
@@ -30,4 +32,3 @@ public class ErrorResponse {
         this.path = path;
     }
 }
-

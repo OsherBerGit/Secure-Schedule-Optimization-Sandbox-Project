@@ -31,6 +31,10 @@ public class TaskMapper {
                 .taskStatusName(task.getStatus() != null ? task.getStatus().getName() : null)
                 .taskStatusColorCode(task.getStatus() != null ? task.getStatus().getColorCode() : null)
                 .departmentName(task.getDepartment() != null ? task.getDepartment().getName() : null)
+                .version(task.getVersion())
+                .requiredRoleIds(task.getRequiredRoles() != null
+                        ? task.getRequiredRoles().stream().map(Role::getId).collect(Collectors.toSet())
+                        : Collections.emptySet())
                 .build();
     }
 
@@ -83,5 +87,3 @@ public class TaskMapper {
                 .build();
     }
 }
-
-

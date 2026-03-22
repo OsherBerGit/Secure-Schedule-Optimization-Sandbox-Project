@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { Task, User, Department, ScheduleStrategy, ScheduleResult, UnscheduledTaskResult } from '../types'
+import type { Task, User, Department, ScheduleStrategy, ScheduleResult, UnscheduledTaskResult, SaveTaskAssignment } from '../types'
 import { taskApi, userApi, departmentApi, scheduleApi } from '../api'
 import { useAuth } from '../context/useAuth'
 import FitnessChart from '../components/FitnessChart'
+import BatchErrorSummary from '../components/BatchErrorSummary'
 import './Schedule.css'
 
 // Group tasks by assigned worker for display
@@ -46,6 +47,7 @@ const Schedule = () => {
     const [isGenerating, setIsGenerating] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [validationErrors, setValidationErrors] = useState<string[]>([])
     const [successMsg, setSuccessMsg] = useState<string | null>(null)
     const [viewMode, setViewMode] = useState<'gantt' | 'table'>('gantt')
     const [strategy, setStrategy] = useState<ScheduleStrategy>('GREEDY')
@@ -157,23 +159,45 @@ const Schedule = () => {
         if (!scheduleResult) return
         setIsSaving(true)
         setError(null)
+        setValidationErrors([])
         setSuccessMsg(null)
+
         try {
-            await scheduleApi.save({
-                assignments: scheduleResult.assignments.map(a => ({
+            // Map assignments to DTO, including the optimistic locking version from the Task entity
+            const assignments: SaveTaskAssignment[] = scheduleResult.assignments.map(a => {
+                const originalTask = tasks.find(t => t.id === a.taskId)
+                if (!originalTask) {
+                    throw new Error(`Task ID ${a.taskId} not found in local state via ID.`)
+                }
+
+                return {
                     taskId: a.taskId,
                     assignedUserId: a.assignedUserId ?? null,
                     scheduledStart: a.scheduledStart ?? null,
                     scheduledEnd: a.scheduledEnd ?? null,
-                })),
+                    version: originalTask.version // Send version for optimistic locking
+                }
             })
+
+            await scheduleApi.save({ assignments })
+            
             setSuccessMsg(
                 `✅ Schedule approved and saved — ${scheduleResult.assignedTasks} task(s) scheduled.`
             )
             setScheduleResult(null) // clear draft state after saving
             await fetchData()       // refresh task list to reflect new SCHEDULED statuses
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to save schedule')
+            // Handle Structured Batch Validation Errors (422)
+            // @ts-expect-error err has unknown type but we check properties safely
+            if (err?.response?.status === 422 && Array.isArray(err?.response?.data?.details)) {
+                // @ts-expect-error checked above
+                setValidationErrors(err.response.data.details)
+                setError('Batch validation failed. Please review the errors below.')
+            } else if (err instanceof Error) {
+                setError(err.message)
+            } else {
+                setError('Failed to save schedule')
+            }
         } finally {
             setIsSaving(false)
         }
@@ -244,9 +268,17 @@ const Schedule = () => {
                 </div>
             </div>
 
-            {/* Messages */}
-            {error      && <div className="alert alert-error">{error}</div>}
-            {successMsg && <div className="alert alert-info">{successMsg}</div>}
+            {/* Batch Validation Errors */}
+            {validationErrors.length > 0 && (
+                <BatchErrorSummary 
+                    errors={validationErrors} 
+                    onClose={() => setValidationErrors([])} 
+                />
+            )}
+
+            {/* Success/Error Alerts (Legacy) */}
+            {error && !validationErrors.length && <div className="error-msg">{error}</div>}
+            {successMsg && <div className="success-msg">{successMsg}</div>}
 
             {/* Algorithm Result Panel */}
             {scheduleResult && (
@@ -512,4 +544,3 @@ const Schedule = () => {
 }
 
 export default Schedule
-

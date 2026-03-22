@@ -46,6 +46,12 @@ public class Task {
     private LocalDateTime startTime;
 
     /**
+     * Version field for optimistic locking to handle concurrent updates safely.
+     */
+    @Version
+    private Long version;
+    
+    /**
      * The department this task belongs to.
      * Used by scheduling scope: MANAGERs only see tasks in their own department.
      * Nullable — tasks not yet assigned to a department are visible to ADMINs only.

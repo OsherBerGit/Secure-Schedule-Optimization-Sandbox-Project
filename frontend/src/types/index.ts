@@ -5,6 +5,11 @@ export interface Department {
   name: string;
 }
 
+export interface Role {
+  id: number;
+  roleName: string;
+}
+
 export interface WorkerAvailability {
   id: number | null;
   dayOfWeek: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
@@ -67,6 +72,11 @@ export interface Task {
   taskStatusName: string | null;       // "OPEN" | "LOCKED" | "CLOSED"
   taskStatusCategory: string | null;   // always "TASK"
   taskStatusColorCode: string | null;  // hex colour for badge
+  
+  /** Optimistic locking version from backend. */
+  version: number;
+  /** IDs of roles required to perform this task. */
+  requiredRoleIds: number[];
 }
 
 export interface CreateTaskRequest {
@@ -75,6 +85,8 @@ export interface CreateTaskRequest {
   deadline?: string;
   durationHours?: number;
   priorityId: number;
+  departmentId?: number;
+  requiredRoleIds?: number[];
 }
 
 export interface UpdateTaskRequest {
@@ -83,6 +95,8 @@ export interface UpdateTaskRequest {
   deadline?: string;
   durationHours?: number;
   priorityId: number;
+  departmentId?: number;
+  requiredRoleIds?: number[];
 }
 
 export interface Status {
@@ -260,6 +274,8 @@ export interface SaveTaskAssignment {
   assignedUserId: number | null;
   scheduledStart: string | null;
   scheduledEnd: string | null;
+  /** Version of the task at the time of scheduling, for optimistic locking. */
+  version: number;
 }
 
 /** Request body for POST /api/schedule/save. */
@@ -278,4 +294,3 @@ export interface ScheduleResult {
   /** Tasks the algorithm could not assign, with human-readable failure reasons. */
   unscheduledTasks?: UnscheduledTaskResult[];
 }
-

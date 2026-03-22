@@ -52,6 +52,12 @@ public class SaveScheduleRequest {
 
         /** Proposed end time returned by the algorithm (may be null). */
         private LocalDateTime scheduledEnd;
+
+        /**
+         * The version of the Task entity when it was fetched.
+         * Used for optimistic locking to prevent concurrent modification.
+         */
+        @NotNull(message = "Task version is required for optimistic locking")
+        private Long version;
     }
 }
-

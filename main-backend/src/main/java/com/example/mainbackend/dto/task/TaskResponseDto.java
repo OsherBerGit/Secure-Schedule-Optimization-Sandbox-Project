@@ -26,4 +26,15 @@ public class TaskResponseDto {
 
     /** Name of the department this task belongs to (null if unassigned). */
     private String departmentName;
+
+    /**
+     * Optimistic Locking Version.
+     * Sent to frontend so it can be returned during saves to prevent stale updates.
+     */
+    private Long version;
+
+    /**
+     * Role requirements for the task.
+     */
+    private java.util.Set<Long> requiredRoleIds;
 }
