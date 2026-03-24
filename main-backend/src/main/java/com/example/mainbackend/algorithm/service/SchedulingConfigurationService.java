@@ -33,6 +33,28 @@ public class SchedulingConfigurationService {
     }
 
     /**
+     * Returns a specific configuration by its ID.
+     * Falls back to the active configuration if the ID is null.
+     */
+    @Transactional(readOnly = true)
+    public SchedulingConfigurationDto getConfiguration(Long id) {
+        if (id == null) return getActiveConfiguration();
+        return repository.findById(id)
+                .map(mapper::mapToDto)
+                .orElseThrow(() -> new IllegalArgumentException("Configuration with ID " + id + " not found"));
+    }
+
+    /**
+     * Returns all configurations.
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<SchedulingConfigurationDto> getAllConfigurations() {
+        return repository.findAll().stream()
+                .map(mapper::mapToDto)
+                .toList();
+    }
+
+    /**
      * Persists a new or updated configuration.
      *
      * Concurrency / transaction note:
@@ -61,7 +83,8 @@ public class SchedulingConfigurationService {
         return new SchedulingConfigurationDto(
                 null, "Default",
                 0.4, 0.4, 0.2,
-                true, 100, 500
+                true, 100, 500,
+                0.1, 0.9, 0.2
         );
     }
 }

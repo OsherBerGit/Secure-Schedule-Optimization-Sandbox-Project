@@ -50,4 +50,14 @@ public class SchedulingConfigurationController {
             @Valid @RequestBody SchedulingConfigurationDto dto) {
         return ResponseEntity.ok(service.saveConfiguration(dto));
     }
+
+    /**
+     * Returns all available configurations.
+     * Accessible by ADMIN only.
+     */
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<java.util.List<SchedulingConfigurationDto>> getAllConfigs() {
+        return ResponseEntity.ok(service.getAllConfigurations());
+    }
 }

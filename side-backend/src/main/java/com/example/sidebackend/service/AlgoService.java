@@ -158,7 +158,7 @@ public class AlgoService {
         return switch (name) {
             case "MEMETIC"     -> MemeticSchedulingStrategy.withDefaults(
                                       config != null ? config : new com.example.algorithm.model.AlgoSchedulingConfiguration(
-                                              1.0, 1.0, 1.0, 50, 100));
+                                              1.0, 1.0, 1.0, 50, 100, 0.1, 0.9, 0.2));
             case "ROUND_ROBIN" -> new RoundRobinSchedulingStrategy();
             case "CONSTRAINT_PROGRAMMING" -> new ConstraintProgrammingStrategy();
             default            -> new GreedySchedulingStrategy();

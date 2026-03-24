@@ -34,7 +34,18 @@ public record SchedulingConfigurationDto(
         Integer populationSize,
 
         @Min(value = 1, message = "maxGenerations must be at least 1")
-        Integer maxGenerations
+        Integer maxGenerations,
+
+        @DecimalMin(value = "0.0", message = "mutationRate must be >= 0.0")
+        @DecimalMax(value = "1.0", message = "mutationRate must be <= 1.0")
+        double mutationRate,
+
+        @DecimalMin(value = "0.0", message = "crossoverRate must be >= 0.0")
+        @DecimalMax(value = "1.0", message = "crossoverRate must be <= 1.0")
+        double crossoverRate,
+
+        @DecimalMin(value = "0.0", message = "localSearchFrequency must be >= 0.0")
+        @DecimalMax(value = "1.0", message = "localSearchFrequency must be <= 1.0")
+        double localSearchFrequency
 
 ) {}
-

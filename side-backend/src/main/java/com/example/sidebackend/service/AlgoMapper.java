@@ -183,11 +183,14 @@ public final class AlgoMapper {
     public static AlgoSchedulingConfiguration toModel(SchedulingConfigurationDto dto) {
         if (dto == null) return null;
         return new AlgoSchedulingConfiguration(
-                dto.weightPriority(),
-                dto.weightDeadline(),
-                dto.weightFairness(),
-                dto.populationSize(),
-                dto.maxGenerations()
+            dto.weightPriority(),
+            dto.weightDeadline(),
+            dto.weightFairness(),
+            dto.populationSize(),
+            dto.maxGenerations(),
+            dto.mutationRate(),
+            dto.crossoverRate(),
+            dto.localSearchFrequency()
         );
     }
 

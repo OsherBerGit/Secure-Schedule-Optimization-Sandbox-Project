@@ -93,11 +93,13 @@ public class SchedulingService {
      *
      * @param strategy     the scheduling strategy name (GREEDY, ROUND_ROBIN, MEMETIC)
      * @param departmentId optional department scope for ADMIN users; ignored for MANAGER
+     * @param configId     optional configuration ID (uses active if null)
      */
     @Transactional(readOnly = true)
-    public AlgoScheduleResponse runScheduling(String strategy, Long departmentId) {
+    public AlgoScheduleResponse runScheduling(String strategy, Long departmentId, Long configId) {
         User currentUser = resolveCurrentUser();
-        SchedulingConfigurationDto config = configService.getActiveConfiguration();
+        // Zero-Trust: Validate config existence and permissions if necessary (here just fetching)
+        SchedulingConfigurationDto config = configService.getConfiguration(configId);
         AlgoScheduleRequest request = buildRequest(strategy, config, currentUser, departmentId);
 
         AlgoScheduleResponse response = algorithmClient.requestSchedule(request);
@@ -106,6 +108,14 @@ public class SchedulingService {
         enrichForPreview(response);
 
         return response;
+    }
+
+    /**
+     * Backwards compatibility overload for existing tests/calls
+     */
+    @Transactional(readOnly = true)
+    public AlgoScheduleResponse runScheduling(String strategy, Long departmentId) {
+        return runScheduling(strategy, departmentId, null);
     }
 
     /**

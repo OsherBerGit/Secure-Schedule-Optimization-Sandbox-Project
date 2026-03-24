@@ -263,4 +263,22 @@ export const scheduleApi = {
    */
   save: (data: SaveScheduleRequest) =>
     axiosInstance.post<void>('/schedule/save', data),
+
+  /** Optional PHASE 1 override: Run with a specific config preset (Memetic only) */
+  runWithConfig: (strategy: ScheduleStrategy, configId: number, departmentId?: number | null) => {
+      const params = new URLSearchParams({ strategy, configId: String(configId) });
+      if (departmentId != null) params.append('departmentId', String(departmentId));
+      return axiosInstance.post<ScheduleResult>(`/schedule/run?${params.toString()}`);
+  }
+};
+
+// Scheduling Configuration API — CRUD for algorithm parameters
+export const schedulingConfigApi = {
+  getActive: () => axiosInstance.get<import('../types').SchedulingConfiguration>('/scheduling-configs/active'),
+  
+  create: (config: Omit<import('../types').SchedulingConfiguration, 'id'>) => 
+      axiosInstance.post<import('../types').SchedulingConfiguration>('/scheduling-configs', config),
+
+  // If a GetAll endpoint exists, add it here. For now we assume we might need to fetch all to populate a dropdown
+  getAll: () => axiosInstance.get<import('../types').SchedulingConfiguration[]>('/scheduling-configs'),
 };

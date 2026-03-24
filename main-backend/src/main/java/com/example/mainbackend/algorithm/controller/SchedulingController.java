@@ -41,8 +41,9 @@ public class SchedulingController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<AlgoScheduleResponse> runSchedule(
             @RequestParam(defaultValue = "GREEDY") String strategy,
-            @RequestParam(required = false) Long departmentId) {
-        AlgoScheduleResponse response = schedulingService.runScheduling(strategy, departmentId);
+            @RequestParam(required = false) Long departmentId,
+            @RequestParam(required = false) Long configId) {
+        AlgoScheduleResponse response = schedulingService.runScheduling(strategy, departmentId, configId);
         return ResponseEntity.ok(response);
     }
 
@@ -59,5 +60,3 @@ public class SchedulingController {
         return ResponseEntity.ok().build();
     }
 }
-
-

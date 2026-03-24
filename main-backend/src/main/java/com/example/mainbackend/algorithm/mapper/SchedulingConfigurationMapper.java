@@ -17,6 +17,9 @@ public class SchedulingConfigurationMapper {
                 .isActive(dto.isActive())
                 .populationSize(dto.getPopulationSize())
                 .maxGenerations(dto.getMaxGenerations())   // field was "generations" — now unified
+                .mutationRate(dto.getMutationRate())
+                .crossoverRate(dto.getCrossoverRate())
+                .localSearchFrequency(dto.getLocalSearchFrequency())
                 .build();
     }
 
@@ -29,7 +32,10 @@ public class SchedulingConfigurationMapper {
                 entity.getWeightFairness(),
                 entity.isActive(),
                 entity.getPopulationSize(),
-                entity.getMaxGenerations()
+                entity.getMaxGenerations(),
+                entity.getMutationRate(),
+                entity.getCrossoverRate(),
+                entity.getLocalSearchFrequency()
         );
     }
 

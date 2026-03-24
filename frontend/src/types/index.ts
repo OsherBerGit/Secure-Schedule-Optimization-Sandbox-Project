@@ -79,6 +79,20 @@ export interface Task {
   requiredRoleIds: number[];
 }
 
+export interface SchedulingConfiguration {
+  id: number | null;
+  configName: string;
+  weightPriority: number;
+  weightDeadline: number;
+  weightFairness: number;
+  mutationRate: number;
+  crossoverRate: number;
+  localSearchFrequency: number;
+  populationSize: number;
+  maxGenerations: number;
+  isActive: boolean;
+}
+
 export interface CreateTaskRequest {
   title: string;
   description?: string;
