@@ -8,6 +8,7 @@ import type {
   CreateUserRequest,
   UpdateUserRequest,
   Department,
+  Job,
   Task,
   CreateTaskRequest,
   UpdateTaskRequest,
@@ -89,9 +90,9 @@ export const departmentApi = {
     axiosInstance.delete(`/departments/${id}`),
 };
 
-// Role API
-export const roleApi = {
-  getAll: () => axiosInstance.get<import('../types').Role[]>('/roles'),
+// Job API
+export const jobApi = {
+  getAll: () => axiosInstance.get<Job[]>('/jobs'),
 };
 
 // Task API
@@ -279,6 +280,6 @@ export const schedulingConfigApi = {
   create: (config: Omit<import('../types').SchedulingConfiguration, 'id'>) => 
       axiosInstance.post<import('../types').SchedulingConfiguration>('/scheduling-configs', config),
 
-  // If a GetAll endpoint exists, add it here. For now we assume we might need to fetch all to populate a dropdown
+  // If a GetAll endpoint exists, add it here. For now we assume we might need to populate a dropdown
   getAll: () => axiosInstance.get<import('../types').SchedulingConfiguration[]>('/scheduling-configs'),
 };

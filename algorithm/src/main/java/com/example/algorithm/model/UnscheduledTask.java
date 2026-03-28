@@ -1,5 +1,6 @@
 package com.example.algorithm.model;
 
+// TODO: REMOVE
 /**
  * Represents a task that the scheduling algorithm could not assign to any worker,
  * along with a machine-readable explanation of why it was skipped.

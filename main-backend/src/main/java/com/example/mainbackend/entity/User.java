@@ -55,17 +55,21 @@ public class User {
     @Builder.Default
     private List<WorkerAvailability> availabilities = new ArrayList<>();
 
-    // Relationship Roles - EAGER is acceptable for roles (usually small set)
-    // Ensure that a user can have a role only once, the user_id and role_id combination must be unique
-    @ManyToMany(fetch = FetchType.EAGER)
+    // Access Level: Each user has exactly one security Role (ADMIN, MANAGER, WORKER)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id", nullable = false)
+    private Role role;
+
+    // Functional Skills: A user can have multiple Job Titles (many-to-many)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-        name = "user_role",
+        name = "user_jobs",
         joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id"),
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "role_id"})
+        inverseJoinColumns = @JoinColumn(name = "job_id"),
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "job_id"})
     )
     @Builder.Default
-    private Set<Role> roles = new HashSet<>();
+    private Set<Job> jobs = new HashSet<>();
 
     // Relationship Settlements - mappedBy establishes bidirectional relationship
     @OneToMany(mappedBy = "worker", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -77,5 +81,3 @@ public class User {
     @Builder.Default
     private List<Vacation> vacations = new ArrayList<>();
 }
-
-

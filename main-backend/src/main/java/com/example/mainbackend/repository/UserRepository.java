@@ -13,22 +13,22 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByNationalId(String nationalId); // Queries teudat_zehut column
     Optional<User> findByEmail(String email);
-    List<User> findByRoles_RoleName(String roleName); // Find all users with a specific role
+    List<User> findByRole_RoleName(String roleName); // Updated to single Role
 
     /** All users scoped to a specific department. */
     List<User> findAllByDepartmentId(Long departmentId);
 
     /**
-     * Loads ALL users with their roles eagerly in a single query.
+     * Loads ALL users with their jobs eagerly in a single query.
      * Used by SchedulingService (ADMIN scope) to avoid N+1 when building AlgoUserRequests.
      */
-    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.roles")
-    List<User> findAllWithRoles();
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.jobs")
+    List<User> findAllWithJobs();
 
     /**
-     * Loads users belonging to a specific department with their roles eagerly.
+     * Loads users belonging to a specific department with their jobs eagerly.
      * Used by SchedulingService (MANAGER scope).
      */
-    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.roles WHERE u.department.id = :departmentId")
-    List<User> findByDepartmentIdWithRoles(@Param("departmentId") Long departmentId);
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.jobs WHERE u.department.id = :departmentId")
+    List<User> findAllWithJobsByDepartment(@Param("departmentId") Long departmentId);
 }

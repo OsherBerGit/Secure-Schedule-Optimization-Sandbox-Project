@@ -12,25 +12,24 @@ import ScheduleTable from '../components/schedule/ScheduleTable'
 import ScheduleExplainability from '../components/schedule/ScheduleExplainability'
 import UnscheduledWarning from '../components/schedule/UnscheduledWarning'
 import './Schedule.css'
-import './SchedulingConfigurationModal.css'
 
 const Schedule = () => {
     const { user: currentUser } = useAuth()
-    
+
     // 1. Data Hook
-    const { 
-        tasks, workers, departments, isLoading: isDataLoading, refreshData, error: dataError 
+    const {
+        tasks, workers, departments, isLoading: isDataLoading, refreshData, error: dataError
     } = useScheduleData()
 
     // 2. Algorithm Hook
-    const { 
-        scheduleResult, isGenerating, isSaving, 
-        error: algoError, validationErrors, successMsg, 
-        runAlgorithm, saveSchedule, setValidationErrors, clearMessages 
+    const {
+        scheduleResult, isGenerating, isSaving,
+        error: algoError, validationErrors, successMsg,
+        runAlgorithm, saveSchedule, setValidationErrors, clearMessages
     } = useScheduleAlgorithm()
-    
+
     // 3. Configuration Hook
-    const { 
+    const {
         configs, isConfigModalOpen, selectedConfigId, isLoading: isConfigLoading, error: configError,
         openConfigModal, closeConfigModal, selectConfig, createConfig, fetchConfigs
     } = useSchedulingConfig()
@@ -49,7 +48,7 @@ const Schedule = () => {
     const assignmentMap = new Map<number, number | null>(
         scheduleResult?.assignments.map(a => [a.taskId, a.assignedUserId]) ?? []
     )
-    
+
     const scheduledTasks = tasks.filter(t => t.startTime)
     const unassignedTasks  = tasks.filter(t => !assignmentMap.has(t.id) || assignmentMap.get(t.id) == null)
     // Warning for tasks that are assigned in the draft but don't have a start time yet (should be rare if algorithm works)
@@ -135,7 +134,7 @@ const Schedule = () => {
                                 <option value="MEMETIC">Memetic (Genetic + Local Search)</option>
                             </select>
 
-                            <button 
+                            <button
                                 className={`btn-secondary ${strategy !== 'MEMETIC' ? 'btn-ghost' : ''}`}
                                 disabled={strategy !== 'MEMETIC'}
                                 title={strategy !== 'MEMETIC' ? "Available only for Memetic Algorithm" : "Configure Algorithm Parameters"}
@@ -145,9 +144,9 @@ const Schedule = () => {
                                ⚙️ Algorithm Configuration
                             </button>
 
-                            <button 
-                                className="generate-btn" 
-                                onClick={handleGenerate} 
+                            <button
+                                className="generate-btn"
+                                onClick={handleGenerate}
                                 disabled={isGenerating || tasks.length === 0}
                             >
                                 {isGenerating ? 'Optimizing...' : 'Generate Schedule Draft'}
@@ -165,9 +164,9 @@ const Schedule = () => {
 
             {/* Batch Validation Errors */}
             {validationErrors.length > 0 && (
-                <BatchErrorSummary 
-                    errors={validationErrors} 
-                    onClose={() => setValidationErrors([])} 
+                <BatchErrorSummary
+                    errors={validationErrors}
+                    onClose={() => setValidationErrors([])}
                 />
             )}
 
@@ -277,15 +276,15 @@ const Schedule = () => {
                             </p>
                         </div>
                     ) : viewMode === 'gantt' ? (
-                        <ScheduleGantt 
-                            tasks={tasks} 
-                            workers={workers} 
-                            assignmentMap={assignmentMap} 
+                        <ScheduleGantt
+                            tasks={tasks}
+                            workers={workers}
+                            assignmentMap={assignmentMap}
                         />
                     ) : (
-                        <ScheduleTable 
-                            tasks={tasks} 
-                            workers={workers} 
+                        <ScheduleTable
+                            tasks={tasks}
+                            workers={workers}
                             assignmentMap={assignmentMap}
                             assignments={scheduleResult?.assignments ?? []}
                         />
@@ -293,7 +292,7 @@ const Schedule = () => {
 
                     {/* Warnings and Explainability */}
                     <UnscheduledWarning tasks={unscheduledWarningTasks} />
-                    
+
                     {scheduleResult?.unscheduledTasks && (
                         <ScheduleExplainability failures={scheduleResult.unscheduledTasks} />
                     )}
@@ -302,7 +301,7 @@ const Schedule = () => {
 
             {/* Configuration Modal */}
             {isConfigModalOpen && (
-                <SchedulingConfigurationModal 
+                <SchedulingConfigurationModal
                     configs={configs}
                     isLoading={isConfigLoading}
                     error={configError}

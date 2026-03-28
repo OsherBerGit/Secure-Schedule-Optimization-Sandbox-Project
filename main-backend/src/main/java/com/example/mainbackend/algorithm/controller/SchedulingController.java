@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -32,18 +33,22 @@ public class SchedulingController {
      * <p>Runs the algorithm and returns enriched assignments for the admin to review.
      * <strong>Does not write anything to the database.</strong></p>
      *
-     * @param strategy     "GREEDY" (default) | "ROUND_ROBIN" | "MEMETIC"
+     * @param strategy     "GREEDY" (default) | "ROUND_ROBIN" | "MEMETIC" | "Constraint Programming"
      * @param departmentId optional — ADMIN only: scope the run to a specific department.
      *                     Ignored for MANAGER (always scoped to their own department).
      *                     When null for ADMIN, all departments are included.
      */
     @PostMapping("/run")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<AlgoScheduleResponse> runSchedule(
             @RequestParam(defaultValue = "GREEDY") String strategy,
             @RequestParam(required = false) Long departmentId,
-            @RequestParam(required = false) Long configId) {
-        AlgoScheduleResponse response = schedulingService.runScheduling(strategy, departmentId, configId);
+            @RequestParam(required = false) Long configId,
+            Authentication authentication) {
+
+        String nationalId = authentication.getName();
+
+        AlgoScheduleResponse response = schedulingService.runScheduling(strategy, departmentId, configId, nationalId);
         return ResponseEntity.ok(response);
     }
 
@@ -54,9 +59,13 @@ public class SchedulingController {
      * to the database: Task → SCHEDULED, Settlement → ASSIGNED.</p>
      */
     @PostMapping("/save")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> saveSchedule(@Valid @RequestBody SaveScheduleRequest request) {
-        schedulingService.saveApprovedSchedule(request);
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<Void> saveSchedule(@Valid @RequestBody SaveScheduleRequest request,
+                                             Authentication authentication) {
+
+        String nationalId = authentication.getName();
+
+        schedulingService.saveApprovedSchedule(request, nationalId);
         return ResponseEntity.ok().build();
     }
 }

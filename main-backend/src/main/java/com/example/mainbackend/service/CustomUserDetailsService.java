@@ -14,6 +14,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -25,30 +27,55 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String nationalId) throws UsernameNotFoundException {
-        User user = userRepository.findByNationalId(nationalId).orElse(null);
+        User user = userRepository.findByNationalId(nationalId)
+                .orElseThrow(() -> new UsernameNotFoundException("Invalid national ID: " + nationalId));
 
-        if (user != null) {
-            UserDetails userDetails = new org.springframework.security.core.userdetails.User(
-                    user.getNationalId(),  // Use nationalId as the principal identifier
-                    user.getPassword(),
-                    mapRolesToAuthorities(user.getRoles()));
-            if (!userDetails.isEnabled())
-                throw new DisabledException("User account is disabled");
+        List<GrantedAuthority> authorities = Collections.singletonList(
+                new SimpleGrantedAuthority("ROLE_" + user.getRole().getRoleName())
+        );
 
-            if (!userDetails.isAccountNonLocked())
-                throw new LockedException("User account is locked");
+        UserDetails userDetails = new org.springframework.security.core.userdetails.User(
+                user.getNationalId(),
+                user.getPassword(),
+                authorities
+        );
 
-            return userDetails;
+        if (!userDetails.isEnabled())
+            throw new DisabledException("User account is disabled");
 
-        } else {
-            throw new UsernameNotFoundException("Invalid national ID: " + nationalId);
-        }
+        if (!userDetails.isAccountNonLocked())
+            throw new LockedException("User account is locked");
+
+        return userDetails;
     }
 
-    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(Set<Role> roles) {
-        return roles.stream()
-                // add the prefix "ROLE_" to the role name, it is required by Spring Security
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
-                .collect(Collectors.toList());
-    }
+
+//    @Override
+//    public UserDetails loadUserByUsername(String nationalId) throws UsernameNotFoundException {
+//        User user = userRepository.findByNationalId(nationalId).orElse(null);
+//
+//        if (user != null) {
+//            UserDetails userDetails = new org.springframework.security.core.userdetails.User(
+//                    user.getNationalId(),  // Use nationalId as the principal identifier
+//                    user.getPassword(),
+//                    mapRolesToAuthorities(user.getRoles()));
+//            if (!userDetails.isEnabled())
+//                throw new DisabledException("User account is disabled");
+//
+//            if (!userDetails.isAccountNonLocked())
+//                throw new LockedException("User account is locked");
+//
+//            return userDetails;
+//
+//        } else {
+//            throw new UsernameNotFoundException("Invalid national ID: " + nationalId);
+//        }
+//    }
+
+//    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(Set<Role> roles) {
+//        return roles.stream()
+//                // add the prefix "ROLE_" to the role name, it is required by Spring Security
+//                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
+//                .collect(Collectors.toList());
+//    }
 }

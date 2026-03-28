@@ -7,6 +7,10 @@ import './Vacations.css'
 
 const Vacations = () => {
     const { user: currentUser } = useAuth()
+    const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.roles?.includes('ADMIN')
+    const isManager = currentUser?.role === 'MANAGER' || currentUser?.roles?.includes('MANAGER')
+    const canManage = isAdmin || isManager
+
     const [vacations, setVacations] = useState<Vacation[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -55,7 +59,7 @@ const Vacations = () => {
             vacationApi.update(selectedVacation.id, formData as UpdateVacationRequest)
                 .then(() => { setShowModal(false); setSelectedVacation(null); fetchVacations() })
                 .catch(err => setError(err.message))
-        } else if (currentUser?.role === 'ADMIN') {
+        } else if (canManage) {
             vacationApi.create(formData as CreateVacationRequest)
                 .then(() => { setShowModal(false); fetchVacations() })
                 .catch(err => setError(err.message))
@@ -76,7 +80,7 @@ const Vacations = () => {
             <div className="vacations-header">
                 <h1>🏖️ Vacations</h1>
                 <button className="btn-add" onClick={handleAddVacation}>
-                    {currentUser?.role === 'ADMIN' ? '+ Add Vacation' : '+ Request Vacation'}
+                    {canManage ? '+ Add Vacation' : '+ Request Vacation'}
                 </button>
             </div>
 
@@ -119,13 +123,13 @@ const Vacations = () => {
                                             </span>
                                         </td>
                                         <td>
-                                            {currentUser?.role === 'ADMIN' && status === 'PENDING' && (
+                                            {canManage && status === 'PENDING' && (
                                                 <>
                                                     <button className="btn-approve" onClick={() => handleApprove(vacation.id)}>✓ Approve</button>
                                                     <button className="btn-reject" onClick={() => handleReject(vacation.id)}>✗ Reject</button>
                                                 </>
                                             )}
-                                            {currentUser?.role === 'ADMIN' && (
+                                            {canManage && (
                                                 <>
                                                     <button className="btn-edit" onClick={() => handleEdit(vacation)}>Edit</button>
                                                     <button className="btn-delete" onClick={() => handleDelete(vacation.id)}>Delete</button>
@@ -143,7 +147,7 @@ const Vacations = () => {
             {showModal && (
                 <VacationModal
                     vacation={selectedVacation}
-                    isAdmin={currentUser?.role === 'ADMIN'}
+                    isAdmin={!!canManage}
                     onSubmit={handleSubmit}
                     onClose={() => { setShowModal(false); setSelectedVacation(null) }}
                 />

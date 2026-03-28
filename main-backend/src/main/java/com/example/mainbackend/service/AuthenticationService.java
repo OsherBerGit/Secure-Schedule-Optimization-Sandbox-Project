@@ -3,6 +3,8 @@ package com.example.mainbackend.service;
 import com.example.mainbackend.config.JwtUtil;
 import com.example.mainbackend.dto.auth.AuthenticationRequest;
 import com.example.mainbackend.dto.auth.AuthenticationResponse;
+import com.example.mainbackend.entity.User;
+import com.example.mainbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,6 +21,7 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final CustomUserDetailsService customUserDetailsService;
     private final RefreshTokenService refreshTokenService;
+    private final UserRepository userRepository;
 
     public AuthenticationResponse authenticate(AuthenticationRequest authenticationRequest) {
         // load the user details from the database using the nationalId
@@ -27,6 +30,11 @@ public class AuthenticationService {
         // check if the password matches the password in the database
         if (!passwordEncoder.matches(authenticationRequest.getPassword(), userDetails.getPassword()))
             throw new AuthenticationServiceException("Invalid credentials");
+        
+        // Fetch User entity to get departmentId
+        User user = userRepository.findByNationalId(authenticationRequest.getNationalId())
+                .orElseThrow(() -> new AuthenticationServiceException("User not found"));
+        Long departmentId = (user.getDepartment() != null) ? user.getDepartment().getId() : null;
 
         // generate a unique ID for the two tokens
         String jwtID = UUID.randomUUID().toString();
@@ -35,7 +43,7 @@ public class AuthenticationService {
         refreshTokenService.storeRefreshTokenIp(jwtID, clientIP);
 
         // generate the JWT access token and refresh token
-        String accessToken = jwtUtil.generateToken(authenticationRequest, userDetails, jwtID);
+        String accessToken = jwtUtil.generateToken(authenticationRequest, userDetails, departmentId, jwtID);
         String refreshToken = jwtUtil.generateRefreshToken(authenticationRequest, userDetails, jwtID);
 
         // return the AuthenticationResponse object

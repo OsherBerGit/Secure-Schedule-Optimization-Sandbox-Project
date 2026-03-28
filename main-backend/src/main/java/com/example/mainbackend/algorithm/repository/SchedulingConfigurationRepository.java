@@ -4,11 +4,24 @@ import com.example.mainbackend.algorithm.entity.SchedulingConfiguration;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface SchedulingConfigurationRepository extends JpaRepository<SchedulingConfiguration, Long> {
-    Optional<SchedulingConfiguration> findByIsActiveTrue();
+    List<SchedulingConfiguration> findByIsActiveTrue();
+
+    /**
+     * Finds all configurations created by a specific user (by their Id).
+     */
+    List<SchedulingConfiguration> findByCreatedBy_NationalId(String nationalId);
+
+    Optional<SchedulingConfiguration> findByIsActiveTrueAndCreatedBy_NationalId(String nationalId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE SchedulingConfiguration s SET s.isActive = false WHERE s.createdBy.nationalId = :nationalId")
+    void deactivateAllByNationalId(@Param("nationalId") String nationalId);
 
     /**
      * Deactivates all configurations in a single bulk UPDATE.

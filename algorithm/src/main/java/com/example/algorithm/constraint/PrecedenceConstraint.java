@@ -31,8 +31,7 @@ public class PrecedenceConstraint implements ConstraintChecker {
 
     @Override
     public ConstraintResult check(ConstraintContext ctx) {
-        if (ctx.task().getPredecessorTaskIds() == null
-                || ctx.task().getPredecessorTaskIds().isEmpty())
+        if (ctx.task().getPredecessorTaskIds() == null || ctx.task().getPredecessorTaskIds().isEmpty())
             return ConstraintResult.pass(); // no dependencies — always valid
 
         for (Long predecessorId : ctx.task().getPredecessorTaskIds()) {

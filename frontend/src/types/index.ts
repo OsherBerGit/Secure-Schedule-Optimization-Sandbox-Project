@@ -5,9 +5,10 @@ export interface Department {
   name: string;
 }
 
-export interface Role {
+export interface Job {
   id: number;
-  roleName: string;
+  name: string;
+  description?: string;
 }
 
 export interface WorkerAvailability {
@@ -29,9 +30,9 @@ export interface User {
   availabilities: WorkerAvailability[];
   maxTasks: number | null;
   departmentName: string | null;
-  roles: string[]; // e.g. ["ADMIN"] or ["WORKER"]
-  // helper getter — derived on frontend
-  role?: 'ADMIN' | 'WORKER';
+  departmentId?: number; // Decoded from JWT
+  role: 'ADMIN' | 'MANAGER' | 'WORKER';
+  jobs: Job[];
 }
 
 export interface CreateUserRequest {
@@ -41,9 +42,10 @@ export interface CreateUserRequest {
   lastName?: string;
   email?: string;
   phoneNumber?: string;
-  role: 'ADMIN' | 'WORKER';
+  role: 'ADMIN' | 'MANAGER' | 'WORKER';
   departmentName?: string;
   availabilities?: WorkerAvailability[];
+  jobIds?: number[];
 }
 
 export interface UpdateUserRequest {
@@ -51,10 +53,10 @@ export interface UpdateUserRequest {
   lastName?: string;
   email?: string;
   phoneNumber?: string;
-  role?: 'ADMIN' | 'WORKER';
-  roles?: string[];
+  role?: 'ADMIN' | 'MANAGER' | 'WORKER';
   departmentName?: string | null;
   availabilities?: WorkerAvailability[];
+  jobIds?: number[];
 }
 
 export interface Task {
@@ -75,8 +77,7 @@ export interface Task {
   
   /** Optimistic locking version from backend. */
   version: number;
-  /** IDs of roles required to perform this task. */
-  requiredRoleIds: number[];
+  requiredJob?: Job;
 }
 
 export interface SchedulingConfiguration {
@@ -100,7 +101,7 @@ export interface CreateTaskRequest {
   durationHours?: number;
   priorityId: number;
   departmentId?: number;
-  requiredRoleIds?: number[];
+  requiredJobId: number;
 }
 
 export interface UpdateTaskRequest {
@@ -110,7 +111,7 @@ export interface UpdateTaskRequest {
   durationHours?: number;
   priorityId: number;
   departmentId?: number;
-  requiredRoleIds?: number[];
+  requiredJobId: number;
 }
 
 export interface Status {

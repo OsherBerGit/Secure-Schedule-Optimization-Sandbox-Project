@@ -42,8 +42,10 @@ public class JwtUtil {
     private SecretKey getKey() { return this.key; } // Use the stored key
 
     // Generate a JWT token for a user, first time login
-    public String generateToken(AuthenticationRequest authenticationRequest, UserDetails userDetails, String jwtID) {
+    public String generateToken(AuthenticationRequest authenticationRequest, UserDetails userDetails, Long departmentId, String jwtID) {
         Map<String, Object> claims = new HashMap<>();
+        if (departmentId != null)
+            claims.put("departmentId", departmentId);
 
         return Jwts.builder()
                 .claims()
@@ -53,7 +55,8 @@ public class JwtUtil {
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiration()))
                 .and()
-                .claim("roles", userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+                .claim("roles", userDetails.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toList()))
                 .claim("issuedBy", "Secure-Schedule System")
                 .signWith(getKey())

@@ -2,8 +2,10 @@ package com.example.algorithm.constraint;
 
 import com.example.algorithm.model.AlgoTask;
 import com.example.algorithm.model.AlgoUser;
+import com.example.algorithm.model.TaskAssignment;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,6 +23,8 @@ import java.util.Map;
  *                         (used to evaluate predecessor constraints)
  * @param assignedCount    map of userId → number of tasks already assigned in this run
  *                         (used to evaluate maxTasks constraints)
+ * @param currentAssignments List of all {@link TaskAssignment} results produced so far
+ *                          in this session (used to evaluate overlaps).
  */
 public record ConstraintContext(
         AlgoTask               task,
@@ -28,6 +32,7 @@ public record ConstraintContext(
         LocalDateTime          proposedStart,
         LocalDateTime          proposedEnd,
         Map<Long, LocalDateTime> completionTimes,
-        Map<Long, Integer>       assignedCount
+        Map<Long, Integer>       assignedCount,
+        List<TaskAssignment> currentAssignments
 ) {}
 

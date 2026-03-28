@@ -6,8 +6,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SchedulingConfigurationMapper {
-
     public SchedulingConfiguration mapToEntity(SchedulingConfigurationDto dto) {
+        if (dto == null) return null;
+
         return SchedulingConfiguration.builder()
                 .id(dto.getId())                           // null for new records → AUTO generates id
                 .configName(dto.getConfigName())
@@ -24,6 +25,16 @@ public class SchedulingConfigurationMapper {
     }
 
     public SchedulingConfigurationDto mapToDto(SchedulingConfiguration entity) {
+        if (entity == null) return null;
+
+        Long creatorId = null;
+        String creatorName = "System";
+
+        if (entity.getCreatedBy() != null) {
+            creatorId = entity.getCreatedBy().getId();
+            creatorName = entity.getCreatedBy().getFirstName() + " " + entity.getCreatedBy().getLastName();
+        }
+
         return new SchedulingConfigurationDto(
                 entity.getId(),
                 entity.getConfigName(),
@@ -35,8 +46,9 @@ public class SchedulingConfigurationMapper {
                 entity.getMaxGenerations(),
                 entity.getMutationRate(),
                 entity.getCrossoverRate(),
-                entity.getLocalSearchFrequency()
+                entity.getLocalSearchFrequency(),
+                creatorName,
+                creatorId
         );
     }
-
 }

@@ -312,6 +312,16 @@
     gap: 0.6rem;
 }
 
+.department-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: #fff;
+    cursor: pointer;
+    color: #333;
+}
+
 .strategy-select {
     padding: 0.5rem 0.75rem;
     border: 1px solid #ddd;
@@ -549,4 +559,65 @@
     font-size: 0.8rem;
     font-style: italic;
     line-height: 1.5;
+}
+
+/* --- New Button Styles --- */
+
+/* Base styles for buttons in the action group */
+.schedule-generate-group .btn-secondary,
+.schedule-generate-group .generate-btn {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+}
+
+/* Algorithm Configuration Button (.btn-secondary) */
+.btn-secondary {
+    background-color: #2563eb; /* Accessible blue */
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: #1d4ed8; /* Darker blue on hover */
+}
+
+.btn-secondary:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+/* Ghost/Disabled state for the config button */
+.btn-secondary.btn-ghost {
+    background-color: #e5e7eb; /* Light gray */
+    color: #9ca3af; /* Muted text */
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none; /* Disable active transform */
+}
+
+/* Generate Schedule Draft Button (.generate-btn) */
+.generate-btn {
+    background-color: #4a5568; /* Dark slate */
+    color: white;
+    padding: 0.7rem 1.5rem; /* Slightly larger padding */
+}
+
+.generate-btn:hover:not(:disabled) {
+    background-color: #2d3748; /* Darker slate on hover */
+}
+
+.generate-btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+/* Disabled state for the generate button */
+.generate-btn:disabled {
+    background-color: #9ca3af; /* Muted gray */
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }

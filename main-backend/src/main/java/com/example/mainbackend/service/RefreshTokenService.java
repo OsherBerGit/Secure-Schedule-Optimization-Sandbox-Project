@@ -3,6 +3,8 @@ package com.example.mainbackend.service;
 import com.example.mainbackend.config.JwtUtil;
 import com.example.mainbackend.dto.auth.AuthenticationResponse;
 import com.example.mainbackend.dto.auth.RefreshTokenRequest;
+import com.example.mainbackend.entity.User;
+import com.example.mainbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RefreshTokenService {
 
     private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
     private final CustomUserDetailsService customUserDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
 
@@ -44,8 +47,13 @@ public class RefreshTokenService {
         if (!jwtUtil.validateToken(refreshToken, userDetails))
             throw new RuntimeException("Invalid or expired refresh token");
 
+        User user = userRepository.findByNationalId(nationalId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Long departmentId = (user.getDepartment() != null) ? user.getDepartment().getId() : null;
+
         // create a new access token
-        String newAccessToken = jwtUtil.generateToken(null, userDetails, jwtID);
+        String newAccessToken = jwtUtil.generateToken(null, userDetails, departmentId, jwtID);
         String newRefreshToken = jwtUtil.generateRefreshToken(null, userDetails, jwtID);
 
         // returns the new access token along with the refresh token

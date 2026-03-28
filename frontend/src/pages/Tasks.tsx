@@ -20,6 +20,8 @@ function statusClass(name: string | null): string {
 const Tasks = () => {
     const { user: currentUser } = useAuth()
     const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.roles?.includes('ADMIN')
+    const isManager = currentUser?.role === 'MANAGER' || currentUser?.roles?.includes('MANAGER')
+    const canManage = isAdmin || isManager
 
     const [tasks, setTasks] = useState<Task[]>([])
     const [statuses, setStatuses] = useState<Status[]>([])
@@ -93,7 +95,7 @@ const Tasks = () => {
         <div className="tasks-container">
             <div className="tasks-header">
                 <h1>📋 Tasks</h1>
-                {isAdmin && (
+                {canManage && (
                     <button className="btn-add" onClick={() => { setSelectedTask(null); setShowModal(true) }}>
                         + Add Task
                     </button>
@@ -102,8 +104,8 @@ const Tasks = () => {
 
             {error && <div className="error-message">{error}</div>}
 
-            {isAdmin && (
-                <div className="filter-row">
+            <div className="filter-row">
+                {isAdmin && (
                     <select
                         className="modern-select"
                         value={filterDepartment}
@@ -114,30 +116,30 @@ const Tasks = () => {
                             <option key={d.id} value={d.name}>{d.name}</option>
                         ))}
                     </select>
+                )}
 
-                    <select
-                        className="modern-select"
-                        value={filterStatus}
-                        onChange={e => setFilterStatus(e.target.value)}
-                    >
-                        <option value="">All Statuses</option>
-                        {statuses.map(s => (
-                            <option key={s.id} value={s.name}>{s.name}</option>
-                        ))}
-                    </select>
+                <select
+                    className="modern-select"
+                    value={filterStatus}
+                    onChange={e => setFilterStatus(e.target.value)}
+                >
+                    <option value="">All Statuses</option>
+                    {statuses.map(s => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
+                </select>
 
-                    <select
-                        className="modern-select"
-                        value={filterPriority}
-                        onChange={e => setFilterPriority(e.target.value)}
-                    >
-                        <option value="">All Priorities</option>
-                        {priorities.map(p => (
-                            <option key={p.id} value={p.name}>{p.name}</option>
-                        ))}
-                    </select>
-                </div>
-            )}
+                <select
+                    className="modern-select"
+                    value={filterPriority}
+                    onChange={e => setFilterPriority(e.target.value)}
+                >
+                    <option value="">All Priorities</option>
+                    {priorities.map(p => (
+                        <option key={p.id} value={p.name}>{p.name}</option>
+                    ))}
+                </select>
+            </div>
 
             {isLoading ? (
                 <div className="loading">Loading...</div>
@@ -152,13 +154,13 @@ const Tasks = () => {
                             <th>Deadline</th>
                             <th>Duration</th>
                             <th>Start Time</th>
-                            {isAdmin && <th>Actions</th>}
+                            {canManage && <th>Actions</th>}
                         </tr>
                     </thead>
                     <tbody>
                         {filteredTasks.length === 0 ? (
                             <tr>
-                                <td colSpan={isAdmin ? 8 : 7} className="no-data">No tasks found</td>
+                                <td colSpan={canManage ? 8 : 7} className="no-data">No tasks found</td>
                             </tr>
                         ) : (
                             filteredTasks.map(task => (
@@ -189,7 +191,7 @@ const Tasks = () => {
                                     <td>{task.deadline ? new Date(task.deadline).toLocaleDateString() : '—'}</td>
                                     <td>{task.durationHours != null ? `${task.durationHours}h` : '—'}</td>
                                     <td>{task.startTime ? new Date(task.startTime).toLocaleString() : <span className="unassigned">Not scheduled</span>}</td>
-                                    {isAdmin && (
+                                    {canManage && (
                                         <td>
                                             <button className="btn-edit" onClick={() => handleEdit(task)}>Edit</button>
                                             <button className="btn-delete" onClick={() => handleDelete(task.id)}>Delete</button>

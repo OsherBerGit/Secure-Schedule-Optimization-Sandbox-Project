@@ -39,9 +39,9 @@ public class EvolutionaryOperators {
      *
      * <p>Each gene is independently mutated with probability {@code mutationRate}.
      * A mutated gene is reassigned to a uniformly random worker index in
-     * {@code [0, numberOfWorkers)}.  Mutation never produces {@code -1}
-     * (unassigned) — that is the job of the initialisation or local search
-     * if required by the problem formulation.</p>
+     * {@code [0, numberOfWorkers)}.  Mutation can also produce {@code -1}
+     * (unassigned) to allow the algorithm to "drop" tasks if they are causing
+     * severe constraint violations that can't be resolved otherwise.</p>
      *
      * @param individual      the individual to mutate (modified in place)
      * @param numberOfWorkers total number of available workers
@@ -50,6 +50,10 @@ public class EvolutionaryOperators {
     public void mutate(Individual individual, int numberOfWorkers, double mutationRate) {
         for (int i = 0; i < individual.getChromosome().length; i++)
             if (random.nextDouble() < mutationRate)
-                individual.setGene(i, random.nextInt(numberOfWorkers));
+                // 10% chance to unassign completely during mutation as a drastic escape measure
+                if (random.nextDouble() < 0.1)
+                    individual.setGene(i, -1);
+                else
+                    individual.setGene(i, random.nextInt(numberOfWorkers));
     }
 }

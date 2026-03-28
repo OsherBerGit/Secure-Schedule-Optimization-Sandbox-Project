@@ -11,7 +11,7 @@ import java.util.Set;
 @Builder
 public class UserWithVacationsDto {
     private Long id;
-    private String nationalId; // Israeli National ID (Teudat Zehut)
+    private String nationalId;
     private String firstName;
     private String lastName;
     private String email;

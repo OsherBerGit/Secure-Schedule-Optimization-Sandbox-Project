@@ -13,6 +13,7 @@ import com.example.mainbackend.repository.UserRepository;
 import com.example.mainbackend.repository.VacationRepository;
 import com.example.mainbackend.repository.VacationStatusRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ public class VacationService {
     private final UserRepository userRepository;
     private final VacationStatusRepository vacationStatusRepository;
     private final VacationMapper mapper;
+    private final SecurityHelper securityHelper;
 
     /**
      * ADMIN creates a vacation directly — auto-set to APPROVED.
@@ -77,10 +79,9 @@ public class VacationService {
                 .orElseThrow(() -> new IllegalArgumentException("Worker not found with national ID: " + nationalId));
 
         List<Vacation> existing = vacationRepository.findByWorkerId(worker.getId());
-        for (Vacation v : existing) {
+        for (Vacation v : existing)
             if (datesOverlap(v.getStartDate(), v.getEndDate(), request.getStartDate(), request.getEndDate()))
                 throw new IllegalArgumentException("Vacation period overlaps with an existing vacation");
-        }
 
         VacationStatus pending = vacationStatusRepository.findByName(VacationStatusConstants.PENDING)
                 .orElseThrow(() -> new IllegalStateException("PENDING vacation status not found in database"));
@@ -106,6 +107,13 @@ public class VacationService {
         Vacation vacation = vacationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Vacation not found with ID: " + id));
 
+        // RBAC Check for MANAGER
+        if (securityHelper.isManager()) {
+            Long deptId = securityHelper.getCurrentUserDepartmentId();
+            if (vacation.getWorker().getDepartment() == null || !vacation.getWorker().getDepartment().getId().equals(deptId))
+                throw new AccessDeniedException("Managers can only manage vacations for their own department.");
+        }
+
         if (vacation.getStatus() == null || !VacationStatusConstants.PENDING.equals(vacation.getStatus().getName()))
             throw new IllegalStateException("Only PENDING vacation requests can be approved or rejected");
 
@@ -114,6 +122,24 @@ public class VacationService {
 
         vacation.setStatus(newStatus);
         return mapper.toDto(vacationRepository.save(vacation));
+    }
+
+    /**
+     * Retrieves pending vacation requests.
+     * ADMIN sees all pending requests.
+     * MANAGER sees only pending requests from their department.
+     */
+    @Transactional(readOnly = true)
+    public List<VacationResponseDto> getPendingVacations() {
+        if (securityHelper.isManager()) {
+            Long deptId = securityHelper.getCurrentUserDepartmentId();
+            return vacationRepository.findAllByWorker_Department_IdAndStatus_Name(deptId, VacationStatusConstants.PENDING).stream()
+                    .map(mapper::toDto)
+                    .toList();
+        }
+        return vacationRepository.findByStatus_Name(VacationStatusConstants.PENDING).stream()
+                .map(mapper::toDto)
+                .toList();
     }
 
     @Transactional(readOnly = true)

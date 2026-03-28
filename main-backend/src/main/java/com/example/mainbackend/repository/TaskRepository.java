@@ -18,7 +18,10 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     @Query("SELECT t FROM Task t WHERE t.status.name = :statusName")
     List<Task> findByStatusName(@Param("statusName") String statusName);
 
-    /** All tasks scoped to a specific department (any status). */
+    /**
+     * Returns all tasks scoped to a specific department (any status).
+     * Used by TaskService to display all tasks for a department.
+     */
     List<Task> findAllByDepartmentId(Long departmentId);
 
     // ── ADMIN scope (all departments) ────────────────────────────────────────
@@ -28,7 +31,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
      * Used by SchedulingService (ADMIN scope).
      */
     @Query("SELECT DISTINCT t FROM Task t " +
-           "LEFT JOIN FETCH t.requiredRoles " +
+           "LEFT JOIN FETCH t.requiredJob " +
            "WHERE t.status.name = :statusName")
     List<Task> findOpenTasksWithRoles(@Param("statusName") String statusName);
 
@@ -49,7 +52,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
      * Used by SchedulingService (MANAGER scope).
      */
     @Query("SELECT DISTINCT t FROM Task t " +
-           "LEFT JOIN FETCH t.requiredRoles " +
+           "LEFT JOIN FETCH t.requiredJob " +
            "WHERE t.status.name = :statusName AND t.department.id = :departmentId")
     List<Task> findOpenTasksWithRolesByDepartment(@Param("statusName") String statusName,
                                                   @Param("departmentId") Long departmentId);

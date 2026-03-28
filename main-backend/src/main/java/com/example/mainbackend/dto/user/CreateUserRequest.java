@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 @Builder
@@ -47,10 +48,15 @@ public class CreateUserRequest {
     private Integer maxTasks;
 
     /**
-     * Role to assign to the new user: ADMIN or WORKER.
+     * Role to assign to the new user: ADMIN, MANAGER or WORKER.
      * Defaults to WORKER if not provided.
      */
     private String role;
+
+    /**
+     * Optional: List of Job names to assign to the user.
+     */
+    private Set<String> jobs;
 
     /** Optional: name of the department to assign this user to on creation. */
     private String departmentName;

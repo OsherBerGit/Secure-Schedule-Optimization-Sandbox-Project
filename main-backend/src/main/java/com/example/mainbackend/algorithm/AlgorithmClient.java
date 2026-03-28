@@ -4,8 +4,10 @@ import com.example.mainbackend.algorithm.dto.AlgoScheduleRequest;
 import com.example.mainbackend.algorithm.dto.AlgoScheduleResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 /**
  * HTTP client that calls the algorithm side-backend.
@@ -19,6 +21,10 @@ public class AlgorithmClient {
     private final RestClient restClient;
 
     public AlgorithmClient(@Value("${algorithm.service.url}") String algorithmServiceUrl) {
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory();
+        requestFactory.setReadTimeout(java.time.Duration.ofMinutes(5));
+        requestFactory.setReadTimeout(java.time.Duration.ofSeconds(30));
+
         this.restClient = RestClient.builder()
                 .baseUrl(algorithmServiceUrl)
                 .build();
@@ -39,13 +45,17 @@ public class AlgorithmClient {
                     .body(request)
                     .retrieve()
                     .body(AlgoScheduleResponse.class);
+
             log.info("Algorithm response — assigned: {}, unassigned: {}",
                     response != null ? response.getAssignedTasks() : 0,
                     response != null ? response.getUnassignedTasks() : 0);
             return response;
+        } catch (RestClientResponseException e) {
+            log.error("Algorithm service returned HTTP error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("Algorithm calculation failed: " + e.getResponseBodyAsString(), e);
         } catch (Exception e) {
-            log.error("Failed to call algorithm service: {}", e.getMessage());
-            throw new RuntimeException("Algorithm service unavailable: " + e.getMessage(), e);
+            log.error("Failed to connect to algorithm service: {}", e.getMessage());
+            throw new RuntimeException("Algorithm service unreachable: " + e.getMessage(), e);
         }
     }
 }

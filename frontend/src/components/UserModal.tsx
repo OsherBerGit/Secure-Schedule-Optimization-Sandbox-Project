@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
-import type { User, CreateUserRequest, UpdateUserRequest, Department, WorkerAvailability } from '../types'
-import { departmentApi } from '../api'
+import type { User, CreateUserRequest, UpdateUserRequest, Department, WorkerAvailability, Job } from '../types'
+import { departmentApi, jobApi } from '../api'
 
 interface UserModalProps {
     user: User | null
@@ -23,41 +23,76 @@ interface AvailRow {
 }
 
 const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
-    // ── Basic fields ─────────────────────────────────────────────────────────
-    const [nationalId, setNationalId] = useState(user?.nationalId ?? '')
+    // ── Form State ───────────────────────────────────────────────────────────
+    const [nationalId, setNationalId] = useState('')
     const [password, setPassword] = useState('')
-    const [firstName, setFirstName] = useState(user?.firstName ?? '')
-    const [lastName, setLastName] = useState(user?.lastName ?? '')
-    const [email, setEmail] = useState(user?.email ?? '')
-    const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber ?? '')
-    const derivedRole: 'ADMIN' | 'WORKER' =
-        user?.role ?? (user?.roles?.includes('ADMIN') ? 'ADMIN' : 'WORKER')
-    const [role, setRole] = useState<'ADMIN' | 'WORKER'>(derivedRole)
+    const [firstName, setFirstName] = useState('')
+    const [lastName, setLastName] = useState('')
+    const [email, setEmail] = useState('')
+    const [phoneNumber, setPhoneNumber] = useState('')
+    const [role, setRole] = useState<'ADMIN' | 'MANAGER' | 'WORKER'>('WORKER')
+    const [selectedDept, setSelectedDept] = useState('')
+    const [selectedJobIds, setSelectedJobIds] = useState<number[]>([])
+    const [availRows, setAvailRows] = useState<AvailRow[]>([])
 
-    // ── Department ───────────────────────────────────────────────────────────
+    // ── Data Fetching State ──────────────────────────────────────────────────
     const [departments, setDepartments] = useState<Department[]>([])
-    const [selectedDept, setSelectedDept] = useState<string>(user?.departmentName ?? '')
+    const [jobs, setJobs] = useState<Job[]>([])
+    const [isLoading, setIsLoading] = useState(true)
 
-    // ── Availabilities ───────────────────────────────────────────────────────
+    // ── Helper to convert backend availability format to form row format ─────
     const toRows = (avs: WorkerAvailability[]): AvailRow[] =>
         avs.map(a => ({
             id: a.id,
             dayOfWeek: a.dayOfWeek as DayOfWeek,
-            startTime: a.startTime.slice(0, 5),   // "HH:MM:SS" → "HH:MM"
+            startTime: a.startTime.slice(0, 5), // "HH:MM:SS" → "HH:MM"
             endTime:   a.endTime.slice(0, 5),
         }))
 
-    const [availRows, setAvailRows] = useState<AvailRow[]>(
-        user?.availabilities ? toRows(user.availabilities) : []
-    )
-
+    // Effect for fetching static data like departments and jobs
     useEffect(() => {
-        departmentApi.getAll()
-            .then(res => setDepartments(res.data))
-            .catch(() => { /* non-fatal */ })
+        setIsLoading(true)
+        Promise.all([
+            departmentApi.getAll(),
+            jobApi.getAll()
+        ]).then(([deptRes, jobRes]) => {
+            setDepartments(deptRes.data)
+            setJobs(jobRes.data)
+        }).catch(() => {
+            // Handle errors if necessary, e.g., show a toast notification
+        }).finally(() => {
+            setIsLoading(false)
+        })
     }, [])
 
-    // ── Availability row helpers ─────────────────────────────────────────────
+    // Effect for resetting form state when the user prop changes
+    useEffect(() => {
+        if (user) {
+            setNationalId(user.nationalId ?? '')
+            setFirstName(user.firstName ?? '')
+            setLastName(user.lastName ?? '')
+            setEmail(user.email ?? '')
+            setPhoneNumber(user.phoneNumber ?? '')
+            setRole(user.role ?? 'WORKER')
+            setSelectedDept(user.departmentName ?? '')
+            setSelectedJobIds(user.jobs?.map(j => j.id) ?? [])
+            setAvailRows(user.availabilities ? toRows(user.availabilities) : [])
+        } else {
+            // Reset to default values for a new user
+            setNationalId('')
+            setFirstName('')
+            setLastName('')
+            setEmail('')
+            setPhoneNumber('')
+            setRole('WORKER')
+            setSelectedDept('')
+            setSelectedJobIds([])
+            setAvailRows([])
+        }
+        setPassword('') // Always clear password field
+    }, [user])
+
+    // ── UI Helpers for dynamic availability rows ─────────────────────────────
     function addRow() {
         setAvailRows(prev => [
             ...prev,
@@ -72,12 +107,19 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
     function updateRow<K extends keyof AvailRow>(idx: number, key: K, val: AvailRow[K]) {
         setAvailRows(prev => prev.map((r, i) => i === idx ? { ...r, [key]: val } : r))
     }
+    
+    function handleJobChange(jobId: number) {
+        setSelectedJobIds(prev =>
+            prev.includes(jobId)
+                ? prev.filter(id => id !== jobId)
+                : [...prev, jobId]
+        )
+    }
 
-    // ── Submit ───────────────────────────────────────────────────────────────
+    // ── Form Submission ──────────────────────────────────────────────────────
     function handleSubmit(e: FormEvent) {
         e.preventDefault()
 
-        // Map rows → WorkerAvailability (backend format: "HH:MM:SS")
         const availabilities: WorkerAvailability[] = availRows.map(r => ({
             id: r.id,
             dayOfWeek: r.dayOfWeek,
@@ -86,28 +128,29 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
         }))
 
         if (user) {
-            // PUT /api/users/{id} accepts UserDto — send all editable fields
             const data: UpdateUserRequest = {
                 firstName:      firstName  || undefined,
                 lastName:       lastName   || undefined,
                 email:          email      || undefined,
                 phoneNumber:    phoneNumber || undefined,
-                roles:          [role],
+                role,
                 departmentName: selectedDept || null,
                 availabilities,
+                jobIds: selectedJobIds
             }
             onSubmit(data)
         } else {
             const data: CreateUserRequest = {
                 nationalId,
                 password,
-                firstName,
-                lastName,
-                email,
-                phoneNumber,
+                firstName: firstName || undefined,
+                lastName: lastName || undefined,
+                email: email || undefined,
+                phoneNumber: phoneNumber || undefined,
                 role,
                 departmentName: selectedDept || undefined,
                 availabilities,
+                jobIds: selectedJobIds
             }
             onSubmit(data)
         }
@@ -124,7 +167,6 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
 
                 <form onSubmit={handleSubmit} className="modal-form">
 
-                    {/* ── Create-only fields ──────────────────────────────── */}
                     {!user && (
                         <>
                             <div className="form-group">
@@ -138,34 +180,34 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
                         </>
                     )}
 
-                    {/* ── Two-column grid for basic info ──────────────────── */}
                     <div className="form-row">
                         <div className="form-group">
                             <label>First Name</label>
-                            <input value={firstName ?? ''} onChange={e => setFirstName(e.target.value)} />
+                            <input value={firstName} onChange={e => setFirstName(e.target.value)} />
                         </div>
                         <div className="form-group">
                             <label>Last Name</label>
-                            <input value={lastName ?? ''} onChange={e => setLastName(e.target.value)} />
+                            <input value={lastName} onChange={e => setLastName(e.target.value)} />
                         </div>
                     </div>
 
                     <div className="form-row">
                         <div className="form-group">
                             <label>Email</label>
-                            <input type="email" value={email ?? ''} onChange={e => setEmail(e.target.value)} />
+                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} />
                         </div>
                         <div className="form-group">
                             <label>Phone Number</label>
-                            <input value={phoneNumber ?? ''} onChange={e => setPhoneNumber(e.target.value)} />
+                            <input value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} />
                         </div>
                     </div>
 
                     <div className="form-row">
                         <div className="form-group">
                             <label>Role</label>
-                            <select value={role} onChange={e => setRole(e.target.value as 'ADMIN' | 'WORKER')}>
+                            <select value={role} onChange={e => setRole(e.target.value as 'ADMIN' | 'MANAGER' | 'WORKER')}>
                                 <option value="WORKER">WORKER</option>
+                                <option value="MANAGER">MANAGER</option>
                                 <option value="ADMIN">ADMIN</option>
                             </select>
                         </div>
@@ -180,7 +222,26 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
                         </div>
                     </div>
 
-                    {/* ── Weekly Shifts / Availabilities ──────────────────── */}
+                    <div className="form-group">
+                        <label>Jobs</label>
+                        {isLoading ? <p>Loading...</p> : (
+                            <div className="grid grid-cols-3 gap-2 p-2 border rounded-md bg-gray-50">
+                                {jobs.map(job => (
+                                    <div key={job.id} className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            id={`job-${job.id}`}
+                                            checked={selectedJobIds.includes(job.id)}
+                                            onChange={() => handleJobChange(job.id)}
+                                            className="mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <label htmlFor={`job-${job.id}`} className="text-sm text-gray-700">{job.name}</label>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     <div className="avail-section">
                         <div className="avail-section-header">
                             <span className="avail-section-title">📅 Weekly Shifts</span>
@@ -188,7 +249,7 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
                         </div>
 
                         {availRows.length === 0 ? (
-                            <p className="avail-empty">No shifts defined. Click "+ Add Shift" to add one.</p>
+                            <p className="avail-empty">No shifts defined.</p>
                         ) : (
                             <div className="avail-table-wrap">
                                 <table className="avail-table">
@@ -208,33 +269,12 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
                                                         value={row.dayOfWeek}
                                                         onChange={e => updateRow(idx, 'dayOfWeek', e.target.value as DayOfWeek)}
                                                     >
-                                                        {DAYS_OF_WEEK.map(d => (
-                                                            <option key={d} value={d}>{d}</option>
-                                                        ))}
+                                                        {DAYS_OF_WEEK.map(d => <option key={d} value={d}>{d}</option>)}
                                                     </select>
                                                 </td>
-                                                <td>
-                                                    <input
-                                                        type="time"
-                                                        value={row.startTime}
-                                                        onChange={e => updateRow(idx, 'startTime', e.target.value)}
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <input
-                                                        type="time"
-                                                        value={row.endTime}
-                                                        onChange={e => updateRow(idx, 'endTime', e.target.value)}
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <button
-                                                        type="button"
-                                                        className="btn-remove-row"
-                                                        onClick={() => removeRow(idx)}
-                                                        title="Remove shift"
-                                                    >✕</button>
-                                                </td>
+                                                <td><input type="time" value={row.startTime} onChange={e => updateRow(idx, 'startTime', e.target.value)} /></td>
+                                                <td><input type="time" value={row.endTime} onChange={e => updateRow(idx, 'endTime', e.target.value)} /></td>
+                                                <td><button type="button" className="btn-remove-row" onClick={() => removeRow(idx)} title="Remove shift">✕</button></td>
                                             </tr>
                                         ))}
                                     </tbody>

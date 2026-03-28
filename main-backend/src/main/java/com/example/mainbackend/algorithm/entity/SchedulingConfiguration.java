@@ -1,5 +1,6 @@
 package com.example.mainbackend.algorithm.entity;
 
+import com.example.mainbackend.entity.User;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -54,4 +55,15 @@ public class SchedulingConfiguration {
 
     /** Frequency of local search application (0.0 – 1.0). */
     private double localSearchFrequency;
+
+    /**
+     * References the `User` entity responsible for creating this scheduling configuration.
+     * Represents a required relationship to ensure traceability of the configuration's origin.
+     *
+     * Maps to the `created_by_user_id` column in the database.
+     * This column is non-nullable, meaning all scheduling configurations must have an associated creator.
+     */
+    @ManyToOne
+    @JoinColumn(name = "created_by_user_id", nullable = false)
+    private User createdBy;
 }

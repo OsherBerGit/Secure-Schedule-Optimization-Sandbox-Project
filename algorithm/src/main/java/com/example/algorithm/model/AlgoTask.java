@@ -21,7 +21,7 @@ import java.util.Set;
  *   <li>{@code durationHours}     — direct copy from {@code TaskDto.durationHours}</li>
  *   <li>{@code deadline}          — direct copy from {@code TaskDto.deadline}</li>
  *   <li>{@code priorityLevel}     — direct copy from {@code TaskDto.priorityLevel} (defaults to 0)</li>
- *   <li>{@code requiredRoles}     — {@code TaskDto.requiredRoleIds} converted to {@code Set<String>}</li>
+ *   <li>{@code requiredJobs}      — {@code TaskDto.requiredJobId} converted to {@code Set<String>}</li>
  *   <li>{@code predecessorTaskIds}— direct copy from {@code TaskDto.predecessorTaskIds}</li>
  * </ul>
  */
@@ -34,9 +34,9 @@ public final class AlgoTask {
 
     /**
      * Opaque role identifiers required to perform this task.
-     * Stored as Strings of role IDs (e.g. "42") for compatibility with AlgoUser.roles.
+     * Stored as Strings of job IDs (e.g. "42") for compatibility with AlgoUser.jobs.
      */
-    private final Set<String> requiredRoles;
+    private final Set<String> requiredJobs;
 
     /** IDs of tasks that must complete before this task can start. */
     private final List<Long> predecessorTaskIds;
@@ -45,14 +45,14 @@ public final class AlgoTask {
                     Integer durationHours,
                     LocalDateTime deadline,
                     Integer priorityLevel,
-                    Set<String> requiredRoles,
+                    Set<String> requiredJobs,
                     List<Long> predecessorTaskIds) {
         this.id                 = id;
         this.durationHours      = durationHours;
         this.deadline           = deadline;
         this.priorityLevel      = priorityLevel != null ? priorityLevel : 0;
-        this.requiredRoles      = requiredRoles != null
-                ? Collections.unmodifiableSet(requiredRoles)
+        this.requiredJobs = requiredJobs != null
+                ? Collections.unmodifiableSet(requiredJobs)
                 : Collections.emptySet();
         this.predecessorTaskIds = predecessorTaskIds != null
                 ? Collections.unmodifiableList(predecessorTaskIds)
@@ -63,7 +63,7 @@ public final class AlgoTask {
     public Integer getDurationHours()        { return durationHours; }
     public LocalDateTime getDeadline()       { return deadline; }
     public Integer getPriorityLevel()        { return priorityLevel; }
-    public Set<String> getRequiredRoles()    { return requiredRoles; }
+    public Set<String> getRequiredJobs()    { return requiredJobs; }
     public List<Long> getPredecessorTaskIds(){ return predecessorTaskIds; }
 
     /**
@@ -79,7 +79,7 @@ public final class AlgoTask {
                 + ", durationHours=" + durationHours
                 + ", deadline=" + deadline
                 + ", priorityLevel=" + priorityLevel
-                + ", requiredRoles=" + requiredRoles
+                + ", requiredJobs=" + requiredJobs
                 + ", predecessorTaskIds=" + predecessorTaskIds + '}';
     }
 }

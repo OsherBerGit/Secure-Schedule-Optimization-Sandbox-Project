@@ -1,5 +1,6 @@
 package com.example.mainbackend.algorithm.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
@@ -57,4 +58,10 @@ public class SchedulingConfigurationDto {
     @DecimalMin(value = "0.0", message = "localSearchFrequency must be >= 0.0")
     @DecimalMax(value = "1.0", message = "localSearchFrequency must be <= 1.0")
     private double localSearchFrequency;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String createdByUserName;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private Long createdByUserId;
 }

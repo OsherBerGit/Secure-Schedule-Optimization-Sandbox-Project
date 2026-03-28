@@ -10,6 +10,7 @@ import com.example.sidebackend.dto.SchedulingRequestDto;
 import com.example.sidebackend.dto.TaskDto;
 import com.example.sidebackend.dto.UserDto;
 import com.example.sidebackend.dto.VacationDto;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,33 +24,28 @@ import java.util.stream.Collectors;
  *
  * <h3>Zero-Trust guarantee</h3>
  * <ul>
- *   <li>No PII fields (names, emails) are ever copied — the DTOs don't carry them
- *       and the models don't accept them.</li>
- *   <li>Every {@code null} collection is normalised to an empty, immutable collection
- *       so the algorithm engine never needs to perform null checks on lists/sets.</li>
+ * <li>No PII fields (names, emails) are ever copied — the DTOs don't carry them
+ * and the models don't accept them.</li>
+ * <li>Every {@code null} collection is normalised to an empty, immutable collection
+ * so the algorithm engine never needs to perform null checks on lists/sets.</li>
  * </ul>
  *
- * <h3>Role ID convention</h3>
- * Both {@code UserDto.roleIds} and {@code TaskDto.requiredRoleIds} are {@code Set<Long>}.
- * {@code AlgoUser.roles} and {@code AlgoTask.requiredRoles} are {@code Set<String>}.
- * The mapper converts each {@code Long} to its {@code String} representation (e.g. {@code 42L → "42"})
- * so that the engine's role-matching logic can do a simple {@code Set.contains()} check.
+ * <h3>Job ID convention</h3>
+ * Both {@code UserDto.jobIds} and {@code TaskDto.requiredJobId} are processed as technical IDs.
+ * {@code AlgoUser.jobs} and {@code AlgoTask.requiredJob} remain {@code Set<String>} in the engine.
+ * The mapper converts each {@code Long} ID to its {@code String} representation (e.g. {@code 42L → "42"})
+ * to facilitate high-performance {@code Set.contains()} checks during scheduling.
  *
  * <h3>Usage</h3>
  * <pre>{@code
- *   AlgoUser  user   = AlgoMapper.toModel(userDto);
- *   AlgoTask  task   = AlgoMapper.toModel(taskDto);
- *   AlgoUser  user   = AlgoMapper.toModel(userDto, vacationDtos);  // explicit vacation list
- *   // Full request mapping:
- *   List<AlgoUser> users = AlgoMapper.toUserModels(request.users());
- *   List<AlgoTask> tasks = AlgoMapper.toTaskModels(request.tasks());
- *   AlgoSchedulingConfiguration cfg = AlgoMapper.toModel(request.config());
+ * AlgoUser  user   = AlgoMapper.toModel(userDto);
+ * AlgoTask  task   = AlgoMapper.toModel(taskDto);
+ * // Full request mapping:
+ * MappedRequest mapped = AlgoMapper.toModels(request);
  * }</pre>
  */
+@Component
 public final class AlgoMapper {
-
-    // Non-instantiable utility class
-    private AlgoMapper() {}
 
     // ── VacationDto → AlgoVacation ────────────────────────────────────────────
 
@@ -60,7 +56,7 @@ public final class AlgoMapper {
      * @param userId the ID of the owning worker (for traceability inside the engine)
      * @return immutable {@link AlgoVacation}
      */
-    public static AlgoVacation toModel(VacationDto dto, Long userId) {
+    public AlgoVacation toModel(VacationDto dto, Long userId) {
         return new AlgoVacation(
                 dto.id(),
                 userId,
@@ -73,7 +69,7 @@ public final class AlgoMapper {
      * Converts a (possibly null) list of {@link VacationDto}s for one worker.
      * Returns an empty list when the input is null or empty.
      */
-    public static List<AlgoVacation> toVacationModels(List<VacationDto> dtos, Long userId) {
+    public List<AlgoVacation> toVacationModels(List<VacationDto> dtos, Long userId) {
         if (dtos == null || dtos.isEmpty()) return Collections.emptyList();
         List<AlgoVacation> result = new ArrayList<>(dtos.size());
         for (VacationDto dto : dtos)
@@ -87,7 +83,7 @@ public final class AlgoMapper {
      * Converts a single inlined {@link UserDto.WorkerAvailabilityDto} to an
      * {@link AlgoWorkerAvailability} model.
      */
-    public static AlgoWorkerAvailability toModel(UserDto.WorkerAvailabilityDto dto) {
+    public AlgoWorkerAvailability toModel(UserDto.WorkerAvailabilityDto dto) {
         return new AlgoWorkerAvailability(dto.dayOfWeek(), dto.startTime(), dto.endTime());
     }
 
@@ -95,8 +91,7 @@ public final class AlgoMapper {
      * Converts a (possibly null) list of availability windows.
      * Returns an empty list when the input is null or empty.
      */
-    public static List<AlgoWorkerAvailability> toAvailabilityModels(
-            List<UserDto.WorkerAvailabilityDto> dtos) {
+    public List<AlgoWorkerAvailability> toAvailabilityModels(List<UserDto.WorkerAvailabilityDto> dtos) {
         if (dtos == null || dtos.isEmpty()) return Collections.emptyList();
         List<AlgoWorkerAvailability> result = new ArrayList<>(dtos.size());
         for (UserDto.WorkerAvailabilityDto dto : dtos)
@@ -114,18 +109,18 @@ public final class AlgoMapper {
      * @param dto source DTO (must not be null)
      * @return immutable {@link AlgoUser}
      */
-    public static AlgoUser toModel(UserDto dto) {
-        Set<String> roles          = roleIdsToStrings(dto.roleIds());
+    public AlgoUser toModel(UserDto dto) {
+        Set<String> jobs = jobIdsToStrings(dto.jobIds());
         List<AlgoVacation> vacations = toVacationModels(dto.vacations(), dto.id());
         List<AlgoWorkerAvailability> availabilities = toAvailabilityModels(dto.availabilities());
-        return new AlgoUser(dto.id(), availabilities, dto.maxTasks(), roles, vacations);
+        return new AlgoUser(dto.id(), availabilities, dto.maxTasks(), jobs, vacations);
     }
 
     /**
      * Bulk-converts a list of {@link UserDto}s.
      * Returns an empty list when the input is null or empty.
      */
-    public static List<AlgoUser> toUserModels(List<UserDto> dtos) {
+    public List<AlgoUser> toUserModels(List<UserDto> dtos) {
         if (dtos == null || dtos.isEmpty()) return Collections.emptyList();
         List<AlgoUser> result = new ArrayList<>(dtos.size());
         for (UserDto dto : dtos)
@@ -142,17 +137,21 @@ public final class AlgoMapper {
      * @param dto source DTO (must not be null)
      * @return immutable {@link AlgoTask}
      */
-    public static AlgoTask toModel(TaskDto dto) {
-        Set<String> requiredRoles = roleIdsToStrings(dto.requiredRoleIds());
-        List<Long> predecessors   = dto.predecessorTaskIds() != null
+    public AlgoTask toModel(TaskDto dto) {
+        Set<String> requiredJobs = (dto.requiredJobId() != null)
+                ? Collections.singleton(dto.requiredJobId().toString())
+                : Collections.emptySet();
+
+        List<Long> predecessors = dto.predecessorTaskIds() != null
                 ? Collections.unmodifiableList(new ArrayList<>(dto.predecessorTaskIds()))
                 : Collections.emptyList();
+
         return new AlgoTask(
                 dto.id(),
                 dto.durationHours(),
                 dto.deadline(),
                 dto.priorityLevel(),
-                requiredRoles,
+                requiredJobs,
                 predecessors
         );
     }
@@ -161,12 +160,11 @@ public final class AlgoMapper {
      * Bulk-converts a list of {@link TaskDto}s.
      * Returns an empty list when the input is null or empty.
      */
-    public static List<AlgoTask> toTaskModels(List<TaskDto> dtos) {
+    public List<AlgoTask> toTaskModels(List<TaskDto> dtos) {
         if (dtos == null || dtos.isEmpty()) return Collections.emptyList();
         List<AlgoTask> result = new ArrayList<>(dtos.size());
-        for (TaskDto dto : dtos) {
+        for (TaskDto dto : dtos)
             result.add(toModel(dto));
-        }
         return result;
     }
 
@@ -180,7 +178,7 @@ public final class AlgoMapper {
      * @param dto source config DTO (may be null)
      * @return immutable {@link AlgoSchedulingConfiguration}, or {@code null} if dto is null
      */
-    public static AlgoSchedulingConfiguration toModel(SchedulingConfigurationDto dto) {
+    public AlgoSchedulingConfiguration toModel(SchedulingConfigurationDto dto) {
         if (dto == null) return null;
         return new AlgoSchedulingConfiguration(
             dto.weightPriority(),
@@ -206,7 +204,7 @@ public final class AlgoMapper {
      * @param request fully-validated inbound DTO (must not be null)
      * @return {@link MappedRequest} containing users, tasks, and (possibly null) config
      */
-    public static MappedRequest toModels(SchedulingRequestDto request) {
+    public MappedRequest toModels(SchedulingRequestDto request) {
         return new MappedRequest(
                 toUserModels(request.users()),
                 toTaskModels(request.tasks()),
@@ -220,9 +218,9 @@ public final class AlgoMapper {
      * Converts a {@code Set<Long>} of role IDs to a {@code Set<String>}.
      * Returns an empty set for null input.
      */
-    private static Set<String> roleIdsToStrings(Set<Long> roleIds) {
-        if (roleIds == null || roleIds.isEmpty()) return Collections.emptySet();
-        return roleIds.stream()
+    private static Set<String> jobIdsToStrings(Set<Long> jobIds) {
+        if (jobIds == null || jobIds.isEmpty()) return Collections.emptySet();
+        return jobIds.stream()
                 .map(Object::toString)
                 .collect(Collectors.toUnmodifiableSet());
     }

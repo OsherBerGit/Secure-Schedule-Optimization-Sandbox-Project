@@ -2,10 +2,11 @@ package com.example.mainbackend.mapper;
 
 import com.example.mainbackend.algorithm.dto.AlgoUserRequest;
 import com.example.mainbackend.algorithm.dto.AlgoVacationRequest;
+import com.example.mainbackend.constants.VacationStatusConstants;
 import com.example.mainbackend.dto.user.CreateUserRequest;
 import com.example.mainbackend.dto.user.UserDto;
 import com.example.mainbackend.dto.user.WorkerAvailabilityDto;
-import com.example.mainbackend.entity.Role;
+import com.example.mainbackend.entity.Job;
 import com.example.mainbackend.entity.User;
 import org.springframework.stereotype.Component;
 
@@ -40,8 +41,9 @@ public class UserMapper {
                                 .collect(Collectors.toList())
                         : Collections.emptyList())
                 .departmentName(user.getDepartment() != null ? user.getDepartment().getName() : null)
-                .roles(user.getRoles() != null
-                        ? user.getRoles().stream().map(Role::getRoleName).collect(Collectors.toSet())
+                .role(user.getRole() != null ? user.getRole().getRoleName() : null)
+                .jobs(user.getJobs() != null
+                        ? user.getJobs().stream().map(Job::getName).collect(Collectors.toSet())
                         : Collections.emptySet())
                 .build();
     }
@@ -134,13 +136,13 @@ public class UserMapper {
      * @param user the User entity (must have roles already loaded)
      * @return anonymous AlgoUserRequest for the algorithm engine
      */
-    public static AlgoUserRequest toAlgoRequest(User user) {
+    public AlgoUserRequest toAlgoRequest(User user) {
         if (user == null) return null;
 
         List<AlgoVacationRequest> approvedVacations = user.getVacations() != null
                 ? user.getVacations().stream()
                         .filter(v -> v.getStatus() != null
-                                && "APPROVED".equalsIgnoreCase(v.getStatus().getName()))
+                                && VacationStatusConstants.APPROVED.equalsIgnoreCase(v.getStatus().getName()))
                         .map(v -> AlgoVacationRequest.builder()
                                 .id(v.getId())
                                 .startDate(v.getStartDate())
@@ -164,8 +166,8 @@ public class UserMapper {
                 .id(user.getId())
                 .availabilities(availabilities)
                 .maxTasks(user.getMaxTasks())
-                .roles(user.getRoles() != null
-                        ? user.getRoles().stream().map(Role::getId).collect(Collectors.toSet())
+                .jobIds(user.getJobs() != null
+                        ? user.getJobs().stream().map(Job::getId).collect(Collectors.toSet())
                         : Collections.emptySet())
                 .vacations(approvedVacations)
                 .build();

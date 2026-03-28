@@ -17,7 +17,6 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -38,26 +37,71 @@ public class DataLoader implements CommandLineRunner {
     private final VacationRepository vacationRepository;
     private final SettlementRepository settlementRepository;
     private final PasswordEncoder passwordEncoder;
+    private final DepartmentRepository departmentRepository;
+    private final JobRepository jobRepository;
 
     @Override
-    @Transactional
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         seedTaskStatuses();
         seedSettlementStatuses();
         seedVacationStatuses();
         seedPriorities();
         seedConstraintTypes();
-        seedRolesAndUsers();
+        seedDepartments();
+        seedJobs();
+        seedRoles();
+        seedUsers();
         seedTasks();
         seedVacations();
         seedSettlements();
+    }
+
+    @Transactional
+    public void seedDepartments() {
+        if (departmentRepository.findByName("General").isEmpty()) {
+            departmentRepository.save(Department.builder().name("General").build());
+            log.info("Seeded department: General");
+        }
+    }
+
+    @Transactional
+    public void seedJobs() {
+        if (jobRepository.findByName("Software Engineer").isEmpty()) {
+            jobRepository.save(Job.builder().name("Software Engineer").build());
+            log.info("Seeded job: Software Engineer");
+        }
+        if (jobRepository.findByName("QA Engineer").isEmpty()) {
+            jobRepository.save(Job.builder().name("QA Engineer").build());
+            log.info("Seeded job: QA Engineer");
+        }
+        if (jobRepository.findByName("DevOps Engineer").isEmpty()) {
+            jobRepository.save(Job.builder().name("DevOps Engineer").build());
+            log.info("Seeded job: DevOps Engineer");
+        }
+    }
+
+    @Transactional
+    public void seedRoles() {
+        if (roleRepository.findByRoleName("ADMIN").isEmpty()) {
+            roleRepository.save(new Role(null, "ADMIN"));
+            log.info("Seeded role: ADMIN");
+        }
+        if (roleRepository.findByRoleName("MANAGER").isEmpty()) {
+            roleRepository.save(new Role(null, "MANAGER"));
+            log.info("Seeded role: MANAGER");
+        }
+        if (roleRepository.findByRoleName("WORKER").isEmpty()) {
+            roleRepository.save(new Role(null, "WORKER"));
+            log.info("Seeded role: WORKER");
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Lookup tables
     // ─────────────────────────────────────────────────────────────────────────
 
-    private void seedTaskStatuses() {
+    @Transactional
+    public void seedTaskStatuses() {
         seedTaskStatus(TaskStatusConstants.TASK_OPEN,      "#3B82F6");
         seedTaskStatus(TaskStatusConstants.TASK_LOCKED,    "#F59E0B");
         seedTaskStatus(TaskStatusConstants.TASK_SCHEDULED, "#A855F7");
@@ -71,7 +115,8 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
-    private void seedSettlementStatuses() {
+    @Transactional
+    public void seedSettlementStatuses() {
         seedSettlementStatus(TaskStatusConstants.SETTLEMENT_PENDING,     "#6B7280");
         seedSettlementStatus(TaskStatusConstants.SETTLEMENT_ASSIGNED,    "#3B82F6");
         seedSettlementStatus(TaskStatusConstants.SETTLEMENT_IN_PROGRESS, "#8B5CF6");
@@ -86,7 +131,8 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
-    private void seedVacationStatuses() {
+    @Transactional
+    public void seedVacationStatuses() {
         for (String name : VacationStatusConstants.REQUIRED_STATUSES) {
             if (vacationStatusRepository.findByName(name).isEmpty()) {
                 vacationStatusRepository.save(VacationStatus.builder().name(name).build());
@@ -95,7 +141,8 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
-    private void seedPriorities() {
+    @Transactional
+    public void seedPriorities() {
         int value = 1;
         for (String name : PriorityConstants.REQUIRED_PRIORITIES) {
             if (priorityRepository.findByName(name).isEmpty()) {
@@ -106,7 +153,8 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
-    private void seedConstraintTypes() {
+    @Transactional
+    public void seedConstraintTypes() {
         String[] descriptions = {
             "Successor cannot start until predecessor finishes",
             "Successor cannot start until predecessor starts",
@@ -128,65 +176,100 @@ public class DataLoader implements CommandLineRunner {
     // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional
-    public void seedRolesAndUsers() {
-        Role adminRole  = roleRepository.findByRoleName("ADMIN")
-                .orElseGet(() -> roleRepository.save(new Role(null, "ADMIN")));
-        Role workerRole = roleRepository.findByRoleName("WORKER")
-                .orElseGet(() -> roleRepository.save(new Role(null, "WORKER")));
+    public void seedUsers() {
+        Role adminRole  = roleRepository.findByRoleName("ADMIN").orElseThrow();
+        Role managerRole = roleRepository.findByRoleName("MANAGER").orElseThrow();
+        Role workerRole = roleRepository.findByRoleName("WORKER").orElseThrow();
+
+        Department generalDepartment = departmentRepository.findByName("General").orElseThrow();
+        Job softwareEngineer = jobRepository.findByName("Software Engineer").orElseThrow();
+        Job qaEngineer = jobRepository.findByName("QA Engineer").orElseThrow();
+        Job devopsEngineer = jobRepository.findByName("DevOps Engineer").orElseThrow();
+
+        // ── Generic Users ──────────────────────────────────────────────────
+        upsertUser("admin", "admin", "admin", "admin@company.com", 15,
+                adminRole,
+                shifts(
+                        shift(DayOfWeek.SUNDAY,    "09:00", "17:00"),
+                        shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
+                        shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
+                        shift(DayOfWeek.WEDNESDAY, "09:00", "17:00"),
+                        shift(DayOfWeek.THURSDAY,  "09:00", "17:00")
+                ), generalDepartment, Set.of(softwareEngineer, qaEngineer, devopsEngineer));
+
+        upsertUser("manager", "manager", "manager", "manager@company.com", 10,
+                managerRole,
+                shifts(
+                        shift(DayOfWeek.SUNDAY,    "09:00", "17:00"),
+                        shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
+                        shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
+                        shift(DayOfWeek.WEDNESDAY, "09:00", "17:00"),
+                        shift(DayOfWeek.THURSDAY,  "09:00", "17:00")
+                ), generalDepartment, Set.of(softwareEngineer, qaEngineer));
+
+        upsertUser("user", "user", "user", "user@company.com", 5,
+                workerRole,
+                shifts(
+                        shift(DayOfWeek.SUNDAY,    "08:00", "16:00"),
+                        shift(DayOfWeek.MONDAY,    "08:00", "16:00"),
+                        shift(DayOfWeek.TUESDAY,   "08:00", "16:00"),
+                        shift(DayOfWeek.WEDNESDAY, "08:00", "16:00"),
+                        shift(DayOfWeek.THURSDAY,  "08:00", "16:00")
+                ), generalDepartment, Set.of(softwareEngineer));
+
 
         // ── Admin ────────────────────────────────────────────────────────────
-        // Full week, 09-17 every day
-        upsertUser("admin", "Admin", "User", "admin@company.com", 15,
-                Set.of(adminRole, workerRole),
+        upsertUser("admin2", "Admin", "User", "admin2@company.com", 15,
+                adminRole,
                 shifts(
                     shift(DayOfWeek.SUNDAY,    "09:00", "17:00"),
                     shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
                     shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
                     shift(DayOfWeek.WEDNESDAY, "09:00", "17:00"),
                     shift(DayOfWeek.THURSDAY,  "09:00", "17:00")
-                ));
+                ), generalDepartment, Set.of(softwareEngineer, qaEngineer, devopsEngineer));
 
         // ── Workers ──────────────────────────────────────────────────────────
         upsertUser("john", "John", "Doe", "john@company.com", 5,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.SUNDAY,    "08:00", "16:00"),
                     shift(DayOfWeek.MONDAY,    "08:00", "16:00"),
                     shift(DayOfWeek.TUESDAY,   "08:00", "16:00"),
                     shift(DayOfWeek.WEDNESDAY, "08:00", "16:00"),
                     shift(DayOfWeek.THURSDAY,  "08:00", "16:00")
-                ));
+                ), generalDepartment, Set.of(softwareEngineer));
 
         upsertUser("alice", "Alice", "Smith", "alice@company.com", 4,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
                     shift(DayOfWeek.WEDNESDAY, "09:00", "17:00"),
                     shift(DayOfWeek.THURSDAY,  "09:00", "17:00"),
                     shift(DayOfWeek.FRIDAY,    "09:00", "13:00")
-                ));
+                ), generalDepartment, Set.of(qaEngineer));
 
         upsertUser("bob", "Bob", "Johnson", "bob@company.com", 3,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.SUNDAY,    "07:00", "15:00"),
                     shift(DayOfWeek.MONDAY,    "07:00", "15:00"),
                     shift(DayOfWeek.TUESDAY,   "07:00", "15:00"),
                     shift(DayOfWeek.THURSDAY,  "07:00", "15:00")
-                ));
+                ), generalDepartment, Set.of(devopsEngineer));
 
         upsertUser("carol", "Carol", "Williams", "carol@company.com", 4,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.SUNDAY,    "10:00", "18:00"),
                     shift(DayOfWeek.MONDAY,    "10:00", "18:00"),
                     shift(DayOfWeek.TUESDAY,   "10:00", "18:00"),
                     shift(DayOfWeek.WEDNESDAY, "10:00", "18:00"),
                     shift(DayOfWeek.THURSDAY,  "10:00", "18:00")
-                ));
+                ), generalDepartment, Set.of(softwareEngineer));
 
         upsertUser("david", "David", "Brown", "david@company.com", 6,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.SUNDAY,    "08:00", "17:00"),
                     shift(DayOfWeek.MONDAY,    "08:00", "17:00"),
@@ -194,57 +277,57 @@ public class DataLoader implements CommandLineRunner {
                     shift(DayOfWeek.WEDNESDAY, "08:00", "17:00"),
                     shift(DayOfWeek.THURSDAY,  "08:00", "17:00"),
                     shift(DayOfWeek.FRIDAY,    "08:00", "12:00")
-                ));
+                ), generalDepartment, Set.of(qaEngineer));
 
         upsertUser("emma", "Emma", "Davis", "emma@company.com", 5,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.MONDAY,    "09:00", "18:00"),
                     shift(DayOfWeek.TUESDAY,   "09:00", "18:00"),
                     shift(DayOfWeek.WEDNESDAY, "09:00", "18:00"),
                     shift(DayOfWeek.THURSDAY,  "09:00", "18:00")
-                ));
+                ), generalDepartment, Set.of(devopsEngineer));
 
         upsertUser("frank", "Frank", "Miller", "frank@company.com", 4,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.SUNDAY,    "06:00", "14:00"),
                     shift(DayOfWeek.MONDAY,    "06:00", "14:00"),
                     shift(DayOfWeek.TUESDAY,   "06:00", "14:00"),
                     shift(DayOfWeek.WEDNESDAY, "06:00", "14:00")
-                ));
+                ), generalDepartment, Set.of(softwareEngineer));
 
         upsertUser("grace", "Grace", "Wilson", "grace@company.com", 5,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.SUNDAY,    "09:00", "17:00"),
                     shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
                     shift(DayOfWeek.WEDNESDAY, "09:00", "17:00"),
                     shift(DayOfWeek.THURSDAY,  "09:00", "17:00"),
                     shift(DayOfWeek.FRIDAY,    "09:00", "17:00")
-                ));
+                ), generalDepartment, Set.of(qaEngineer));
 
         upsertUser("henry", "Henry", "Moore", "henry@company.com", 3,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.MONDAY,    "11:00", "19:00"),
                     shift(DayOfWeek.TUESDAY,   "11:00", "19:00"),
                     shift(DayOfWeek.WEDNESDAY, "11:00", "19:00"),
                     shift(DayOfWeek.THURSDAY,  "11:00", "19:00"),
                     shift(DayOfWeek.FRIDAY,    "11:00", "19:00")
-                ));
+                ), generalDepartment, Set.of(devopsEngineer));
 
         upsertUser("iris", "Iris", "Taylor", "iris@company.com", 5,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.SUNDAY,    "08:00", "16:00"),
                     shift(DayOfWeek.MONDAY,    "08:00", "16:00"),
                     shift(DayOfWeek.WEDNESDAY, "08:00", "16:00"),
                     shift(DayOfWeek.THURSDAY,  "08:00", "16:00")
-                ));
+                ), generalDepartment, Set.of(softwareEngineer));
 
         upsertUser("jack", "Jack", "Anderson", "jack@company.com", 6,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.SUNDAY,    "09:00", "18:00"),
                     shift(DayOfWeek.MONDAY,    "09:00", "18:00"),
@@ -252,37 +335,37 @@ public class DataLoader implements CommandLineRunner {
                     shift(DayOfWeek.WEDNESDAY, "09:00", "18:00"),
                     shift(DayOfWeek.THURSDAY,  "09:00", "18:00"),
                     shift(DayOfWeek.FRIDAY,    "09:00", "13:00")
-                ));
+                ), generalDepartment, Set.of(qaEngineer));
 
         upsertUser("karen", "Karen", "Thomas", "karen@company.com", 4,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.SUNDAY,    "10:00", "16:00"),
                     shift(DayOfWeek.MONDAY,    "10:00", "16:00"),
                     shift(DayOfWeek.TUESDAY,   "10:00", "16:00"),
                     shift(DayOfWeek.WEDNESDAY, "10:00", "16:00"),
                     shift(DayOfWeek.THURSDAY,  "10:00", "16:00")
-                ));
+                ), generalDepartment, Set.of(devopsEngineer));
 
         upsertUser("liam", "Liam", "Jackson", "liam@company.com", 5,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.MONDAY,    "08:00", "17:00"),
                     shift(DayOfWeek.TUESDAY,   "08:00", "17:00"),
                     shift(DayOfWeek.WEDNESDAY, "08:00", "17:00"),
                     shift(DayOfWeek.THURSDAY,  "08:00", "17:00"),
                     shift(DayOfWeek.FRIDAY,    "08:00", "17:00")
-                ));
+                ), generalDepartment, Set.of(softwareEngineer));
 
         upsertUser("mia", "Mia", "White", "mia@company.com", 4,
-                Set.of(workerRole),
+                workerRole,
                 shifts(
                     shift(DayOfWeek.SUNDAY,    "07:00", "15:00"),
                     shift(DayOfWeek.MONDAY,    "07:00", "15:00"),
                     shift(DayOfWeek.TUESDAY,   "07:00", "15:00"),
                     shift(DayOfWeek.THURSDAY,  "07:00", "15:00"),
                     shift(DayOfWeek.FRIDAY,    "07:00", "11:00")
-                ));
+                ), generalDepartment, Set.of(qaEngineer));
 
         log.info("Seeded {} users", userRepository.count());
     }
@@ -304,8 +387,10 @@ public class DataLoader implements CommandLineRunner {
         Priority critical = priorityRepository.findByName(PriorityConstants.CRITICAL).orElseThrow();
 
         TaskStatus open = taskStatusRepository.findByName(TaskStatusConstants.TASK_OPEN).orElseThrow();
-        Role workerRole = roleRepository.findByRoleName("WORKER").orElseThrow();
-        Role adminRole  = roleRepository.findByRoleName("ADMIN").orElseThrow();
+        Department generalDepartment = departmentRepository.findByName("General").orElseThrow();
+        Job softwareEngineer = jobRepository.findByName("Software Engineer").orElseThrow();
+        Job qaEngineer = jobRepository.findByName("QA Engineer").orElseThrow();
+        Job devopsEngineer = jobRepository.findByName("DevOps Engineer").orElseThrow();
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -313,157 +398,157 @@ public class DataLoader implements CommandLineRunner {
         Task t01 = save(Task.builder().title("Design Database Schema")
                 .description("Design the full relational DB schema including all entities, relationships, and indexes.")
                 .durationHours(4).deadline(now.plusDays(3)).priority(high).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t02 = save(Task.builder().title("Setup CI/CD Pipeline")
                 .description("Configure GitHub Actions workflows for build, test, and deploy stages.")
                 .durationHours(6).deadline(now.plusDays(5)).priority(medium).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(devopsEngineer).department(generalDepartment).build());
 
         Task t03 = save(Task.builder().title("Provision Production Server")
                 .description("Provision and harden the AWS EC2 production server with security groups and IAM roles.")
                 .durationHours(5).deadline(now.plusDays(6)).priority(high).status(open)
-                .requiredRoles(Set.of(adminRole)).build());
+                .requiredJob(devopsEngineer).department(generalDepartment).build());
 
         Task t04 = save(Task.builder().title("Configure NGINX Reverse Proxy")
                 .description("Set up NGINX as a reverse proxy in front of the Spring Boot app with SSL termination.")
                 .durationHours(3).deadline(now.plusDays(7)).priority(medium).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(devopsEngineer).department(generalDepartment).build());
 
         Task t05 = save(Task.builder().title("Setup Docker Compose Environment")
                 .description("Create docker-compose.yml for local dev with MySQL, Redis, and backend services.")
                 .durationHours(4).deadline(now.plusDays(4)).priority(medium).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(devopsEngineer).department(generalDepartment).build());
 
         // ── Backend – Auth & Security ────────────────────────────────────────
         Task t06 = save(Task.builder().title("Implement JWT Authentication")
                 .description("Build JWT-based login with access/refresh tokens, blacklisting, and role guards.")
                 .durationHours(8).deadline(now.plusDays(4)).priority(critical).status(open)
-                .requiredRoles(Set.of(workerRole, adminRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t07 = save(Task.builder().title("Add Role-Based Access Control")
                 .description("Wire Spring Security method-level @PreAuthorize annotations for ADMIN/WORKER separation.")
                 .durationHours(4).deadline(now.plusDays(5)).priority(high).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t08 = save(Task.builder().title("Implement Password Reset Flow")
                 .description("Email-based OTP password reset with expiry and rate limiting.")
                 .durationHours(5).deadline(now.plusDays(8)).priority(medium).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         // ── Backend – Core APIs ──────────────────────────────────────────────
         Task t09 = save(Task.builder().title("Build Tasks REST API")
                 .description("CRUD endpoints for task management with pagination, filtering, and status transitions.")
                 .durationHours(6).deadline(now.plusDays(5)).priority(high).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t10 = save(Task.builder().title("Build Users REST API")
                 .description("CRUD endpoints for user management including role assignment and availability windows.")
                 .durationHours(5).deadline(now.plusDays(5)).priority(high).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t11 = save(Task.builder().title("Build Settlements REST API")
                 .description("Endpoints for creating, listing, and completing worker-task settlements.")
                 .durationHours(5).deadline(now.plusDays(6)).priority(high).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
-        Task t12 = save(Task.builder().title("Build Vacations REST API")
+        save(Task.builder().title("Build Vacations REST API")
                 .description("Endpoints for vacation request, approval/rejection workflow, and date-range queries.")
                 .durationHours(4).deadline(now.plusDays(6)).priority(medium).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t13 = save(Task.builder().title("Build Schedule Run Endpoint")
                 .description("POST /api/schedule/run — calls the algorithm service and returns the draft preview.")
                 .durationHours(6).deadline(now.plusDays(7)).priority(critical).status(open)
-                .requiredRoles(Set.of(workerRole, adminRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t14 = save(Task.builder().title("Build Schedule Save Endpoint")
                 .description("POST /api/schedule/save — persists approved assignments to the DB (SCHEDULED + ASSIGNED).")
                 .durationHours(4).deadline(now.plusDays(7)).priority(critical).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
-        Task t15 = save(Task.builder().title("Integrate Priorities & Statuses Lookup APIs")
+        save(Task.builder().title("Integrate Priorities & Statuses Lookup APIs")
                 .description("Seed endpoints for priorities and task/settlement status lookup tables.")
                 .durationHours(3).deadline(now.plusDays(4)).priority(low).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         // ── Algorithm Service ────────────────────────────────────────────────
         Task t16 = save(Task.builder().title("Implement Greedy Scheduling Strategy")
                 .description("Assign tasks in priority order to the first available worker respecting role and availability.")
                 .durationHours(8).deadline(now.plusDays(6)).priority(critical).status(open)
-                .requiredRoles(Set.of(workerRole, adminRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t17 = save(Task.builder().title("Implement Round-Robin Scheduling Strategy")
                 .description("Distribute tasks evenly across eligible workers in a round-robin fashion.")
                 .durationHours(6).deadline(now.plusDays(7)).priority(high).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t18 = save(Task.builder().title("Implement Memetic Algorithm Strategy")
                 .description("Genetic + local-search hybrid for near-optimal scheduling across large task sets.")
                 .durationHours(16).deadline(now.plusDays(12)).priority(high).status(open)
-                .requiredRoles(Set.of(workerRole, adminRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t19 = save(Task.builder().title("Add Constraint Validation to Algorithm")
                 .description("Enforce Finish-to-Start / Start-to-Start lag constraints during candidate generation.")
                 .durationHours(6).deadline(now.plusDays(8)).priority(high).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t20 = save(Task.builder().title("Add Vacation Blocking to Algorithm")
                 .description("Exclude workers who are on approved vacation from candidate assignment windows.")
                 .durationHours(4).deadline(now.plusDays(7)).priority(high).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         // ── Frontend ─────────────────────────────────────────────────────────
         Task t21 = save(Task.builder().title("Frontend — Login & Auth Pages")
                 .description("React login form with JWT storage, auto-refresh, and redirect logic.")
                 .durationHours(5).deadline(now.plusDays(6)).priority(high).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t22 = save(Task.builder().title("Frontend — Dashboard Page")
                 .description("Summary cards for tasks, workers, open settlements, and scheduling stats.")
                 .durationHours(5).deadline(now.plusDays(8)).priority(medium).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t23 = save(Task.builder().title("Frontend — Tasks Management Page")
                 .description("Table with create/edit/delete modals, status badges, and priority filters.")
                 .durationHours(6).deadline(now.plusDays(8)).priority(medium).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t24 = save(Task.builder().title("Frontend — Schedule Page with Gantt Chart")
                 .description("Gantt-style schedule view with draft/approve flow and Approve & Save button.")
                 .durationHours(8).deadline(now.plusDays(10)).priority(high).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t25 = save(Task.builder().title("Frontend — Settlements Page")
                 .description("List worker-task assignments with status tracking and completion action.")
                 .durationHours(4).deadline(now.plusDays(9)).priority(medium).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t26 = save(Task.builder().title("Frontend — Vacations Page")
                 .description("Vacation request form for workers and approve/reject UI for admins.")
                 .durationHours(4).deadline(now.plusDays(9)).priority(low).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         Task t27 = save(Task.builder().title("Frontend — Users Management Page")
                 .description("Admin-only table to view, create, edit, and delete users with role badges.")
                 .durationHours(4).deadline(now.plusDays(7)).priority(medium).status(open)
-                .requiredRoles(Set.of(adminRole)).build());
+                .requiredJob(softwareEngineer).department(generalDepartment).build());
 
         // ── QA & Delivery ─────────────────────────────────────────────────────
         Task t28 = save(Task.builder().title("Write Integration Tests — Backend")
                 .description("Spring Boot @SpringBootTest coverage for all REST endpoints.")
                 .durationHours(8).deadline(now.plusDays(11)).priority(medium).status(open)
-                .requiredRoles(Set.of(workerRole)).build());
+                .requiredJob(qaEngineer).department(generalDepartment).build());
 
         Task t29 = save(Task.builder().title("Deploy to Staging & Smoke Test")
                 .description("Deploy the full stack to staging and run a smoke test checklist.")
                 .durationHours(4).deadline(now.plusDays(12)).priority(high).status(open)
-                .requiredRoles(Set.of(adminRole)).build());
+                .requiredJob(qaEngineer).department(generalDepartment).build());
 
         Task t30 = save(Task.builder().title("Production Go-Live & Monitoring Setup")
                 .description("Deploy to production, configure Grafana/Prometheus dashboards, set up alerting.")
                 .durationHours(6).deadline(now.plusDays(14)).priority(critical).status(open)
-                .requiredRoles(Set.of(adminRole, workerRole)).build());
+                .requiredJob(devopsEngineer).department(generalDepartment).build());
 
         log.info("Seeded {} tasks", taskRepository.count());
 
@@ -620,8 +705,8 @@ public class DataLoader implements CommandLineRunner {
     // ─────────────────────────────────────────────────────────────────────────
 
     private void upsertUser(String nationalId, String firstName, String lastName,
-                             String email, int maxTasks, Set<Role> roles,
-                             List<WorkerAvailability> availabilityTemplates) {
+                             String email, int maxTasks, Role role,
+                             List<WorkerAvailability> availabilityTemplates, Department department, Set<Job> jobs) {
         User user = userRepository.findByNationalId(nationalId).orElseGet(() -> {
             User u = new User();
             u.setNationalId(nationalId);
@@ -633,7 +718,9 @@ public class DataLoader implements CommandLineRunner {
         user.setLastName(lastName);
         user.setEmail(email);
         user.setMaxTasks(maxTasks);
-        user.setRoles(new HashSet<>(roles));
+        user.setRole(role);
+        user.setDepartment(department);
+        user.setJobs(jobs);
 
         // Replace availability windows
         user.getAvailabilities().clear();

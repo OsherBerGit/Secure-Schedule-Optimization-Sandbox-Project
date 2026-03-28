@@ -17,7 +17,7 @@ import java.util.Set;
  * @param id             Internal database ID of the worker
  * @param availabilities Specific weekly shift windows defining when the worker is available
  * @param maxTasks       Maximum concurrent tasks the worker can handle (1–100)
- * @param roleIds        Set of role IDs the worker holds
+ * @param jobIds        Set of job IDs the worker holds
  * @param vacations      Approved vacation windows (may be empty, never null)
  */
 public record UserDto(
@@ -31,7 +31,7 @@ public record UserDto(
         @NotNull(message = "maxTasks must not be null")
         Integer maxTasks,
 
-        Set<Long> roleIds,
+        Set<Long> jobIds,
 
         @Valid
         List<VacationDto> vacations

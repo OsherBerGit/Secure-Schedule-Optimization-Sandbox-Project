@@ -3,77 +3,63 @@ package com.example.algorithm.engine.core;
 import com.example.algorithm.constraint.ConstraintChecker;
 import com.example.algorithm.constraint.ConstraintContext;
 import com.example.algorithm.constraint.ConstraintResult;
+import com.example.algorithm.constraint.Scorer;
 import com.example.algorithm.model.AlgoSchedulingConfiguration;
 import com.example.algorithm.model.AlgoTask;
 import com.example.algorithm.model.AlgoUser;
+import com.example.algorithm.model.TaskAssignment;
 
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Evaluates the fitness (quality) of a candidate schedule encoded as an {@link Individual}.
  *
  * <p>Scoring strategy:</p>
  * <ul>
- *   <li><b>Hard constraint violation</b> — any assignment that fails the constraint pipeline
- *       incurs a large penalty ({@code -5000} per violation) and does not contribute to the
- *       positive score.  A penalty of {@code -1000} is additionally subtracted per violation
- *       before the penalty multiplier so that the total score can never be inflated by
- *       many partial passes.</li>
- *   <li><b>Priority reward</b> — each successfully scheduled task contributes
- *       {@code priorityLevel × weightPriority}.</li>
- *   <li><b>Deadline slack reward</b> — positive hours remaining before the deadline add a small
- *       bonus: {@code slackHours × weightDeadline × 0.1}.</li>
- *   <li><b>Fairness reward</b> — low variance in per-worker task counts yields a bonus scaled by
- *       {@code weightFairness}.</li>
- *   <li>The final score is clamped to {@code ≥ 0}.</li>
+ *   <li><b>Base Score:</b> Each successfully scheduled task contributes a large positive score (e.g., +1000).
+ *       This is the primary driver of fitness.</li>
+ *   <li><b>Hard Constraint Violation:</b> An assignment that fails the constraint pipeline does not get the base score
+ *       and incurs a moderate penalty. This ensures invalid assignments are heavily disfavored.</li>
+ *   <li><b>Soft Constraints (Bonuses/Penalties):</b>
+ *     <ul>
+ *       <li><b>Priority:</b> Higher priority tasks add a bonus scaled by {@code weightPriority}.</li>
+ *       <li><b>Deadline Slack:</b> Finishing a task well before its deadline adds a bonus.</li>
+ *       <li><b>Fairness:</b> Evenly distributed workloads across users add a bonus.</li>
+ *     </ul>
+ *   </li>
  * </ul>
- *
- * <p>Pure Java: no Spring, Jackson, or Lombok annotations.</p>
  */
 public class FitnessEvaluator {
 
-    private final List<ConstraintChecker> constraints;
+    private final List<ConstraintChecker> hardConstraints;
+    private final List<Scorer> softScorers;
     private final AlgoSchedulingConfiguration config;
 
-    /**
-     * @param constraints the same constraint pipeline used by the greedy strategies
-     *                    (typically {@code PrecedenceConstraint}, {@code DeadlineConstraint},
-     *                    {@code AvailabilityConstraint})
-     * @param config      scheduling weights and GA parameters
-     */
-    public FitnessEvaluator(List<ConstraintChecker> constraints,
-                             AlgoSchedulingConfiguration config) {
-        this.constraints = constraints;
-        this.config      = config;
+    private static final double BASE_SCORE_PER_TASK = 1000.0;
+    private static final double HARD_VIOLATION_PENALTY = 500.0;
+
+    public FitnessEvaluator(List<ConstraintChecker> hardConstraints,
+                            List<Scorer> softScorers,
+                            AlgoSchedulingConfiguration config) {
+        this.hardConstraints = hardConstraints;
+        this.softScorers = softScorers;
+        this.config = config;
     }
 
-    /**
-     * Computes the fitness score for the given individual.
-     *
-     * <p>The chromosome is decoded sequentially (index 0 first).  Per-worker availability
-     * and per-task completion times are tracked throughout so that {@code PrecedenceConstraint}
-     * and {@code AvailabilityConstraint} can be evaluated correctly for every proposed
-     * assignment.</p>
-     *
-     * @param individual the candidate solution to evaluate
-     * @param tasks      the ordered list of tasks (index {@code i} → chromosome position {@code i})
-     * @param users      the ordered list of users  (chromosome value {@code j} → {@code users.get(j)})
-     * @return a non-negative fitness score; higher is better
-     */
     public double evaluate(Individual individual, List<AlgoTask> tasks, List<AlgoUser> users) {
-        double score        = 0.0;
-        int    hardViolations = 0;
-
-        // Track how many tasks each worker has been assigned so far in this chromosome.
-        Map<Long, Integer>       assignedCount   = new HashMap<>();
-        // Track when each worker becomes free (for sequential scheduling within the fitness sim).
-        Map<Long, LocalDateTime> workerNextFree  = new HashMap<>();
-        // Track when each task finishes (needed for PrecedenceConstraint evaluation).
+        double score = 0.0;
+        Map<Long, Integer> assignedCount = new HashMap<>();
+        Map<Long, LocalDateTime> workerNextFree = new HashMap<>();
         Map<Long, LocalDateTime> completionTimes = new HashMap<>();
+        List<TaskAssignment> currentAssignments = new ArrayList<>();
 
         LocalDateTime now = LocalDateTime.now();
         for (AlgoUser user : users) {
@@ -82,112 +68,114 @@ public class FitnessEvaluator {
         }
 
         int[] chromosome = individual.getChromosome();
-
         for (int i = 0; i < chromosome.length; i++) {
             int workerIndex = chromosome[i];
-
-            // A gene value of -1 (or out-of-range) means "do not assign this task".
-            if (workerIndex < 0 || workerIndex >= users.size()) {
-                hardViolations++;
-                continue;
-            }
+            if (workerIndex < 0 || workerIndex >= users.size()) continue; // Unassigned tasks don't get a positive score, but we don't penalize them here.
 
             AlgoTask task = tasks.get(i);
             AlgoUser user = users.get(workerIndex);
 
-            // Calculate proposed start: the later of (a) the worker's next free slot and
-            // (b) the latest predecessor completion time.
-            // getPredecessorTaskIds() is always non-null (returns Collections.emptyList() when absent).
-            LocalDateTime proposedStart = workerNextFree.get(user.getId());
+            // Use the exact same logic as BaseSchedulingStrategy to find the start time
+            Optional<LocalDateTime> possibleStart = findNextAvailableStartTimeForEvaluation(task, user, completionTimes, workerNextFree.get(user.getId()));
+
+            if (possibleStart.isPresent()) {
+                LocalDateTime proposedStart = possibleStart.get();
+                int durationHours = task.getDurationHours() != null ? task.getDurationHours() : 1;
+                LocalDateTime proposedEnd = proposedStart.plusHours(durationHours);
+
+                ConstraintContext ctx = new ConstraintContext(
+                        task, user, proposedStart, proposedEnd, completionTimes, assignedCount, currentAssignments);
+
+                if (runHardConstraints(ctx).isValid()) {
+                    score += BASE_SCORE_PER_TASK; // Primary reward for a valid assignment
+
+                    for (Scorer scorer : softScorers)
+                        score += scorer.score(ctx, config);
+
+                    if (task.getDeadline() != null) {
+                        long slackHours = Duration.between(proposedEnd, task.getDeadline()).toHours();
+                        if (slackHours > 0)
+                            score += (slackHours * config.getWeightDeadline() * 0.1);
+                    }
+
+                    workerNextFree.put(user.getId(), proposedEnd);
+                    completionTimes.put(task.getId(), proposedEnd);
+                    assignedCount.merge(user.getId(), 1, Integer::sum);
+                    currentAssignments.add(TaskAssignment.builder().task(task).assignedEmployee(user).scheduledStart(proposedStart).scheduledEnd(proposedEnd).build());
+                } else
+                    score -= HARD_VIOLATION_PENALTY; // Penalize invalid assignments
+            } else
+                 score -= HARD_VIOLATION_PENALTY; // Penalize if no shift can be found
+        }
+
+        score += calculateFairnessScore(assignedCount, users.size());
+        return Math.max(0.0, score);
+    }
+
+    // --- Helper logic duplicated from BaseSchedulingStrategy to ensure exact 1:1 evaluation ---
+
+    private Optional<LocalDateTime> findNextAvailableStartTimeForEvaluation(AlgoTask task, AlgoUser worker,
+                                                                 Map<Long, LocalDateTime> completionTimes,
+                                                                 LocalDateTime workerNextFree) {
+        LocalDateTime earliestPossible = LocalDateTime.now();
+        if (task.getPredecessorTaskIds() != null) {
             for (Long predId : task.getPredecessorTaskIds()) {
                 LocalDateTime predEnd = completionTimes.get(predId);
-                if (predEnd != null && predEnd.isAfter(proposedStart)) {
-                    proposedStart = predEnd;
-                }
-            }
-
-            int durationHours = task.getDurationHours() != null ? task.getDurationHours() : 1;
-            LocalDateTime proposedEnd = proposedStart.plusHours(durationHours);
-
-            // Run the full constraint pipeline against this proposed assignment.
-            ConstraintResult result = runConstraints(
-                    task, user, proposedStart, proposedEnd, completionTimes, assignedCount);
-
-            if (result.isValid()) {
-                // Reward: priority contribution.
-                score += (task.getPriorityLevel() * config.getWeightPriority());
-
-                // Reward: deadline slack — bonus for finishing well before the deadline.
-                if (task.getDeadline() != null) {
-                    long slackHours = Duration.between(proposedEnd, task.getDeadline()).toHours();
-                    if (slackHours > 0) {
-                        score += (slackHours * config.getWeightDeadline() * 0.1);
-                    }
-                }
-
-                // Advance the worker's availability and record the task's completion time.
-                workerNextFree.put(user.getId(), proposedEnd);
-                completionTimes.put(task.getId(), proposedEnd);
-                assignedCount.merge(user.getId(), 1, Integer::sum);
-
-            } else {
-                hardViolations++;
-                score -= 1000.0;
+                if (predEnd != null && predEnd.isAfter(earliestPossible))
+                    earliestPossible = predEnd;
             }
         }
 
-        // Reward: workload fairness across all workers.
-        score += calculateFairnessScore(assignedCount, users.size());
+        if (workerNextFree != null && workerNextFree.isAfter(earliestPossible))
+            earliestPossible = workerNextFree;
 
-        // Final score: apply the hard-violation penalty and clamp to zero.
-        return Math.max(0.0, score - (hardViolations * 5000.0));
+        int taskDurationHours = task.getDurationHours() != null ? task.getDurationHours() : 1;
+
+        if (worker.getAvailabilities().isEmpty())
+            return Optional.of(earliestPossible);
+
+        List<com.example.algorithm.model.AlgoWorkerAvailability> sortedAvailabilities = worker.getAvailabilities().stream()
+                .sorted(Comparator.comparing(com.example.algorithm.model.AlgoWorkerAvailability::dayOfWeek).thenComparing(com.example.algorithm.model.AlgoWorkerAvailability::startTime))
+                .toList();
+
+        for (int i = 0; i < 7; i++) {
+            LocalDateTime dayToSearch = earliestPossible.plusDays(i);
+            DayOfWeek currentDay = dayToSearch.getDayOfWeek();
+
+            for (com.example.algorithm.model.AlgoWorkerAvailability shift : sortedAvailabilities) {
+                if (shift.dayOfWeek() == currentDay) {
+                    LocalDateTime shiftStart = dayToSearch.toLocalDate().atTime(shift.startTime());
+                    LocalDateTime shiftEnd = dayToSearch.toLocalDate().atTime(shift.endTime());
+
+                    LocalDateTime actualStart = (shiftStart.isAfter(earliestPossible)) ? shiftStart : earliestPossible;
+                    
+                    if (i > 0)
+                        actualStart = shiftStart;
+
+                    if (actualStart.isBefore(shiftEnd) && (actualStart.plusHours(taskDurationHours).isBefore(shiftEnd) || actualStart.plusHours(taskDurationHours).isEqual(shiftEnd)))
+                        return Optional.of(actualStart);
+                }
+            }
+        }
+        return Optional.empty();
     }
 
-    // -------------------------------------------------------------------------
-    // Constraint pipeline (mirrors BaseSchedulingStrategy.runConstraints)
-    // -------------------------------------------------------------------------
 
-    /**
-     * Runs every registered {@link ConstraintChecker} against the proposed assignment.
-     * Returns the first failing result, or {@link ConstraintResult#pass()} if all pass.
-     */
-    private ConstraintResult runConstraints(AlgoTask task,
-                                             AlgoUser candidate,
-                                             LocalDateTime start,
-                                             LocalDateTime end,
-                                             Map<Long, LocalDateTime> completionTimes,
-                                             Map<Long, Integer> assignedCount) {
-        ConstraintContext ctx = new ConstraintContext(
-                task, candidate, start, end, completionTimes, assignedCount);
-
-        for (ConstraintChecker checker : constraints) {
+    private ConstraintResult runHardConstraints(ConstraintContext ctx) {
+        for (ConstraintChecker checker : hardConstraints) {
             ConstraintResult result = checker.check(ctx);
-            if (!result.isValid()) {
+            if (!result.isValid())
                 return result;
-            }
         }
         return ConstraintResult.pass();
     }
 
-    // -------------------------------------------------------------------------
-    // Fairness scoring
-    // -------------------------------------------------------------------------
-
-    /**
-     * Rewards schedules where tasks are distributed evenly across workers.
-     * Uses an inverse-variance formula so that lower variance yields a higher bonus.
-     *
-     * @param counts     map of workerId → number of tasks assigned in this evaluation
-     * @param totalUsers total number of users (denominator for variance)
-     * @return a non-negative fairness bonus
-     */
     private double calculateFairnessScore(Map<Long, Integer> counts, int totalUsers) {
         if (totalUsers == 0) return 0.0;
-        double average  = counts.values().stream().mapToInt(i -> i).average().orElse(0.0);
+        double average = counts.values().stream().mapToInt(i -> i).average().orElse(0.0);
         double variance = counts.values().stream()
                 .mapToDouble(count -> Math.pow(count - average, 2))
                 .sum() / totalUsers;
         return (1.0 / (variance + 1.0)) * config.getWeightFairness() * 100.0;
     }
 }
-

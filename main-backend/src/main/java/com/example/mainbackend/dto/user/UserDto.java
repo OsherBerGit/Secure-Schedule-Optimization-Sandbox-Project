@@ -27,6 +27,9 @@ public class UserDto {
     /** Name of the department this user belongs to (null if unassigned). */
     private String departmentName;
 
-    // Roles as role names (not full entity to avoid circular references)
-    private Set<String> roles;
+    // Access Level: Single role (ADMIN, MANAGER, WORKER)
+    private String role;
+
+    // Functional Skills: List of job names
+    private Set<String> jobs;
 }

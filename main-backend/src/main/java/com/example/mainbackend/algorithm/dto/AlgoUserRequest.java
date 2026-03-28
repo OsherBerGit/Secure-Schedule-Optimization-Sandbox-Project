@@ -16,7 +16,7 @@ public class AlgoUserRequest {
     /** Specific weekly shift windows, replacing the old coarse dailyAvailabilityHours. */
     private List<WorkerAvailabilityDto> availabilities;
     private Integer maxTasks;
-    private Set<Long> roles;
+    /** Functional skills for scheduling. Replaces roles. */
+    private Set<Long> jobIds;
     private List<AlgoVacationRequest> vacations;
 }
-

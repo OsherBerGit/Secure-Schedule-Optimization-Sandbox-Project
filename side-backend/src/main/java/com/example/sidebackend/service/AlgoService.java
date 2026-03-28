@@ -41,6 +41,11 @@ public class AlgoService {
     private static final Logger log = LoggerFactory.getLogger(AlgoService.class);
     private static final String DEFAULT_STRATEGY = "GREEDY";
 
+    private final AlgoMapper algoMapper;
+
+    public AlgoService(AlgoMapper algoMapper) { this.algoMapper = algoMapper; }
+
+
     // ─── Public entry point ───────────────────────────────────────────────────
 
     /**
@@ -56,7 +61,7 @@ public class AlgoService {
         sanitize(request);
 
         // 2. Map DTOs → algorithm models (via AlgoMapper)
-        MappedRequest mapped = AlgoMapper.toModels(request);
+        MappedRequest mapped = algoMapper.toModels(request);
         ScheduleData data = new ScheduleData(mapped.users(), mapped.tasks());
 
         // 3. Select and execute strategy
@@ -156,7 +161,7 @@ public class AlgoService {
                                                com.example.algorithm.model.AlgoSchedulingConfiguration config) {
         String name = (strategyName != null) ? strategyName.toUpperCase().trim() : DEFAULT_STRATEGY;
         return switch (name) {
-            case "MEMETIC"     -> MemeticSchedulingStrategy.withDefaults(
+            case "MEMETIC"     -> new MemeticSchedulingStrategy(
                                       config != null ? config : new com.example.algorithm.model.AlgoSchedulingConfiguration(
                                               1.0, 1.0, 1.0, 50, 100, 0.1, 0.9, 0.2));
             case "ROUND_ROBIN" -> new RoundRobinSchedulingStrategy();

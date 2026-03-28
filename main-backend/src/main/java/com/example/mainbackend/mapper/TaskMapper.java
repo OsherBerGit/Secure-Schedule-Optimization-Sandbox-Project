@@ -2,7 +2,6 @@ package com.example.mainbackend.mapper;
 
 import com.example.mainbackend.algorithm.dto.AlgoTaskRequest;
 import com.example.mainbackend.dto.task.TaskResponseDto;
-import com.example.mainbackend.entity.Role;
 import com.example.mainbackend.entity.Task;
 import com.example.mainbackend.entity.TaskConstraint;
 import org.springframework.stereotype.Component;
@@ -32,9 +31,8 @@ public class TaskMapper {
                 .taskStatusColorCode(task.getStatus() != null ? task.getStatus().getColorCode() : null)
                 .departmentName(task.getDepartment() != null ? task.getDepartment().getName() : null)
                 .version(task.getVersion())
-                .requiredRoleIds(task.getRequiredRoles() != null
-                        ? task.getRequiredRoles().stream().map(Role::getId).collect(Collectors.toSet())
-                        : Collections.emptySet())
+                .requiredJobId(task.getRequiredJob() != null ? task.getRequiredJob().getId() : null)
+                .requiredJobName(task.getRequiredJob() != null ? task.getRequiredJob().getName() : null)
                 .build();
     }
 
@@ -42,10 +40,10 @@ public class TaskMapper {
      * Maps a Task entity to an anonymous AlgoTaskRequest.
      * Zero-Trust: only scheduling-relevant fields are included — no titles, descriptions, or PII.
      *
-     * @param task the Task entity (must have requiredRoles and incomingConstraints already loaded)
+     * @param task the Task entity
      * @return anonymous AlgoTaskRequest for the algorithm engine
      */
-    public static AlgoTaskRequest toAlgoRequest(Task task) {
+    public AlgoTaskRequest toAlgoRequest(Task task) {
         return toAlgoRequest(task, null);
     }
 
@@ -57,17 +55,13 @@ public class TaskMapper {
      * SCHEDULED/LOCKED/CLOSED and therefore not included in the current scheduling run.
      * If a predecessor is not OPEN it has already been handled and the dependency is irrelevant.
      *
-     * @param task        the Task entity (must have requiredRoles and incomingConstraints already loaded)
+     * @param task        the Task entity
      * @param openTaskIds set of task IDs being sent in this scheduling request; pass
      *                    {@code null} to skip filtering (all predecessors are kept as-is)
      * @return anonymous AlgoTaskRequest for the algorithm engine
      */
-    public static AlgoTaskRequest toAlgoRequest(Task task, Set<Long> openTaskIds) {
+    public AlgoTaskRequest toAlgoRequest(Task task, Set<Long> openTaskIds) {
         if (task == null) return null;
-
-        Set<Long> requiredRoleIds = task.getRequiredRoles() != null
-                ? task.getRequiredRoles().stream().map(Role::getId).collect(Collectors.toSet())
-                : Collections.emptySet();
 
         List<Long> predecessorIds = task.getIncomingConstraints() != null
                 ? task.getIncomingConstraints().stream()
@@ -82,7 +76,7 @@ public class TaskMapper {
                 .durationHours(task.getDurationHours())
                 .deadline(task.getDeadline())
                 .priorityLevel(task.getPriority() != null ? task.getPriority().getValue() : null)
-                .requiredRoles(requiredRoleIds)
+                .requiredJobId(task.getRequiredJob() != null ? task.getRequiredJob().getId() : null)
                 .predecessorTaskIds(predecessorIds)
                 .build();
     }

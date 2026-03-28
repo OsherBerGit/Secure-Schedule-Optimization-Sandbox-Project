@@ -34,7 +34,8 @@ public class TaskResponseDto {
     private Long version;
 
     /**
-     * Role requirements for the task.
+     * Job required for the task.
      */
-    private java.util.Set<Long> requiredRoleIds;
+    private Long requiredJobId;
+    private String requiredJobName;
 }

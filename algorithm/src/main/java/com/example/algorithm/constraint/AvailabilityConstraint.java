@@ -37,7 +37,7 @@ public class AvailabilityConstraint implements ConstraintChecker {
     @Override
     public ConstraintResult check(ConstraintContext ctx) {
 
-        // ── Rule 1: Vacation overlap ─────────────────────────────────────────
+        // ── Rule: Vaca  tion overlap ─────────────────────────────────────────
         if (ctx.candidate().getVacations() != null) {
             LocalDate taskStart = ctx.proposedStart().toLocalDate();
             LocalDate taskEnd   = ctx.proposedEnd().toLocalDate();
@@ -57,19 +57,6 @@ public class AvailabilityConstraint implements ConstraintChecker {
             }
         }
 
-        // ── Rule 2: Max task limit ────────────────────────────────────────────
-        if (ctx.candidate().getMaxTasks() != null) {
-            int currentLoad = ctx.assignedCount()
-                    .getOrDefault(ctx.candidate().getId(), 0);
-
-            if (currentLoad >= ctx.candidate().getMaxTasks())
-                return ConstraintResult.fail(
-                        "User [id=" + ctx.candidate().getId() + "] has reached their maxTasks limit ("
-                        + ctx.candidate().getMaxTasks() + "). "
-                        + "Cannot assign task [id=" + ctx.task().getId() + "].");
-        }
-
         return ConstraintResult.pass();
     }
 }
-

@@ -4,6 +4,8 @@ import com.example.mainbackend.algorithm.dto.SchedulingConfigurationDto;
 import com.example.mainbackend.algorithm.entity.SchedulingConfiguration;
 import com.example.mainbackend.algorithm.mapper.SchedulingConfigurationMapper;
 import com.example.mainbackend.algorithm.repository.SchedulingConfigurationRepository;
+import com.example.mainbackend.entity.User;
+import com.example.mainbackend.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Manages scheduling configurations.
  * Only one configuration may be active at a time.
- * No Lombok — manual constructor injection per project rules.
  */
 @Service
 @AllArgsConstructor
@@ -19,6 +20,7 @@ public class SchedulingConfigurationService {
 
     private final SchedulingConfigurationRepository repository;
     private final SchedulingConfigurationMapper mapper;
+    private final UserRepository userRepository;
 
     /**
      * Returns the currently active configuration.
@@ -26,10 +28,13 @@ public class SchedulingConfigurationService {
      * this ensures the scheduling engine always has valid weights to work with.
      */
     @Transactional(readOnly = true)
-    public SchedulingConfigurationDto getActiveConfiguration() {
-        return repository.findByIsActiveTrue()
+    public SchedulingConfigurationDto getActiveConfiguration(String nationalId) {
+        return repository.findByIsActiveTrueAndCreatedBy_NationalId(nationalId)
                 .map(mapper::mapToDto)
-                .orElseGet(this::getDefaultConfiguration);
+                .orElseGet(() -> repository.findByIsActiveTrue().stream()
+                        .findFirst()
+                        .map(mapper::mapToDto)
+                        .orElseGet(this::getDefaultConfiguration));
     }
 
     /**
@@ -37,21 +42,29 @@ public class SchedulingConfigurationService {
      * Falls back to the active configuration if the ID is null.
      */
     @Transactional(readOnly = true)
-    public SchedulingConfigurationDto getConfiguration(Long id) {
-        if (id == null) return getActiveConfiguration();
+    public SchedulingConfigurationDto getConfigurationById(Long id, String nationalId) {
+        if (id == null) return getActiveConfiguration(nationalId);
+
         return repository.findById(id)
                 .map(mapper::mapToDto)
-                .orElseThrow(() -> new IllegalArgumentException("Configuration with ID " + id + " not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Configuration not found"));
     }
 
     /**
-     * Returns all configurations.
+     * Returns configurations based on role:
+     * ADMIN sees all configurations.
+     * MANAGER sees only their own configurations.
      */
     @Transactional(readOnly = true)
-    public java.util.List<SchedulingConfigurationDto> getAllConfigurations() {
-        return repository.findAll().stream()
-                .map(mapper::mapToDto)
-                .toList();
+    public java.util.List<SchedulingConfigurationDto> getAllConfigurations(String nationalId, boolean isAdmin) {
+        if (isAdmin)
+            return repository.findAll().stream()
+                    .map(mapper::mapToDto)
+                    .toList();
+
+        return repository.findByCreatedBy_NationalId(nationalId).stream()
+                    .map(mapper::mapToDto)
+                    .toList();
     }
 
     /**
@@ -65,11 +78,19 @@ public class SchedulingConfigurationService {
      *   so the entity loaded immediately after deactivateAll reflects the DB state.
      */
     @Transactional
-    public SchedulingConfigurationDto saveConfiguration(SchedulingConfigurationDto dto) {
-        if (dto.isActive())
-            // Deactivate every existing active config before making the new one active.
-            // clearAutomatically = true (set on @Modifying) keeps the persistence context in sync.
-            repository.deactivateAll();
+    public SchedulingConfigurationDto saveConfiguration(SchedulingConfigurationDto dto, String nationalId, boolean isAdmin) {
+        User creator = userRepository.findByNationalId(nationalId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + nationalId));
+
+        if (dto.isActive()) {
+            if (isAdmin)
+                repository.deactivateAll();
+            else
+                repository.deactivateAllByNationalId(nationalId);
+        }
+
+        SchedulingConfiguration entity = mapper.mapToEntity(dto);
+        entity.setCreatedBy(creator);
 
         SchedulingConfiguration saved = repository.save(mapper.mapToEntity(dto));
         return mapper.mapToDto(saved);
@@ -84,7 +105,9 @@ public class SchedulingConfigurationService {
                 null, "Default",
                 0.4, 0.4, 0.2,
                 true, 100, 500,
-                0.1, 0.9, 0.2
+                0.1, 0.9, 0.2,
+                "System",
+                null
         );
     }
 }

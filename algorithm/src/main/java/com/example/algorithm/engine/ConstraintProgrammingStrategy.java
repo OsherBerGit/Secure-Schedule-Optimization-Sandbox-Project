@@ -142,7 +142,7 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
             // Assignee domain: eligible users + Dummy
             List<Integer> validIndices = new ArrayList<>();
             for (int u = 0; u < nUsers; u++)
-                if (hasRequiredRole(users.get(u), task))
+                if (hasRequiredJob(users.get(u), task))
                     validIndices.add(u);
             
             // ALWAYS add dummy worker to allow skipping
@@ -206,7 +206,7 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
 
                 cumulativeTasks.add(new Task(taskStarts[i], taskDurations[i], taskEnds[i]));
                 cumulativeHeights.add(isAssigned); // Height is 1 if assigned, 0 otherwise
-                
+
                 userAssignedVars.add(isAssigned);
             }
 
@@ -240,24 +240,23 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
         solver.limitTime("5s"); 
 
         Solution bestSolution = new Solution(model);
-        while(solver.solve()) {
+        while(solver.solve())
              bestSolution.record();
-        }
 
         List<TaskAssignment> solution = new ArrayList<>();
         
-        if (bestSolution.exists()) {
+        if (bestSolution.exists())
             for (int i = 0; i < nTasks; i++) {
                 int uIdx = bestSolution.getIntVal(taskAssignees[i]);
                 AlgoTask task = tasks.get(i);
                 
-                if (uIdx == dummyUserIdx) {
+                if (uIdx == dummyUserIdx)
                     solution.add(TaskAssignment.builder()
                         .task(task)
                         .assignedEmployee(null)
                         .reason("No eligible worker or time slot found (CP)")
                         .build());
-                } else {
+                else {
                     int startMins = bestSolution.getIntVal(taskStarts[i]);
                     AlgoUser user = users.get(uIdx);
                     LocalDateTime start = anchor.plusMinutes(startMins);
@@ -272,7 +271,7 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
                         .build());
                 }
             }
-        } else {
+        else
             // Should be rare given flexible dummy assignment
             for (AlgoTask task : tasks)
                 solution.add(TaskAssignment.builder()
@@ -280,7 +279,6 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
                         .assignedEmployee(null)
                         .reason("No valid solution found (Solver failed)")
                         .build());
-        }
 
         return solution;
     }
@@ -331,17 +329,27 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
         List<int[]> blocked = new ArrayList<>();
         int start = -1;
         for (int m = 0; m < MINUTES_IN_WEEK; m++) {
-            if (!isAvailable[m]) {
+            if (!isAvailable[m])
                 if (start == -1) start = m;
-            } else {
+            else
                 if (start != -1) {
                     blocked.add(new int[]{start, m});
                     start = -1;
                 }
-            }
         }
         if (start != -1)
             blocked.add(new int[]{start, MINUTES_IN_WEEK});
         return blocked;
+    }
+
+    private boolean hasRequiredJob(AlgoUser user, AlgoTask task) {
+        Set<String> requiredJobs = task.getRequiredJobs();
+
+        if (requiredJobs == null || requiredJobs.isEmpty()) return true;
+
+        Set<String> userJobs = user.getJobs();
+        if (userJobs == null || userJobs.isEmpty()) return false;
+
+        return userJobs.containsAll(requiredJobs);
     }
 }

@@ -11,4 +11,6 @@ import java.util.List;
 public interface VacationRepository extends JpaRepository<Vacation, Long> {
     List<Vacation> findByWorkerId(Long workerId);
     List<Vacation> findByStartDateBetween(LocalDate start, LocalDate end);
+    List<Vacation> findByStatus_Name(String statusName);
+    List<Vacation> findAllByWorker_Department_IdAndStatus_Name(Long departmentId, String statusName);
 }

@@ -41,8 +41,16 @@ public class TaskCreateRequest {
     // assignedWorkerId removed — use POST /api/settlements to assign a worker to a task
 
     /**
-     * Set of Role IDs that are required for a worker to perform this task.
-     * Can be empty if no specific roles are required.
+     * ID of the Job required to perform this task.
+     * Each task must require exactly one profession.
      */
-    private java.util.Set<Long> requiredRoleIds;
+    @NotNull(message = "Required Job is mandatory")
+    private Long requiredJob;
+
+    /**
+     * Optional Department ID for assigning the task to a specific department.
+     * Required for ADMIN when creating department-scoped tasks.
+     * MANAGERs must only use their own department ID (or leave it blank to auto-assign).
+     */
+    private Long departmentId;
 }

@@ -5,9 +5,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Represents a work requirement in the system.
@@ -60,14 +58,9 @@ public class Task {
     @JoinColumn(name = "department_id")
     private Department department;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "task_required_roles",
-            joinColumns = @JoinColumn(name = "task_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    @Builder.Default
-    private Set<Role> requiredRoles = new HashSet<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "job_id", nullable = false)
+    private Job requiredJob;
 
     @OneToMany(mappedBy = "predecessorTask", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
