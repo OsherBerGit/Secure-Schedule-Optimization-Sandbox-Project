@@ -17,7 +17,7 @@ import java.util.Set;
  * @param deadline             Hard deadline by which the task must be completed
  * @param priorityLevel        Numeric priority value (higher = more urgent); may be null
  * @param requiredJobId        A job ID that a worker must hold to be eligible
- * @param predecessorTaskIds   IDs of tasks that must be completed before this one starts
+ * @param constraints          IDs of tasks that must be completed before this one starts
  */
 public record TaskDto(
 
@@ -33,7 +33,7 @@ public record TaskDto(
 
         Long requiredJobId,
 
-        List<Long> predecessorTaskIds
+        List<TaskConstraintDto> constraints
 
 ) {}
 

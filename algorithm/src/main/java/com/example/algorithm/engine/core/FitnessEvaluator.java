@@ -4,10 +4,7 @@ import com.example.algorithm.constraint.ConstraintChecker;
 import com.example.algorithm.constraint.ConstraintContext;
 import com.example.algorithm.constraint.ConstraintResult;
 import com.example.algorithm.constraint.Scorer;
-import com.example.algorithm.model.AlgoSchedulingConfiguration;
-import com.example.algorithm.model.AlgoTask;
-import com.example.algorithm.model.AlgoUser;
-import com.example.algorithm.model.TaskAssignment;
+import com.example.algorithm.model.*;
 
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -59,6 +56,7 @@ public class FitnessEvaluator {
         Map<Long, Integer> assignedCount = new HashMap<>();
         Map<Long, LocalDateTime> workerNextFree = new HashMap<>();
         Map<Long, LocalDateTime> completionTimes = new HashMap<>();
+        Map<Long, TaskAssignment> assignmentsMap = new HashMap<>();
         List<TaskAssignment> currentAssignments = new ArrayList<>();
 
         LocalDateTime now = LocalDateTime.now();
@@ -76,7 +74,7 @@ public class FitnessEvaluator {
             AlgoUser user = users.get(workerIndex);
 
             // Use the exact same logic as BaseSchedulingStrategy to find the start time
-            Optional<LocalDateTime> possibleStart = findNextAvailableStartTimeForEvaluation(task, user, completionTimes, workerNextFree.get(user.getId()));
+            Optional<LocalDateTime> possibleStart = findNextAvailableStartTimeForEvaluation(task, user, assignmentsMap, workerNextFree.get(user.getId()), now);
 
             if (possibleStart.isPresent()) {
                 LocalDateTime proposedStart = possibleStart.get();
@@ -101,7 +99,16 @@ public class FitnessEvaluator {
                     workerNextFree.put(user.getId(), proposedEnd);
                     completionTimes.put(task.getId(), proposedEnd);
                     assignedCount.merge(user.getId(), 1, Integer::sum);
-                    currentAssignments.add(TaskAssignment.builder().task(task).assignedEmployee(user).scheduledStart(proposedStart).scheduledEnd(proposedEnd).build());
+
+                    TaskAssignment newAssignment = TaskAssignment.builder()
+                            .task(task)
+                            .assignedEmployee(user)
+                            .scheduledStart(proposedStart)
+                            .scheduledEnd(proposedEnd)
+                            .build();
+
+                    currentAssignments.add(newAssignment);
+                    assignmentsMap.put(task.getId(), newAssignment);
                 } else
                     score -= HARD_VIOLATION_PENALTY; // Penalize invalid assignments
             } else
@@ -115,34 +122,48 @@ public class FitnessEvaluator {
     // --- Helper logic duplicated from BaseSchedulingStrategy to ensure exact 1:1 evaluation ---
 
     private Optional<LocalDateTime> findNextAvailableStartTimeForEvaluation(AlgoTask task, AlgoUser worker,
-                                                                 Map<Long, LocalDateTime> completionTimes,
-                                                                 LocalDateTime workerNextFree) {
-        LocalDateTime earliestPossible = LocalDateTime.now();
-        if (task.getPredecessorTaskIds() != null) {
-            for (Long predId : task.getPredecessorTaskIds()) {
-                LocalDateTime predEnd = completionTimes.get(predId);
-                if (predEnd != null && predEnd.isAfter(earliestPossible))
-                    earliestPossible = predEnd;
+                                                                            Map<Long, TaskAssignment> assignmentsMap,
+                                                                            LocalDateTime workerNextFree,
+                                                                            LocalDateTime now) {
+        LocalDateTime earliestPossible = now;
+        int taskDurationHours = task.getDurationHours() != null ? task.getDurationHours() : 1;
+
+        if (task.getConstraints() != null && !task.getConstraints().isEmpty()) {
+            for (AlgoConstraint constraint : task.getConstraints()) {
+                TaskAssignment predAssignment = assignmentsMap.get(constraint.predecessorId());
+                if (predAssignment == null || predAssignment.getScheduledStart() == null || predAssignment.getScheduledEnd() == null) continue;
+
+                LocalDateTime predStart = predAssignment.getScheduledStart();
+                LocalDateTime predEnd = predAssignment.getScheduledEnd();
+                LocalDateTime requiredStart = earliestPossible;
+
+                switch (constraint.type()) {
+                    case FS -> requiredStart = predEnd;
+                    case SS -> requiredStart = predStart;
+                    case FF -> requiredStart = predEnd.minusHours(taskDurationHours);
+                    case SF -> requiredStart = predStart.minusHours(taskDurationHours);
+                }
+
+                if (requiredStart.isAfter(earliestPossible))
+                    earliestPossible = requiredStart;
             }
         }
 
         if (workerNextFree != null && workerNextFree.isAfter(earliestPossible))
             earliestPossible = workerNextFree;
 
-        int taskDurationHours = task.getDurationHours() != null ? task.getDurationHours() : 1;
-
         if (worker.getAvailabilities().isEmpty())
             return Optional.of(earliestPossible);
 
-        List<com.example.algorithm.model.AlgoWorkerAvailability> sortedAvailabilities = worker.getAvailabilities().stream()
-                .sorted(Comparator.comparing(com.example.algorithm.model.AlgoWorkerAvailability::dayOfWeek).thenComparing(com.example.algorithm.model.AlgoWorkerAvailability::startTime))
+        List<AlgoWorkerAvailability> sortedAvailabilities = worker.getAvailabilities().stream()
+                .sorted(Comparator.comparing(AlgoWorkerAvailability::dayOfWeek).thenComparing(AlgoWorkerAvailability::startTime))
                 .toList();
 
         for (int i = 0; i < 7; i++) {
             LocalDateTime dayToSearch = earliestPossible.plusDays(i);
             DayOfWeek currentDay = dayToSearch.getDayOfWeek();
 
-            for (com.example.algorithm.model.AlgoWorkerAvailability shift : sortedAvailabilities) {
+            for (AlgoWorkerAvailability shift : sortedAvailabilities) {
                 if (shift.dayOfWeek() == currentDay) {
                     LocalDateTime shiftStart = dayToSearch.toLocalDate().atTime(shift.startTime());
                     LocalDateTime shiftEnd = dayToSearch.toLocalDate().atTime(shift.endTime());

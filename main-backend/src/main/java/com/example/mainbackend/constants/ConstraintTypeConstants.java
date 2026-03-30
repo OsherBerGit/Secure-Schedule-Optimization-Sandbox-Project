@@ -6,9 +6,7 @@ package com.example.mainbackend.constants;
  */
 public final class ConstraintTypeConstants {
 
-    private ConstraintTypeConstants() {
-        // Prevent instantiation
-    }
+    private ConstraintTypeConstants() { } // Prevent instantiation
 
     /**
      * Finish-to-Start: Successor cannot start until predecessor finishes.

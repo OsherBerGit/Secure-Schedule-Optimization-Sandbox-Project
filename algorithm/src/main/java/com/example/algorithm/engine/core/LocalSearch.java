@@ -10,12 +10,12 @@ import java.util.Random;
  * Implements a Hill-Climbing Local Search used as the "memetic" refinement step.
  * Also acts as a "Repair" mechanism for completely invalid genes.
  */
-public class MemeticLocalSearch {
+public class LocalSearch {
 
     private final FitnessEvaluator fitnessEvaluator;
     private final Random random = new Random();
 
-    public MemeticLocalSearch(FitnessEvaluator fitnessEvaluator) {
+    public LocalSearch(FitnessEvaluator fitnessEvaluator) {
         this.fitnessEvaluator = fitnessEvaluator;
     }
 

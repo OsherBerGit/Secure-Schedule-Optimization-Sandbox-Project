@@ -276,29 +276,48 @@ public class SchedulingService {
                                                         Map<Long, SaveScheduleRequest.TaskAssignmentDto> batchAssignments) {
         List<String> errors = new ArrayList<>();
         LocalDateTime proposedStart = assignment.getScheduledStart();
+        LocalDateTime proposedEnd = assignment.getScheduledEnd();
 
-        if (task.getIncomingConstraints() != null && !task.getIncomingConstraints().isEmpty()) {
-            for (com.example.mainbackend.entity.TaskConstraint constraint : task.getIncomingConstraints()) {
-                Task predecessor = constraint.getPredecessorTask();
+        if (task.getIncomingConstraints() == null || task.getIncomingConstraints().isEmpty()) return errors;
 
-                if (predecessor == null) continue;
+        for (com.example.mainbackend.entity.TaskConstraint constraint : task.getIncomingConstraints()) {
+            Task predecessor = constraint.getPredecessorTask();
+            if (predecessor == null) continue;
 
-                if (TaskStatusConstants.TASK_CLOSED.equals(predecessor.getStatus().getName()))
-                    continue; // Valid per rule: if closed in DB, consider it implicitly valid.
+            if (TaskStatusConstants.TASK_CLOSED.equals(predecessor.getStatus().getName()))
+                continue; // Valid per rule: if closed in DB, consider it implicitly valid.
 
-                if (batchAssignments.containsKey(predecessor.getId())) {
-                    SaveScheduleRequest.TaskAssignmentDto predAssignment = batchAssignments.get(predecessor.getId());
-                    LocalDateTime predEnd = predAssignment.getScheduledEnd();
-                    if (predEnd == null)
-                        errors.add("Temporal Conflict: Predecessor Task [" + predecessor.getTitle() + "] in current batch has null scheduled end time.");
-                    else if (predEnd.isAfter(proposedStart))
-                        errors.add("Temporal Conflict: Task [" + task.getTitle() + "] starts at " + proposedStart
-                                + " but predecessor [" + predecessor.getTitle() + "] ends at " + predEnd + ".");
-                } else
-                    errors.add("Temporal Conflict: Task [" + task.getTitle() + "] depends on [" + predecessor.getTitle()
-                            + "] which is not completed and not in this schedule batch.");
-            }
+            if (batchAssignments.containsKey(predecessor.getId())) {
+                SaveScheduleRequest.TaskAssignmentDto predAssignment = batchAssignments.get(predecessor.getId());
+                LocalDateTime predStart = predAssignment.getScheduledStart();
+                LocalDateTime predEnd = predAssignment.getScheduledEnd();
+
+                if (predStart == null || predEnd == null) continue;
+
+                String type = (constraint.getConstraintType() != null) ? constraint.getConstraintType().getName() : "FINISH_TO_START";
+
+                switch (type) {
+                    case "FINISH_TO_START" -> {
+                        if (predEnd.isAfter(proposedStart))
+                            errors.add("Temporal Conflict (FS): " + task.getTitle() + " must start after " + predecessor.getTitle() + " ends.");
+                    }
+                    case "START_TO_START" -> {
+                        if (predStart.isAfter(proposedStart))
+                            errors.add("Temporal Conflict (SS): " + task.getTitle() + " cannot start before " + predecessor.getTitle() + " starts.");
+                    }
+                    case "FINISH_TO_FINISH" -> {
+                        if (predEnd.isAfter(proposedEnd))
+                            errors.add("Temporal Conflict (FF): " + task.getTitle() + " cannot finish before " + predecessor.getTitle() + " finishes.");
+                    }
+                    case "START_TO_FINISH" -> {
+                        if (predStart.isAfter(proposedEnd))
+                            errors.add("Temporal Conflict (SF): " + task.getTitle() + " cannot finish before " + predecessor.getTitle() + " starts.");
+                    }
+                }
+            } else
+                errors.add("Dependency Error: Task [" + task.getTitle() + "] depends on [" + predecessor.getTitle() + "] which is missing from this batch.");
         }
+
         return errors;
     }
 

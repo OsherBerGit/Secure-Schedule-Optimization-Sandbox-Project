@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Represents a Task as seen by the scheduling algorithm.
@@ -38,15 +39,17 @@ public final class AlgoTask {
      */
     private final Set<String> requiredJobs;
 
-    /** IDs of tasks that must complete before this task can start. */
-    private final List<Long> predecessorTaskIds;
+    /**
+     * * Detailed incoming constraints (predecessor ID + constraint type like FS, SS).
+     */
+    private final List<AlgoConstraint> constraints;
 
     public AlgoTask(Long id,
                     Integer durationHours,
                     LocalDateTime deadline,
                     Integer priorityLevel,
                     Set<String> requiredJobs,
-                    List<Long> predecessorTaskIds) {
+                    List<AlgoConstraint> constraints) {
         this.id                 = id;
         this.durationHours      = durationHours;
         this.deadline           = deadline;
@@ -54,8 +57,8 @@ public final class AlgoTask {
         this.requiredJobs = requiredJobs != null
                 ? Collections.unmodifiableSet(requiredJobs)
                 : Collections.emptySet();
-        this.predecessorTaskIds = predecessorTaskIds != null
-                ? Collections.unmodifiableList(predecessorTaskIds)
+        this.constraints = constraints != null
+                ? Collections.unmodifiableList(constraints)
                 : Collections.emptyList();
     }
 
@@ -64,7 +67,17 @@ public final class AlgoTask {
     public LocalDateTime getDeadline()       { return deadline; }
     public Integer getPriorityLevel()        { return priorityLevel; }
     public Set<String> getRequiredJobs()    { return requiredJobs; }
-    public List<Long> getPredecessorTaskIds(){ return predecessorTaskIds; }
+    public List<AlgoConstraint> getConstraints(){ return constraints; }
+
+    /**
+     * Helper method kept for backward compatibility with existing strategy code
+     * that only needs to know the IDs of the predecessors.
+     */
+    public List<Long> getPredecessorTaskIds() {
+        return constraints.stream()
+                .map(AlgoConstraint::predecessorId)
+                .collect(Collectors.toList());
+    }
 
     /**
      * Convenience alias kept for backward compatibility with BaseSchedulingStrategy,
@@ -80,6 +93,6 @@ public final class AlgoTask {
                 + ", deadline=" + deadline
                 + ", priorityLevel=" + priorityLevel
                 + ", requiredJobs=" + requiredJobs
-                + ", predecessorTaskIds=" + predecessorTaskIds + '}';
+                + ", predecessorTaskIds=" + constraints + '}';
     }
 }

@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Shared helper utilities used by all scheduling strategy implementations.
@@ -29,15 +30,29 @@ public abstract class BaseSchedulingStrategy implements SchedulingStrategy {
             new PriorityScorer()
     );
 
-    protected LocalDateTime calcStartTime(AlgoTask task, Map<Long, LocalDateTime> completionTimes) {
+    protected LocalDateTime calcStartTime(AlgoTask task, Map<Long, TaskAssignment> assignmentsMap) {
         LocalDateTime earliest = LocalDateTime.now();
-        if (task.getPredecessorTaskIds() != null) {
-            for (Long predId : task.getPredecessorTaskIds()) {
-                LocalDateTime predEnd = completionTimes.get(predId);
-                if (predEnd != null && predEnd.isAfter(earliest)) {
-                    earliest = predEnd;
-                }
+        if (task.getConstraints() == null || task.getConstraints().isEmpty()) return earliest;
+
+        int taskDuration = task.getDurationHours() != null ? task.getDurationHours() : 1;
+
+        for (AlgoConstraint constraint : task.getConstraints()) {
+            TaskAssignment predAssignment = assignmentsMap.get(constraint.predecessorId());
+            if (predAssignment == null || predAssignment.getScheduledStart() == null || predAssignment.getScheduledEnd() == null) continue;
+
+            LocalDateTime predStart = predAssignment.getScheduledStart();
+            LocalDateTime predEnd = predAssignment.getScheduledEnd();
+            LocalDateTime requiredStart = earliest;
+
+            switch (constraint.type()) {
+                case FS -> requiredStart = predEnd;
+                case SS -> requiredStart = predStart;
+                case FF -> requiredStart = predEnd.minusHours(taskDuration);
+                case SF -> requiredStart = predStart.minusHours(taskDuration);
             }
+
+            if (requiredStart.isAfter(earliest))
+                earliest = requiredStart;
         }
         return earliest;
     }
@@ -53,14 +68,14 @@ public abstract class BaseSchedulingStrategy implements SchedulingStrategy {
      *
      * @param task            The task to schedule.
      * @param worker          The worker being considered.
-     * @param completionTimes Map of already completed task IDs to their end times.
+     * @param assignmentsMap Map of already assigned task IDs to their end times.
      * @param workerNextFree  The time the worker finishes their previous assignment.
      * @return An Optional containing the earliest valid start time, or empty if no valid slot is found within 7 days.
      */
     protected Optional<LocalDateTime> findNextAvailableStartTime(AlgoTask task, AlgoUser worker,
-                                                                 Map<Long, LocalDateTime> completionTimes,
+                                                                 Map<Long, TaskAssignment> assignmentsMap,
                                                                  LocalDateTime workerNextFree) {
-        LocalDateTime earliestPossible = calcStartTime(task, completionTimes);
+        LocalDateTime earliestPossible = calcStartTime(task, assignmentsMap);
         
         if (workerNextFree != null && workerNextFree.isAfter(earliestPossible))
             earliestPossible = workerNextFree;
@@ -101,6 +116,7 @@ public abstract class BaseSchedulingStrategy implements SchedulingStrategy {
 
     protected List<AlgoTask> getSortedUnassignedTasks(List<AlgoTask> tasks) {
         return tasks.stream()
+
                 .filter(this::isTaskPending)
                 .sorted(Comparator
                         .comparingInt((AlgoTask t) -> t.getPriorityLevel() != null ? t.getPriorityLevel() : 0)

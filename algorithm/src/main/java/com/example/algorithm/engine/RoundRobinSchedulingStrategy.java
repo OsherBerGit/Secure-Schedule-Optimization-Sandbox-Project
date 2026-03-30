@@ -28,6 +28,7 @@ public class RoundRobinSchedulingStrategy extends BaseSchedulingStrategy {
         List<TaskAssignment> assignments = new ArrayList<>();
         Map<Long, Integer> assignedCount = new HashMap<>();
         Map<Long, LocalDateTime> completionTimes = new HashMap<>();
+        Map<Long, TaskAssignment> assignmentsMap = new HashMap<>();
         Map<Long, LocalDateTime> workerNextFree = new HashMap<>();
 
         List<AlgoUser> allUsers = new ArrayList<>(data.users());
@@ -60,7 +61,7 @@ public class RoundRobinSchedulingStrategy extends BaseSchedulingStrategy {
                 AlgoUser candidate = allUsers.get((roundRobinIndex + i) % size);
 
                 // Find the earliest this candidate can start, considering their personal timeline.
-                Optional<LocalDateTime> possibleStartOpt = findNextAvailableStartTime(task, candidate, completionTimes, workerNextFree.get(candidate.getId()));
+                Optional<LocalDateTime> possibleStartOpt = findNextAvailableStartTime(task, candidate, assignmentsMap, workerNextFree.get(candidate.getId()));
 
                 if (possibleStartOpt.isPresent()) {
                     LocalDateTime start = possibleStartOpt.get();
@@ -88,7 +89,7 @@ public class RoundRobinSchedulingStrategy extends BaseSchedulingStrategy {
                 completionTimes.put(task.getId(), chosenEnd);
                 workerNextFree.put(picked.getId(), chosenEnd); // Update the worker's timeline.
 
-                assignments.add(TaskAssignment.builder()
+                TaskAssignment newAssignment = TaskAssignment.builder()
                         .task(task)
                         .assignedEmployee(picked)
                         .scheduledStart(chosenStart)
@@ -96,7 +97,10 @@ public class RoundRobinSchedulingStrategy extends BaseSchedulingStrategy {
                         .reason(String.format(
                                 "Round-Robin: turn-based pick (now has %d task(s))",
                                 assignedCount.get(picked.getId())))
-                        .build());
+                        .build();
+
+                assignments.add(newAssignment);
+                assignmentsMap.put(task.getId(), newAssignment);
             } else {
                 // No worker could be found for this task in the round-robin cycle.
                 String reason = lastFail != null

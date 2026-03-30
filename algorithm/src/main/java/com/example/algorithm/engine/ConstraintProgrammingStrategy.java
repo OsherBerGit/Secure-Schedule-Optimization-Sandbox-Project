@@ -159,13 +159,21 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
         // 4. Precedence Constraints
         for (int i = 0; i < nTasks; i++) {
             AlgoTask task = tasks.get(i);
-            if (task.getPredecessorTaskIds() != null)
-                for (Long predId : task.getPredecessorTaskIds())
+            if (task.getConstraints() != null && !task.getConstraints().isEmpty()) {
+                for (AlgoConstraint constraint : task.getConstraints()) {
+                    Long predId = constraint.predecessorId();
                     if (taskIndexMap.containsKey(predId)) {
                         int predIdx = taskIndexMap.get(predId);
                         // Start of this task >= End of predecessor
-                        model.arithm(taskStarts[i], ">=", taskEnds[predIdx]).post();
+                        switch (constraint.type()) {
+                            case FS -> model.arithm(taskStarts[i], ">=", taskEnds[predIdx]).post();
+                            case SS -> model.arithm(taskStarts[i], ">=", taskStarts[predIdx]).post();
+                            case FF -> model.arithm(taskEnds[i], ">=", taskEnds[predIdx]).post();
+                            case SF -> model.arithm(taskEnds[i], ">=", taskStarts[predIdx]).post();
+                        }
                     }
+                }
+            }
         }
 
         // 5. User Constraints (Availability & Capacity)

@@ -4,7 +4,7 @@ import com.example.algorithm.constraint.ConstraintResult;
 import com.example.algorithm.engine.core.EvolutionaryOperators;
 import com.example.algorithm.engine.core.FitnessEvaluator;
 import com.example.algorithm.engine.core.Individual;
-import com.example.algorithm.engine.core.MemeticLocalSearch;
+import com.example.algorithm.engine.core.LocalSearch;
 import com.example.algorithm.model.AlgoSchedulingConfiguration;
 import com.example.algorithm.model.AlgoTask;
 import com.example.algorithm.model.AlgoUser;
@@ -13,7 +13,6 @@ import com.example.algorithm.model.TaskAssignment;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Memetic Algorithm (Hybrid Genetic Algorithm + Local Search).
@@ -50,7 +49,7 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
     private final AlgoSchedulingConfiguration config;
     private final FitnessEvaluator fitnessEvaluator;
     private final EvolutionaryOperators operators;
-    private final MemeticLocalSearch localSearch;
+    private final LocalSearch localSearch;
     private final Random random = new Random();
 
     private final List<Double> fitnessHistory = new ArrayList<>();
@@ -59,7 +58,7 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
         this.config = config;
         this.fitnessEvaluator = new FitnessEvaluator(this.hardConstraints, this.softScorers, config);
         this.operators = new EvolutionaryOperators();
-        this.localSearch = new MemeticLocalSearch(this.fitnessEvaluator);
+        this.localSearch = new LocalSearch(this.fitnessEvaluator);
     }
 
     @Override
@@ -82,7 +81,7 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
         int popSize = config.getPopulationSize() != null ? config.getPopulationSize() : 50;
         int maxGenerations = config.getMaxGenerations() != null ? config.getMaxGenerations() : 100;
 
-        List<Individual> population = initializePopulation(popSize, tasks, users);
+        List<Individual> population = initializePopulation(popSize, tasks, users, data);
         fitnessHistory.clear();
 
         for (int generation = 0; generation < maxGenerations; generation++) {
@@ -117,69 +116,46 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
      * "Heuristic Start" is crucial for problems with tight constraints, as it
      * guarantees at least one valid individual exists in the initial population.
      */
-    private List<Individual> initializePopulation(int popSize, List<AlgoTask> tasks, List<AlgoUser> users) {
+    private List<Individual> initializePopulation(int popSize, List<AlgoTask> tasks, List<AlgoUser> users, ScheduleData data) {
         List<Individual> population = new ArrayList<>();
-        population.add(createGreedyIndividual(tasks, users));
 
+        // 1. Generate the Greedy seed directly using the existing strategy
+        GreedySchedulingStrategy greedyStrategy = new GreedySchedulingStrategy();
+        List<TaskAssignment> greedyAssignments = greedyStrategy.schedule(data);
+
+        Individual greedyIndividual = new Individual(tasks.size());
+
+        // Map user DB IDs to their list index for correct gene encoding
+        Map<Long, Integer> userIndexMap = new HashMap<>();
+        for (int i = 0; i < users.size(); i++)
+            userIndexMap.put(users.get(i).getId(), i);
+
+        Map<Long, AlgoUser> greedyResultsMap = new HashMap<>();
+        for (TaskAssignment ta : greedyAssignments)
+            greedyResultsMap.put(ta.getTask().getId(), ta.getAssignedEmployee());
+
+        // Translate Greedy assignments into the chromosome
+        for (int i = 0; i < tasks.size(); i++) {
+            AlgoTask currentTask = tasks.get(i);
+
+            AlgoUser assignedWorker = greedyResultsMap.get(currentTask.getId());
+
+            if (assignedWorker != null && userIndexMap.containsKey(assignedWorker.getId()))
+                greedyIndividual.setGene(i, userIndexMap.get(assignedWorker.getId()));
+            else
+                greedyIndividual.setGene(i, -1);
+        }
+        population.add(greedyIndividual);
+
+        // 2. Fill the rest randomly
         while (population.size() < popSize) {
             Individual randomIndividual = new Individual(tasks.size());
             for (int i = 0; i < tasks.size(); i++)
                 randomIndividual.setGene(i, random.nextInt(users.size()));
             population.add(randomIndividual);
         }
+
         return population;
-    }
-
-    /**
-     * Creates a single valid individual using a greedy approach to seed the population.
-     * It iterates through tasks and assigns the first available worker that satisfies
-     * all hard constraints, storing the worker's LIST INDEX, not their DB ID.
-     */
-    private Individual createGreedyIndividual(List<AlgoTask> tasks, List<AlgoUser> users) {
-        Individual individual = new Individual(tasks.size());
-        Map<Long, Integer> assignedCount = new HashMap<>();
-        Map<Long, LocalDateTime> completionTimes = new HashMap<>();
-        Map<Long, LocalDateTime> workerNextFree = new HashMap<>();
-        
-        // Map user DB IDs to their list index for correct gene encoding.
-        Map<Long, Integer> userIndexMap = new HashMap<>();
-        for (int i = 0; i < users.size(); i++) {
-            userIndexMap.put(users.get(i).getId(), i);
-            workerNextFree.put(users.get(i).getId(), LocalDateTime.now());
-        }
-
-        for (int i = 0; i < tasks.size(); i++) {
-            AlgoTask task = tasks.get(i);
-            
-            AlgoUser picked = null;
-            LocalDateTime bestStartTime = null;
-
-            // Find the best candidate (earliest start time) for the current task
-            for (AlgoUser candidate : users) {
-                Optional<LocalDateTime> possibleStartOpt = findNextAvailableStartTime(task, candidate, completionTimes, workerNextFree.get(candidate.getId()));
-                if (possibleStartOpt.isPresent()) {
-                    LocalDateTime possibleStart = possibleStartOpt.get();
-                    if (bestStartTime == null || possibleStart.isBefore(bestStartTime)) {
-                        // Validate constraints before declaring a candidate as "best"
-                        if (validateHardConstraints(task, candidate, possibleStart, calcEndTime(possibleStart, task), completionTimes, assignedCount, new ArrayList<>()).isValid()) {
-                            picked = candidate;
-                            bestStartTime = possibleStart;
-                        }
-                    }
-                }
-            }
-
-            if (picked != null) {
-                // Correctly store the LIST INDEX of the picked user, not their ID.
-                individual.setGene(i, userIndexMap.get(picked.getId()));
-                LocalDateTime endTime = calcEndTime(bestStartTime, task);
-                completionTimes.put(task.getId(), endTime);
-                workerNextFree.put(picked.getId(), endTime);
-                assignedCount.merge(picked.getId(), 1, Integer::sum);
-            } else
-                individual.setGene(i, -1); // Unassigned
-        }
-        return individual;
     }
 
     /**
@@ -216,6 +192,7 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
         List<TaskAssignment> assignments = new ArrayList<>();
         Map<Long, Integer> assignedCount = new HashMap<>();
         Map<Long, LocalDateTime> completionTimes = new HashMap<>();
+        Map<Long, TaskAssignment> assignmentsMap = new HashMap<>();
         Map<Long, LocalDateTime> workerNextFree = new HashMap<>();
 
         LocalDateTime now = LocalDateTime.now();
@@ -243,7 +220,7 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
             AlgoUser assignedUser = users.get(workerIndex);
 
             // Find the next valid start time using the same logic as the fitness evaluator.
-            Optional<LocalDateTime> possibleStart = findNextAvailableStartTime(task, assignedUser, completionTimes, workerNextFree.get(assignedUser.getId()));
+            Optional<LocalDateTime> possibleStart = findNextAvailableStartTime(task, assignedUser, assignmentsMap, workerNextFree.get(assignedUser.getId()));
 
             if (possibleStart.isPresent()) {
                 LocalDateTime start = possibleStart.get();
@@ -260,13 +237,16 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
                     completionTimes.put(task.getId(), end);
                     assignedCount.merge(assignedUser.getId(), 1, Integer::sum);
 
-                    assignments.add(TaskAssignment.builder()
+                    TaskAssignment newAssignment = TaskAssignment.builder()
                             .task(task)
                             .assignedEmployee(assignedUser)
                             .scheduledStart(start)
                             .scheduledEnd(end)
                             .reason("Memetic: best chromosome assignment")
-                            .build());
+                            .build();
+
+                    assignments.add(newAssignment);
+                    assignmentsMap.put(task.getId(), newAssignment);
                 } else
                     // If the gene is invalid even after fitness evaluation and local search, mark as unassigned.
                     assignments.add(TaskAssignment.builder()

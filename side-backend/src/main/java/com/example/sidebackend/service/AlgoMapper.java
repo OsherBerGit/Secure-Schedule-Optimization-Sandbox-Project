@@ -1,15 +1,7 @@
 package com.example.sidebackend.service;
 
-import com.example.algorithm.model.AlgoSchedulingConfiguration;
-import com.example.algorithm.model.AlgoTask;
-import com.example.algorithm.model.AlgoUser;
-import com.example.algorithm.model.AlgoVacation;
-import com.example.algorithm.model.AlgoWorkerAvailability;
-import com.example.sidebackend.dto.SchedulingConfigurationDto;
-import com.example.sidebackend.dto.SchedulingRequestDto;
-import com.example.sidebackend.dto.TaskDto;
-import com.example.sidebackend.dto.UserDto;
-import com.example.sidebackend.dto.VacationDto;
+import com.example.algorithm.model.*;
+import com.example.sidebackend.dto.*;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -142,8 +134,11 @@ public final class AlgoMapper {
                 ? Collections.singleton(dto.requiredJobId().toString())
                 : Collections.emptySet();
 
-        List<Long> predecessors = dto.predecessorTaskIds() != null
-                ? Collections.unmodifiableList(new ArrayList<>(dto.predecessorTaskIds()))
+        List<AlgoConstraint> constraints = dto.constraints() != null
+                ? dto.constraints().stream()
+                  .map(this::toConstraintModel)
+                  .filter(java.util.Objects::nonNull)
+                  .toList()
                 : Collections.emptyList();
 
         return new AlgoTask(
@@ -152,7 +147,7 @@ public final class AlgoMapper {
                 dto.deadline(),
                 dto.priorityLevel(),
                 requiredJobs,
-                predecessors
+                constraints
         );
     }
 
@@ -166,6 +161,24 @@ public final class AlgoMapper {
         for (TaskDto dto : dtos)
             result.add(toModel(dto));
         return result;
+    }
+
+    /**
+     * Converts a single {@link TaskConstraintDto} to an {@link AlgoConstraint} model.
+     * Safely maps the DTO Enum to the Algorithm Model Enum.
+     */
+    private com.example.algorithm.model.AlgoConstraint toConstraintModel(TaskConstraintDto dto) {
+        if (dto == null) return null;
+
+        com.example.algorithm.model.ConstraintType modelType = com.example.algorithm.model.ConstraintType.FS; // Default
+
+        if (dto.type() != null) {
+            try {
+                modelType = com.example.algorithm.model.ConstraintType.valueOf(dto.type().name());
+            } catch (IllegalArgumentException e) { }
+        }
+
+        return new com.example.algorithm.model.AlgoConstraint(dto.predecessorId(), modelType);
     }
 
     // ── SchedulingConfigurationDto → AlgoSchedulingConfiguration ─────────────

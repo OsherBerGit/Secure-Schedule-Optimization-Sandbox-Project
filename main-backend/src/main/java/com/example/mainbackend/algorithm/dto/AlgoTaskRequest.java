@@ -18,5 +18,5 @@ public class AlgoTaskRequest {
     /** Functional skill required (Job ID). Replaces requiredRoles. */
     private Long requiredJobId;
     
-    private List<Long> predecessorTaskIds;
+    private List<AlgoConstraintRequest> constraints;
 }

@@ -29,6 +29,7 @@ public class GreedySchedulingStrategy extends BaseSchedulingStrategy {
         List<TaskAssignment> assignments = new ArrayList<>();
         Map<Long, Integer> assignedCount = new HashMap<>();
         Map<Long, LocalDateTime> completionTimes = new HashMap<>();
+        Map<Long, TaskAssignment> assignmentsMap = new HashMap<>();
         Map<Long, LocalDateTime> workerNextFree = new HashMap<>();
 
         // Initialize worker next free time to now
@@ -45,7 +46,7 @@ public class GreedySchedulingStrategy extends BaseSchedulingStrategy {
             // Iterate through all users to find the one who can start the task earliest.
             for (AlgoUser candidate : data.users()) {
                 // Find the earliest this candidate can start the task, considering their shifts and previous tasks.
-                Optional<LocalDateTime> possibleStartOpt = findNextAvailableStartTime(task, candidate, completionTimes, workerNextFree.get(candidate.getId()));
+                Optional<LocalDateTime> possibleStartOpt = findNextAvailableStartTime(task, candidate, assignmentsMap, workerNextFree.get(candidate.getId()));
 
                 if (possibleStartOpt.isPresent()) {
                     LocalDateTime possibleStart = possibleStartOpt.get();
@@ -75,13 +76,16 @@ public class GreedySchedulingStrategy extends BaseSchedulingStrategy {
                 completionTimes.put(task.getId(), chosenEnd);
                 workerNextFree.put(bestCandidate.getId(), chosenEnd); // Update when this worker is next free.
 
-                assignments.add(TaskAssignment.builder()
+                TaskAssignment newAssignment = TaskAssignment.builder()
                         .task(task)
                         .assignedEmployee(bestCandidate)
                         .scheduledStart(bestStartTime)
                         .scheduledEnd(chosenEnd)
                         .reason("Greedy: Earliest available worker")
-                        .build());
+                        .build();
+
+                assignments.add(newAssignment);
+                assignmentsMap.put(task.getId(), newAssignment);
             } else {
                 // No suitable worker was found for this task.
                 String reason = lastFail != null

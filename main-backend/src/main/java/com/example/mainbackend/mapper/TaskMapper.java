@@ -1,6 +1,8 @@
 package com.example.mainbackend.mapper;
 
+import com.example.mainbackend.algorithm.dto.AlgoConstraintRequest;
 import com.example.mainbackend.algorithm.dto.AlgoTaskRequest;
+import com.example.mainbackend.algorithm.dto.ConstraintType;
 import com.example.mainbackend.dto.task.TaskResponseDto;
 import com.example.mainbackend.entity.Task;
 import com.example.mainbackend.entity.TaskConstraint;
@@ -60,16 +62,13 @@ public class TaskMapper {
      *                    {@code null} to skip filtering (all predecessors are kept as-is)
      * @return anonymous AlgoTaskRequest for the algorithm engine
      */
+
+    /**
+     * Maps a Task entity to an anonymous AlgoTaskRequest, including detailed constraints (FS, SS, etc.).
+     * Filters out constraints where the predecessor is not in {@code openTaskIds}.
+     */
     public AlgoTaskRequest toAlgoRequest(Task task, Set<Long> openTaskIds) {
         if (task == null) return null;
-
-        List<Long> predecessorIds = task.getIncomingConstraints() != null
-                ? task.getIncomingConstraints().stream()
-                        .map(TaskConstraint::getPredecessorTask)
-                        .map(Task::getId)
-                        .filter(predId -> openTaskIds == null || openTaskIds.contains(predId))
-                        .collect(Collectors.toList())
-                : Collections.emptyList();
 
         return AlgoTaskRequest.builder()
                 .id(task.getId())
@@ -77,7 +76,35 @@ public class TaskMapper {
                 .deadline(task.getDeadline())
                 .priorityLevel(task.getPriority() != null ? task.getPriority().getValue() : null)
                 .requiredJobId(task.getRequiredJob() != null ? task.getRequiredJob().getId() : null)
-                .predecessorTaskIds(predecessorIds)
+                .constraints(mapConstraints(task.getIncomingConstraints(), openTaskIds))
                 .build();
+    }
+
+    /**
+     * Helper to map TaskConstraint entities to AlgoConstraintRequest DTOs.
+     */
+    private List<AlgoConstraintRequest> mapConstraints(List<TaskConstraint> entities, Set<Long> openTaskIds) {
+        if (entities == null || entities.isEmpty())
+            return Collections.emptyList();
+
+        return entities.stream()
+                .filter(c -> c.getPredecessorTask() != null)
+                .filter(c -> openTaskIds == null || openTaskIds.contains(c.getPredecessorTask().getId()))
+                .map(c -> AlgoConstraintRequest.builder()
+                        .predecessorId(c.getPredecessorTask().getId())
+                        .type(mapStringToConstraintType(c.getConstraintType().getName()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private ConstraintType mapStringToConstraintType(String entityType) {
+        if (entityType == null) return ConstraintType.FS;
+
+        return switch (entityType) {
+            case "START_TO_START" -> ConstraintType.SS;
+            case "FINISH_TO_FINISH" -> ConstraintType.FF;
+            case "START_TO_FINISH" -> ConstraintType.SF;
+            default -> ConstraintType.FS; // FINISH_TO_START
+        };
     }
 }

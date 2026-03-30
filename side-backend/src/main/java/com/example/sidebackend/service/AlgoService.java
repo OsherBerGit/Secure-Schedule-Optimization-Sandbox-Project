@@ -1,19 +1,11 @@
 package com.example.sidebackend.service;
 
+import com.example.algorithm.engine.*;
+import com.example.algorithm.model.AlgoTask;
 import com.example.algorithm.model.ScheduleData;
-import com.example.algorithm.engine.GreedySchedulingStrategy;
-import com.example.algorithm.engine.ConstraintProgrammingStrategy;
-import com.example.algorithm.engine.MemeticSchedulingStrategy;
-import com.example.algorithm.engine.RoundRobinSchedulingStrategy;
-import com.example.algorithm.engine.Scheduler;
-import com.example.algorithm.engine.SchedulingStrategy;
 import com.example.algorithm.model.TaskAssignment;
-import com.example.sidebackend.dto.SchedulingRequestDto;
-import com.example.sidebackend.dto.SchedulingResponseDto;
+import com.example.sidebackend.dto.*;
 import com.example.sidebackend.dto.SchedulingResponseDto.AssignmentDto;
-import com.example.sidebackend.dto.TaskDto;
-import com.example.sidebackend.dto.UserDto;
-import com.example.sidebackend.dto.VacationDto;
 import com.example.sidebackend.service.AlgoMapper.MappedRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +34,7 @@ public class AlgoService {
     private static final String DEFAULT_STRATEGY = "GREEDY";
 
     private final AlgoMapper algoMapper;
+    private final TopologicalSorter topologicalSorter = new TopologicalSorter();
 
     public AlgoService(AlgoMapper algoMapper) { this.algoMapper = algoMapper; }
 
@@ -62,7 +55,15 @@ public class AlgoService {
 
         // 2. Map DTOs → algorithm models (via AlgoMapper)
         MappedRequest mapped = algoMapper.toModels(request);
-        ScheduleData data = new ScheduleData(mapped.users(), mapped.tasks());
+
+        List<AlgoTask> sortedTasks;
+        try {
+            sortedTasks = topologicalSorter.sort(mapped.tasks());
+        } catch (IllegalStateException e) {
+            throw new IllegalArgumentException("DAG Validation failed: " + e.getMessage());
+        }
+
+        ScheduleData data = new ScheduleData(mapped.users(), sortedTasks);
 
         // 3. Select and execute strategy
         SchedulingStrategy strategy = resolveStrategy(request.strategy(), mapped.config());
@@ -139,8 +140,12 @@ public class AlgoService {
                 throw new IllegalArgumentException(
                         "Task [id=" + t.id() + "] has a negative priorityLevel: " + t.priorityLevel());
 
-            if (t.predecessorTaskIds() != null) {
-                for (Long predId : t.predecessorTaskIds()) {
+            if (t.constraints() != null) {
+                for (TaskConstraintDto constraint : t.constraints()) {
+                    Long predId = constraint.predecessorId();
+
+                    if (predId == null) continue;
+
                     if (!taskIds.contains(predId))
                         throw new IllegalArgumentException(
                                 "Task [id=" + t.id() + "] references unknown predecessor task id: " + predId);
