@@ -43,7 +43,7 @@ public class UserController {
 
     /**
      * Retrieves all users.
-     *
+     * RESTRICTED TO ADMIN ONLY (Managers should fetch by department).
      * @return ResponseEntity with list of all users and HTTP 200 status
      */
     @GetMapping
@@ -54,12 +54,12 @@ public class UserController {
 
     /**
      * Retrieves a user by their system ID.
-     *
+     * ALLOWED FOR: Admin, Manager (of the same department), and the User themselves.
      * @param id the user's system-generated ID
      * @return ResponseEntity with the user and HTTP 200 if found, HTTP 404 if not found
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@securityHelper.canManageUser(#id)")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
         return userService.getUserById(id)
                 .map(ResponseEntity::ok)
@@ -67,8 +67,8 @@ public class UserController {
     }
 
     /**
-     * Retrieves a user by their national ID (Teudat Zehut).
-     *
+     * Retrieves a user by their national ID.
+     * RESTRICTED TO ADMIN ONLY (For global searches).
      * @param nationalId the user's Israeli national ID
      * @return ResponseEntity with the user and HTTP 200 if found, HTTP 404 if not found
      */
@@ -82,7 +82,7 @@ public class UserController {
 
     /**
      * Retrieves a user by their email address.
-     *
+     * RESTRICTED TO ADMIN ONLY (For global searches).
      * @param email the user's email address
      * @return ResponseEntity with the user and HTTP 200 if found, HTTP 404 if not found
      */
@@ -114,7 +114,7 @@ public class UserController {
      * @return ResponseEntity with the updated user and HTTP 200 if found, HTTP 404 if not found
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MANAGER') and @securityHelper.canManageUser(#id))")
     public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {
         return userService.updateUser(id, userDto)
                 .map(ResponseEntity::ok)
@@ -133,5 +133,15 @@ public class UserController {
         if (userService.deleteUser(id))
             return ResponseEntity.noContent().build();
         return ResponseEntity.notFound().build();
+    }
+
+    /**
+     * Retrieves all users belonging to a specific department.
+     * ALLOWED FOR: ADMIN, or the MANAGER of this department.
+     */
+    @GetMapping("/department/{departmentId}")
+    @PreAuthorize("@securityHelper.canManageDepartment(#departmentId)")
+    public ResponseEntity<List<UserDto>> getUsersByDepartment(@PathVariable Long departmentId) {
+        return ResponseEntity.ok(userService.getUsersByDepartmentId(departmentId));
     }
 }

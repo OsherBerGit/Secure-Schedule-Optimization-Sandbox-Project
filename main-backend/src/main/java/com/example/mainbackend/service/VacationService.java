@@ -1,6 +1,6 @@
 package com.example.mainbackend.service;
 
-import com.example.mainbackend.constants.VacationStatusConstants;
+import com.example.mainbackend.constants.VacationStatusLevel;
 import com.example.mainbackend.dto.vacation.VacationCreateRequest;
 import com.example.mainbackend.dto.vacation.VacationRequestDto;
 import com.example.mainbackend.dto.vacation.VacationResponseDto;
@@ -12,6 +12,7 @@ import com.example.mainbackend.mapper.VacationMapper;
 import com.example.mainbackend.repository.UserRepository;
 import com.example.mainbackend.repository.VacationRepository;
 import com.example.mainbackend.repository.VacationStatusRepository;
+import com.example.mainbackend.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -50,7 +51,7 @@ public class VacationService {
                 throw new IllegalArgumentException("Vacation period overlaps with an existing vacation");
         }
 
-        VacationStatus approved = vacationStatusRepository.findByName(VacationStatusConstants.APPROVED)
+        VacationStatus approved = vacationStatusRepository.findByName(VacationStatusLevel.APPROVED.name())
                 .orElseThrow(() -> new IllegalStateException("APPROVED vacation status not found in database"));
 
         Vacation vacation = Vacation.builder()
@@ -83,7 +84,7 @@ public class VacationService {
             if (datesOverlap(v.getStartDate(), v.getEndDate(), request.getStartDate(), request.getEndDate()))
                 throw new IllegalArgumentException("Vacation period overlaps with an existing vacation");
 
-        VacationStatus pending = vacationStatusRepository.findByName(VacationStatusConstants.PENDING)
+        VacationStatus pending = vacationStatusRepository.findByName(VacationStatusLevel.PENDING.name())
                 .orElseThrow(() -> new IllegalStateException("PENDING vacation status not found in database"));
 
         Vacation vacation = Vacation.builder()
@@ -114,7 +115,7 @@ public class VacationService {
                 throw new AccessDeniedException("Managers can only manage vacations for their own department.");
         }
 
-        if (vacation.getStatus() == null || !VacationStatusConstants.PENDING.equals(vacation.getStatus().getName()))
+        if (vacation.getStatus() == null || !VacationStatusLevel.PENDING.name().equals(vacation.getStatus().getName()))
             throw new IllegalStateException("Only PENDING vacation requests can be approved or rejected");
 
         VacationStatus newStatus = vacationStatusRepository.findByName(request.getStatus())
@@ -133,11 +134,11 @@ public class VacationService {
     public List<VacationResponseDto> getPendingVacations() {
         if (securityHelper.isManager()) {
             Long deptId = securityHelper.getCurrentUserDepartmentId();
-            return vacationRepository.findAllByWorker_Department_IdAndStatus_Name(deptId, VacationStatusConstants.PENDING).stream()
+            return vacationRepository.findAllByWorker_Department_IdAndStatus_Name(deptId, VacationStatusLevel.PENDING.name()).stream()
                     .map(mapper::toDto)
                     .toList();
         }
-        return vacationRepository.findByStatus_Name(VacationStatusConstants.PENDING).stream()
+        return vacationRepository.findByStatus_Name(VacationStatusLevel.PENDING.name()).stream()
                 .map(mapper::toDto)
                 .toList();
     }

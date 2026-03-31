@@ -13,6 +13,7 @@ import com.example.mainbackend.repository.DepartmentRepository;
 import com.example.mainbackend.repository.JobRepository;
 import com.example.mainbackend.repository.RoleRepository;
 import com.example.mainbackend.repository.UserRepository;
+import com.example.mainbackend.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -208,6 +209,13 @@ public class UserService {
             return true;
         }
         return false;
+    }
+
+    @Transactional
+    public List<UserDto> getUsersByDepartmentId(Long departmentId) {
+        return userRepository.findAllByDepartmentId(departmentId).stream()
+                .map(userMapper::toDto)
+                .collect(Collectors.toList());
     }
 
     // Check if user exists by National ID

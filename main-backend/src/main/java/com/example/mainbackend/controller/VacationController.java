@@ -25,10 +25,11 @@ public class VacationController {
     private final VacationService vacationService;
 
     /**
-     * ADMIN creates a vacation directly (auto-approved).
+     * Creates a vacation directly (auto-approved).
+     * ALLOWED FOR: ADMIN, or MANAGER (if they are creating it for a worker in their department).
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MANAGER') and @securityHelper.canManageUser(#request.workerId))")
     public ResponseEntity<VacationResponseDto> createVacation(
             @Valid @RequestBody VacationCreateRequest request) {
         VacationResponseDto response = vacationService.createVacation(request);
@@ -36,24 +37,25 @@ public class VacationController {
     }
 
     /**
-     * WORKER submits a vacation request (starts as PENDING).
-     * Worker identity is extracted from the JWT Security Context — no workerId in body.
+     * Submits a vacation request (starts as PENDING).
+     * ALLOWED FOR: WORKER or MANAGER (Managers can also request vacations for themselves).
      */
     @PostMapping("/request")
-    @PreAuthorize("hasRole('WORKER')")
+    @PreAuthorize("hasAnyRole('WORKER', 'MANAGER')")
     public ResponseEntity<VacationResponseDto> requestVacation(
             @Valid @RequestBody VacationRequestDto request,
             Authentication authentication) {
-        String nationalId = authentication.getName(); // nationalId is the principal
+        String nationalId = authentication.getName();
         VacationResponseDto response = vacationService.requestVacation(nationalId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
-     * ADMIN approves or rejects a PENDING vacation request.
+     * Approves or rejects a PENDING vacation request.
+     * ALLOWED FOR: ADMIN, or MANAGER of the vacation's department.
      */
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@securityHelper.canManageVacation(#id)")
     public ResponseEntity<VacationResponseDto> updateVacationStatus(
             @PathVariable Long id,
             @Valid @RequestBody VacationStatusUpdateRequest request) {
@@ -61,29 +63,45 @@ public class VacationController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Retrieves a specific vacation by its ID.
+     * ALLOWED FOR: ADMIN, MANAGER of the department, or the WORKER who owns it.
+     */
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
+    @PreAuthorize("@securityHelper.canViewVacation(#id)")
     public ResponseEntity<VacationResponseDto> getVacationById(@PathVariable Long id) {
         VacationResponseDto response = vacationService.getVacationById(id);
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Retrieves all vacations globally.
+     * RESTRICTED TO ADMIN ONLY.
+     */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<VacationResponseDto>> getAllVacations() {
         List<VacationResponseDto> vacations = vacationService.getAllVacations();
         return ResponseEntity.ok(vacations);
     }
 
+    /**
+     * Retrieves vacations by a specific worker.
+     * ALLOWED FOR: ADMIN, MANAGER of the worker, or the WORKER themselves.
+     */
     @GetMapping("/worker/{workerId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
+    @PreAuthorize("@securityHelper.canManageUser(#workerId)")
     public ResponseEntity<List<VacationResponseDto>> getVacationsByWorker(@PathVariable Long workerId) {
         List<VacationResponseDto> vacations = vacationService.getVacationsByWorker(workerId);
         return ResponseEntity.ok(vacations);
     }
 
+    /**
+     * Retrieves all vacations within a date range (Global Search).
+     * RESTRICTED TO ADMIN ONLY.
+     */
     @GetMapping("/date-range")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<VacationResponseDto>> getVacationsByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
@@ -91,8 +109,12 @@ public class VacationController {
         return ResponseEntity.ok(vacations);
     }
 
+    /**
+     * Updates an existing vacation entirely.
+     * ALLOWED FOR: ADMIN, or MANAGER of the vacation's department.
+     */
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@securityHelper.canManageVacation(#id)")
     public ResponseEntity<VacationResponseDto> updateVacation(
             @PathVariable Long id,
             @Valid @RequestBody VacationCreateRequest request) {
@@ -100,8 +122,12 @@ public class VacationController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Deletes a vacation.
+     * ALLOWED FOR: ADMIN, or MANAGER of the vacation's department.
+     */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@securityHelper.canManageVacation(#id)")
     public ResponseEntity<Void> deleteVacation(@PathVariable Long id) {
         vacationService.deleteVacation(id);
         return ResponseEntity.noContent().build();

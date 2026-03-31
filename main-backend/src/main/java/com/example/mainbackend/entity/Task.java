@@ -30,7 +30,7 @@ public class Task {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "priority_id", nullable = false)
-    private Priority priority;
+    private TaskPriority priority;
 
     /**
      * Task lifecycle status (OPEN → LOCKED → CLOSED).

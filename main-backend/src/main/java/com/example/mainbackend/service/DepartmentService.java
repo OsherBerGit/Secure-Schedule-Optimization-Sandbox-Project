@@ -16,24 +16,24 @@ public class DepartmentService {
     private final DepartmentRepository departmentRepository;
 
     @Transactional(readOnly = true)
-    public List<Department> getAll() {
+    public List<Department> getAllDepartments() {
         return departmentRepository.findAll();
     }
 
     @Transactional(readOnly = true)
-    public Optional<Department> getById(Long id) {
+    public Optional<Department> getDepartmentById(Long id) {
         return departmentRepository.findById(id);
     }
 
     @Transactional
-    public Department create(String name) {
+    public Department createDepartment(String name) {
         if (departmentRepository.findByName(name).isPresent())
             throw new IllegalArgumentException("Department already exists: " + name);
         return departmentRepository.save(Department.builder().name(name).build());
     }
 
     @Transactional
-    public Optional<Department> update(Long id, String name) {
+    public Optional<Department> updateDepartment(Long id, String name) {
         return departmentRepository.findById(id).map(dept -> {
             dept.setName(name);
             return departmentRepository.save(dept);
@@ -41,7 +41,7 @@ public class DepartmentService {
     }
 
     @Transactional
-    public boolean delete(Long id) {
+    public boolean deleteDepartment(Long id) {
         if (departmentRepository.existsById(id)) {
             departmentRepository.deleteById(id);
             return true;

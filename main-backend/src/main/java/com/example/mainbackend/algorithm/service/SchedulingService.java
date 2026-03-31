@@ -2,7 +2,9 @@ package com.example.mainbackend.algorithm.service;
 
 import com.example.mainbackend.algorithm.AlgorithmClient;
 import com.example.mainbackend.algorithm.dto.*;
-import com.example.mainbackend.constants.TaskStatusConstants;
+import com.example.mainbackend.constants.RoleType;
+import com.example.mainbackend.constants.SettlementStatusLevel;
+import com.example.mainbackend.constants.TaskStatusLevel;
 import com.example.mainbackend.entity.Department;
 import com.example.mainbackend.entity.Settlement;
 import com.example.mainbackend.entity.SettlementStatus;
@@ -127,12 +129,12 @@ public class SchedulingService {
 
         // 1. Initial Status Checks (Cached)
         TaskStatus scheduledStatus = taskStatusRepository
-                .findByName(TaskStatusConstants.TASK_SCHEDULED)
+                .findByName(TaskStatusLevel.SCHEDULED.name())
                 .orElseThrow(() -> new IllegalStateException(
-                        "TaskStatus '" + TaskStatusConstants.TASK_SCHEDULED + "' not seeded in task_statuses table"));
+                        "TaskStatus '" + TaskStatusLevel.SCHEDULED.name() + "' not seeded in task_statuses table"));
 
         SettlementStatus assignedStatus = settlementStatusRepository
-                .findByName(TaskStatusConstants.SETTLEMENT_ASSIGNED)
+                .findByName(SettlementStatusLevel.ASSIGNED.name())
                 .orElseThrow(() -> new IllegalStateException(
                         "SettlementStatus 'ASSIGNED' not seeded in settlement_statuses table"));
 
@@ -248,7 +250,7 @@ public class SchedulingService {
             return errors;
         }
 
-        if (!TaskStatusConstants.TASK_OPEN.equals(task.getStatus().getName()))
+        if (!TaskStatusLevel.OPEN.name().equals(task.getStatus().getName()))
             errors.add("Task ID " + taskId + " is not OPEN (current status: " + task.getStatus().getName() + ").");
 
         Long entityVersion = task.getVersion() != null ? task.getVersion() : 0L;
@@ -284,7 +286,7 @@ public class SchedulingService {
             Task predecessor = constraint.getPredecessorTask();
             if (predecessor == null) continue;
 
-            if (TaskStatusConstants.TASK_CLOSED.equals(predecessor.getStatus().getName()))
+            if (TaskStatusLevel.CLOSED.name().equals(predecessor.getStatus().getName()))
                 continue; // Valid per rule: if closed in DB, consider it implicitly valid.
 
             if (batchAssignments.containsKey(predecessor.getId())) {
@@ -389,8 +391,8 @@ public class SchedulingService {
                                              Long departmentId) {
         String roleName = currentUser.getRole().getRoleName();
 
-        boolean isAdmin   = "ADMIN".equals(roleName);
-        boolean isManager = "MANAGER".equals(roleName);
+        boolean isAdmin   = RoleType.ADMIN.name().equals(roleName);
+        boolean isManager = RoleType.MANAGER.name().equals(roleName);
 
         if (!isAdmin && !isManager)
             throw new org.springframework.security.access.AccessDeniedException(
@@ -456,11 +458,11 @@ public class SchedulingService {
         List<Task> tasksWithConstraints;
 
         if (departmentId == null) {
-            tasksWithRoles       = taskRepository.findOpenTasksWithRoles(TaskStatusConstants.TASK_OPEN);
-            tasksWithConstraints = taskRepository.findOpenTasksWithConstraints(TaskStatusConstants.TASK_OPEN);
+            tasksWithRoles       = taskRepository.findOpenTasksWithRoles(TaskStatusLevel.OPEN.name());
+            tasksWithConstraints = taskRepository.findOpenTasksWithConstraints(TaskStatusLevel.OPEN.name());
         } else {
-            tasksWithRoles       = taskRepository.findOpenTasksWithRolesByDepartment(TaskStatusConstants.TASK_OPEN, departmentId);
-            tasksWithConstraints = taskRepository.findOpenTasksWithConstraintsByDepartment(TaskStatusConstants.TASK_OPEN, departmentId);
+            tasksWithRoles       = taskRepository.findOpenTasksWithRolesByDepartment(TaskStatusLevel.OPEN.name(), departmentId);
+            tasksWithConstraints = taskRepository.findOpenTasksWithConstraintsByDepartment(TaskStatusLevel.OPEN.name(), departmentId);
         }
 
         // Index the constraints result by task ID for O(1) merge

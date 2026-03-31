@@ -23,41 +23,16 @@ public class ConstraintTypeController {
 
     private final ConstraintTypeService constraintTypeService;
 
-    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ConstraintTypeResponseDto> createConstraintType(@Valid @RequestBody ConstraintTypeRequest request) {
-        ConstraintTypeResponseDto response = constraintTypeService.createConstraintType(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<ConstraintTypeResponseDto>> getAllConstraintTypes() {
+        return ResponseEntity.ok(constraintTypeService.getAllConstraintTypes());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ConstraintTypeResponseDto> getConstraintTypeById(@PathVariable Long id) {
-        ConstraintTypeResponseDto response = constraintTypeService.getConstraintTypeById(id);
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
-    public ResponseEntity<List<ConstraintTypeResponseDto>> getAllConstraintTypes() {
-        List<ConstraintTypeResponseDto> constraintTypes = constraintTypeService.getAllConstraintTypes();
-        return ResponseEntity.ok(constraintTypes);
-    }
-
-    @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ConstraintTypeResponseDto> updateConstraintType(
-            @PathVariable Long id,
-            @Valid @RequestBody ConstraintTypeRequest request) {
-        ConstraintTypeResponseDto response = constraintTypeService.updateConstraintType(id, request);
-        return ResponseEntity.ok(response);
-    }
-
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteConstraintType(@PathVariable Long id) {
-        constraintTypeService.deleteConstraintType(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(constraintTypeService.getConstraintTypeById(id));
     }
 }
 

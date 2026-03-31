@@ -2,12 +2,15 @@ package com.example.mainbackend.algorithm.controller;
 
 import com.example.mainbackend.algorithm.dto.SchedulingConfigurationDto;
 import com.example.mainbackend.algorithm.service.SchedulingConfigurationService;
+import com.example.mainbackend.security.SecurityHelper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * REST API for managing scheduling configurations.
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 public class SchedulingConfigurationController {
 
     private final SchedulingConfigurationService service;
+    private final SecurityHelper securityHelper;
 
     /**
      * Returns the currently active configuration.
@@ -34,8 +38,7 @@ public class SchedulingConfigurationController {
     @GetMapping("/active")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<SchedulingConfigurationDto> getActiveConfig(Authentication authentication) {
-        String nationalId = authentication.getName();
-        return ResponseEntity.ok(service.getActiveConfiguration(nationalId));
+        return ResponseEntity.ok(service.getActiveConfiguration(authentication.getName()));
     }
 
     /**
@@ -46,14 +49,8 @@ public class SchedulingConfigurationController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<SchedulingConfigurationDto> saveConfig(
-            @Valid @RequestBody SchedulingConfigurationDto dto,
-            Authentication authentication) {
-
-        String nationalId = authentication.getName();
-        boolean isAdmin = hasRole(authentication, "ROLE_ADMIN");
-
-        return ResponseEntity.ok(service.saveConfiguration(dto, nationalId, isAdmin));
+    public ResponseEntity<SchedulingConfigurationDto> saveConfig(@Valid @RequestBody SchedulingConfigurationDto dto, Authentication authentication) {
+        return ResponseEntity.ok(service.saveConfiguration(dto, authentication.getName(), securityHelper.isAdmin()));
     }
 
     /**
@@ -62,17 +59,7 @@ public class SchedulingConfigurationController {
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<java.util.List<SchedulingConfigurationDto>> getAllConfigs(Authentication authentication) {
-        String nationalId = authentication.getName();
-        boolean isAdmin = hasRole(authentication, "ROLE_ADMIN");
-
-        return ResponseEntity.ok(service.getAllConfigurations(nationalId, isAdmin));
-    }
-
-    // --- Helper Methods ---
-
-    private boolean hasRole(Authentication authentication, String role) {
-        return authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals(role));
+    public ResponseEntity<List<SchedulingConfigurationDto>> getAllConfigs(Authentication authentication) {
+        return ResponseEntity.ok(service.getAllConfigurations(authentication.getName(), securityHelper.isAdmin()));
     }
 }

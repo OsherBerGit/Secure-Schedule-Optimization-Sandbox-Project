@@ -1,15 +1,12 @@
 package com.example.mainbackend.service;
 
-import com.example.mainbackend.constants.TaskStatusConstants;
+import com.example.mainbackend.constants.TaskStatusLevel;
 import com.example.mainbackend.dto.task.TaskCreateRequest;
 import com.example.mainbackend.dto.task.TaskResponseDto;
-import com.example.mainbackend.entity.Department;
-import com.example.mainbackend.entity.Job;
-import com.example.mainbackend.entity.Priority;
-import com.example.mainbackend.entity.Task;
-import com.example.mainbackend.entity.TaskStatus;
+import com.example.mainbackend.entity.*;
 import com.example.mainbackend.mapper.TaskMapper;
 import com.example.mainbackend.repository.*;
+import com.example.mainbackend.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -24,7 +21,7 @@ import java.util.stream.Collectors;
 public class TaskService {
 
     private final TaskRepository taskRepository;
-    private final PriorityRepository priorityRepository;
+    private final TaskPriorityRepository taskPriorityRepository;
     private final TaskStatusRepository taskStatusRepository;
     private final SettlementRepository settlementRepository;
     private final JobRepository jobRepository; // Added dependency
@@ -106,16 +103,26 @@ public class TaskService {
      * No category check needed — task_statuses table holds only task lifecycle statuses.
      */
     @Transactional(readOnly = true)
-    public List<Task> getOpenTasksForScheduling() {
-        return taskRepository.findByStatusName(TaskStatusConstants.TASK_OPEN);
+    public List<Task> getOpenTasksForScheduling() { return taskRepository.findByStatusName(TaskStatusLevel.OPEN.name()); }
+
+    /**
+     * Retrieves all tasks with a specific status.
+     *
+     * @param statusId the ID of the task status
+     * @return list of TaskResponseDto
+     */
+    public List<TaskResponseDto> getTasksByStatusId(Long statusId) {
+        return taskRepository.findByStatusId(statusId).stream()
+                .map(taskMapper::toDto)
+                .collect(Collectors.toList());
     }
 
     private Task buildTaskFromRequest(TaskCreateRequest request, Task existing) {
-        Priority priority = priorityRepository.findById(request.getPriorityId())
+        TaskPriority priority = taskPriorityRepository.findById(request.getPriorityId())
                 .orElseThrow(() -> new RuntimeException("Priority not found: " + request.getPriorityId()));
 
         // Default status for new tasks is OPEN
-        TaskStatus openStatus = taskStatusRepository.findByName(TaskStatusConstants.TASK_OPEN)
+        TaskStatus openStatus = taskStatusRepository.findByName(TaskStatusLevel.OPEN.name())
                 .orElseThrow(() -> new IllegalStateException("OPEN status not seeded in task_statuses"));
 
         Task.TaskBuilder builder = Task.builder()

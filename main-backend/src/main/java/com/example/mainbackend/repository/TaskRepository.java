@@ -24,6 +24,11 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
      */
     List<Task> findAllByDepartmentId(Long departmentId);
 
+    /**
+     * Finds all tasks by their status ID.
+     */
+    List<Task> findByStatusId(Long statusId);
+
     // ── ADMIN scope (all departments) ────────────────────────────────────────
 
     /**

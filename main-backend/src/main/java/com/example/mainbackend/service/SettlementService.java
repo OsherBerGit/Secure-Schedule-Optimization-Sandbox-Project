@@ -1,6 +1,7 @@
 package com.example.mainbackend.service;
 
-import com.example.mainbackend.constants.TaskStatusConstants;
+import com.example.mainbackend.constants.SettlementStatusLevel;
+import com.example.mainbackend.constants.TaskStatusLevel;
 import com.example.mainbackend.dto.settlement.SettlementCreateRequest;
 import com.example.mainbackend.dto.settlement.SettlementResponseDto;
 import com.example.mainbackend.entity.Settlement;
@@ -59,7 +60,7 @@ public class SettlementService {
             status = settlementStatusRepository.findById(request.getStatusId())
                     .orElseThrow(() -> new IllegalArgumentException("Settlement status not found: " + request.getStatusId()));
         } else {
-            status = settlementStatusRepository.findByName(TaskStatusConstants.SETTLEMENT_PENDING)
+            status = settlementStatusRepository.findByName(SettlementStatusLevel.PENDING.name())
                     .orElseThrow(() -> new IllegalStateException("PENDING status not seeded in settlement_statuses"));
         }
 
@@ -140,7 +141,7 @@ public class SettlementService {
             throw new SecurityException("Access denied: this settlement does not belong to you");
         }
 
-        SettlementStatus completed = settlementStatusRepository.findByName(TaskStatusConstants.SETTLEMENT_COMPLETED)
+        SettlementStatus completed = settlementStatusRepository.findByName(SettlementStatusLevel.COMPLETED.name())
                 .orElseThrow(() -> new IllegalStateException("COMPLETED status not seeded in settlement_statuses"));
 
         settlement.setStatus(completed);
@@ -153,9 +154,9 @@ public class SettlementService {
         Task task = settlement.getTask();
         List<Settlement> allForTask = settlementRepository.findByTaskId(task.getId());
         boolean allDone = allForTask.stream()
-                .allMatch(s -> TaskStatusConstants.SETTLEMENT_COMPLETED.equals(s.getStatus().getName()));
+                .allMatch(s -> SettlementStatusLevel.COMPLETED.name().equals(s.getStatus().getName()));
         if (allDone) {
-            TaskStatus closed = taskStatusRepository.findByName(TaskStatusConstants.TASK_CLOSED)
+            TaskStatus closed = taskStatusRepository.findByName(TaskStatusLevel.CLOSED.name())
                     .orElseThrow(() -> new IllegalStateException("CLOSED status not seeded in task_statuses"));
             task.setStatus(closed);
             taskRepository.save(task);

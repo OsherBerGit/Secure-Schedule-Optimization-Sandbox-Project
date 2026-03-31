@@ -1,9 +1,11 @@
 package com.example.mainbackend;
 
-import com.example.mainbackend.constants.ConstraintTypeConstants;
-import com.example.mainbackend.constants.PriorityConstants;
-import com.example.mainbackend.constants.TaskStatusConstants;
-import com.example.mainbackend.constants.VacationStatusConstants;
+import com.example.mainbackend.constants.ConstraintTypeLevel;
+import com.example.mainbackend.constants.TaskPriorityLevel;
+import com.example.mainbackend.constants.TaskStatusLevel;
+import com.example.mainbackend.constants.RoleType;
+import com.example.mainbackend.constants.SettlementStatusLevel;
+import com.example.mainbackend.constants.VacationStatusLevel;
 import com.example.mainbackend.entity.*;
 import com.example.mainbackend.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +32,7 @@ public class DataLoader implements CommandLineRunner {
     private final TaskStatusRepository taskStatusRepository;
     private final SettlementStatusRepository settlementStatusRepository;
     private final VacationStatusRepository vacationStatusRepository;
-    private final PriorityRepository priorityRepository;
+    private final TaskPriorityRepository taskPriorityRepository;
     private final ConstraintTypeRepository constraintTypeRepository;
     private final TaskRepository taskRepository;
     private final TaskConstraintRepository taskConstraintRepository;
@@ -82,16 +84,16 @@ public class DataLoader implements CommandLineRunner {
 
     @Transactional
     public void seedRoles() {
-        if (roleRepository.findByRoleName("ADMIN").isEmpty()) {
-            roleRepository.save(new Role(null, "ADMIN"));
+        if (roleRepository.findByRoleName(RoleType.ADMIN.name()).isEmpty()) {
+            roleRepository.save(new Role(null, RoleType.ADMIN.name()));
             log.info("Seeded role: ADMIN");
         }
-        if (roleRepository.findByRoleName("MANAGER").isEmpty()) {
-            roleRepository.save(new Role(null, "MANAGER"));
+        if (roleRepository.findByRoleName(RoleType.MANAGER.name()).isEmpty()) {
+            roleRepository.save(new Role(null, RoleType.MANAGER.name()));
             log.info("Seeded role: MANAGER");
         }
-        if (roleRepository.findByRoleName("WORKER").isEmpty()) {
-            roleRepository.save(new Role(null, "WORKER"));
+        if (roleRepository.findByRoleName(RoleType.WORKER.name()).isEmpty()) {
+            roleRepository.save(new Role(null, RoleType.WORKER.name()));
             log.info("Seeded role: WORKER");
         }
     }
@@ -102,10 +104,10 @@ public class DataLoader implements CommandLineRunner {
 
     @Transactional
     public void seedTaskStatuses() {
-        seedTaskStatus(TaskStatusConstants.TASK_OPEN,      "#3B82F6");
-        seedTaskStatus(TaskStatusConstants.TASK_LOCKED,    "#F59E0B");
-        seedTaskStatus(TaskStatusConstants.TASK_SCHEDULED, "#A855F7");
-        seedTaskStatus(TaskStatusConstants.TASK_CLOSED,    "#10B981");
+        seedTaskStatus(TaskStatusLevel.OPEN.name(),      "#3B82F6");
+        seedTaskStatus(TaskStatusLevel.LOCKED.name(),    "#F59E0B");
+        seedTaskStatus(TaskStatusLevel.SCHEDULED.name(), "#A855F7");
+        seedTaskStatus(TaskStatusLevel.CLOSED.name(),    "#10B981");
     }
 
     private void seedTaskStatus(String name, String colorCode) {
@@ -117,11 +119,11 @@ public class DataLoader implements CommandLineRunner {
 
     @Transactional
     public void seedSettlementStatuses() {
-        seedSettlementStatus(TaskStatusConstants.SETTLEMENT_PENDING,     "#6B7280");
-        seedSettlementStatus(TaskStatusConstants.SETTLEMENT_ASSIGNED,    "#3B82F6");
-        seedSettlementStatus(TaskStatusConstants.SETTLEMENT_IN_PROGRESS, "#8B5CF6");
-        seedSettlementStatus(TaskStatusConstants.SETTLEMENT_COMPLETED,   "#10B981");
-        seedSettlementStatus(TaskStatusConstants.SETTLEMENT_FAILED,      "#EF4444");
+        seedSettlementStatus(SettlementStatusLevel.PENDING.name(),     "#6B7280");
+        seedSettlementStatus(SettlementStatusLevel.ASSIGNED.name(),    "#3B82F6");
+        seedSettlementStatus(SettlementStatusLevel.IN_PROGRESS.name(), "#8B5CF6");
+        seedSettlementStatus(SettlementStatusLevel.COMPLETED.name(),   "#10B981");
+        seedSettlementStatus(SettlementStatusLevel.FAILED.name(),      "#EF4444");
     }
 
     private void seedSettlementStatus(String name, String colorCode) {
@@ -133,23 +135,29 @@ public class DataLoader implements CommandLineRunner {
 
     @Transactional
     public void seedVacationStatuses() {
-        for (String name : VacationStatusConstants.REQUIRED_STATUSES) {
-            if (vacationStatusRepository.findByName(name).isEmpty()) {
-                vacationStatusRepository.save(VacationStatus.builder().name(name).build());
-                log.info("Seeded vacation status: {}", name);
+        for (VacationStatusLevel level : VacationStatusLevel.values()) {
+            if (vacationStatusRepository.findByName(level.name()).isEmpty()) {
+                vacationStatusRepository.save(VacationStatus.builder()
+                        .name(level.name())
+                        .build());
+                log.info("Seeded vacation status: {}", level.name());
             }
         }
     }
 
     @Transactional
     public void seedPriorities() {
-        int value = 1;
-        for (String name : PriorityConstants.REQUIRED_PRIORITIES) {
-            if (priorityRepository.findByName(name).isEmpty()) {
-                priorityRepository.save(Priority.builder().name(name).value(value).build());
+        for (TaskPriorityLevel priorityEnum : TaskPriorityLevel.values()) {
+            String name = priorityEnum.name();
+            int value = priorityEnum.getWeight();
+
+            if (taskPriorityRepository.findByName(name).isEmpty()) {
+                taskPriorityRepository.save(TaskPriority.builder()
+                        .name(name)
+                        .value(value)
+                        .build());
                 log.info("Seeded priority: {} (value={})", name, value);
             }
-            value++;
         }
     }
 
@@ -161,12 +169,13 @@ public class DataLoader implements CommandLineRunner {
             "Successor cannot finish until predecessor finishes",
             "Successor cannot finish until predecessor starts"
         };
-        for (int i = 0; i < ConstraintTypeConstants.REQUIRED_CONSTRAINT_TYPES.length; i++) {
-            String typeName = ConstraintTypeConstants.REQUIRED_CONSTRAINT_TYPES[i];
-            if (constraintTypeRepository.findByName(typeName).isEmpty()) {
+        for (ConstraintTypeLevel level : ConstraintTypeLevel.values()) {
+            if (constraintTypeRepository.findByName(level.name()).isEmpty()) {
                 constraintTypeRepository.save(ConstraintType.builder()
-                        .name(typeName).description(descriptions[i]).build());
-                log.info("Seeded constraint type: {}", typeName);
+                        .name(level.name())
+                        .description(level.getDescription())
+                        .build());
+                log.info("Seeded constraint type: {}", level.name());
             }
         }
     }
@@ -177,9 +186,9 @@ public class DataLoader implements CommandLineRunner {
 
     @Transactional
     public void seedUsers() {
-        Role adminRole  = roleRepository.findByRoleName("ADMIN").orElseThrow();
-        Role managerRole = roleRepository.findByRoleName("MANAGER").orElseThrow();
-        Role workerRole = roleRepository.findByRoleName("WORKER").orElseThrow();
+        Role adminRole  = roleRepository.findByRoleName(RoleType.ADMIN.name()).orElseThrow();
+        Role managerRole = roleRepository.findByRoleName(RoleType.MANAGER.name()).orElseThrow();
+        Role workerRole = roleRepository.findByRoleName(RoleType.WORKER.name()).orElseThrow();
 
         Department generalDepartment = departmentRepository.findByName("General").orElseThrow();
         Job softwareEngineer = jobRepository.findByName("Software Engineer").orElseThrow();
@@ -381,12 +390,12 @@ public class DataLoader implements CommandLineRunner {
             return;
         }
 
-        Priority low      = priorityRepository.findByName(PriorityConstants.LOW).orElseThrow();
-        Priority medium   = priorityRepository.findByName(PriorityConstants.MEDIUM).orElseThrow();
-        Priority high     = priorityRepository.findByName(PriorityConstants.HIGH).orElseThrow();
-        Priority critical = priorityRepository.findByName(PriorityConstants.CRITICAL).orElseThrow();
+        TaskPriority low      = taskPriorityRepository.findByName(TaskPriorityLevel.LOW.name()).orElseThrow();
+        TaskPriority medium   = taskPriorityRepository.findByName(TaskPriorityLevel.MEDIUM.name()).orElseThrow();
+        TaskPriority high     = taskPriorityRepository.findByName(TaskPriorityLevel.HIGH.name()).orElseThrow();
+        TaskPriority critical = taskPriorityRepository.findByName(TaskPriorityLevel.CRITICAL.name()).orElseThrow();
 
-        TaskStatus open = taskStatusRepository.findByName(TaskStatusConstants.TASK_OPEN).orElseThrow();
+        TaskStatus open = taskStatusRepository.findByName(TaskStatusLevel.OPEN.name()).orElseThrow();
         Department generalDepartment = departmentRepository.findByName("General").orElseThrow();
         Job softwareEngineer = jobRepository.findByName("Software Engineer").orElseThrow();
         Job qaEngineer = jobRepository.findByName("QA Engineer").orElseThrow();
@@ -554,7 +563,7 @@ public class DataLoader implements CommandLineRunner {
 
         // ── Finish-to-Start Constraints ───────────────────────────────────────
         ConstraintType fts = constraintTypeRepository
-                .findByName(ConstraintTypeConstants.FINISH_TO_START).orElseThrow();
+                .findByName(ConstraintTypeLevel.FINISH_TO_START.name()).orElseThrow();
 
         // DB Schema must finish before: Auth API, Tasks API, Users API, Settlements API
         addConstraint(t01, t06, fts);
@@ -626,8 +635,8 @@ public class DataLoader implements CommandLineRunner {
             return;
         }
 
-        VacationStatus approved = vacationStatusRepository.findByName(VacationStatusConstants.APPROVED).orElseThrow();
-        VacationStatus pending  = vacationStatusRepository.findByName(VacationStatusConstants.PENDING).orElseThrow();
+        VacationStatus approved = vacationStatusRepository.findByName(VacationStatusLevel.APPROVED.name()).orElseThrow();
+        VacationStatus pending  = vacationStatusRepository.findByName(VacationStatusLevel.PENDING.name()).orElseThrow();
 
         // Alice — approved vacation for next 4 days (algorithm must skip her entirely)
         saveVacation("alice", LocalDate.now(), LocalDate.now().plusDays(4), approved);
@@ -666,10 +675,10 @@ public class DataLoader implements CommandLineRunner {
             return;
         }
 
-        SettlementStatus pending   = settlementStatusRepository.findByName(TaskStatusConstants.SETTLEMENT_PENDING).orElseThrow();
-        SettlementStatus completed = settlementStatusRepository.findByName(TaskStatusConstants.SETTLEMENT_COMPLETED).orElseThrow();
-        TaskStatus locked = taskStatusRepository.findByName(TaskStatusConstants.TASK_LOCKED).orElseThrow();
-        TaskStatus closed = taskStatusRepository.findByName(TaskStatusConstants.TASK_CLOSED).orElseThrow();
+        SettlementStatus pending   = settlementStatusRepository.findByName(SettlementStatusLevel.PENDING.name()).orElseThrow();
+        SettlementStatus completed = settlementStatusRepository.findByName(SettlementStatusLevel.COMPLETED.name()).orElseThrow();
+        TaskStatus locked = taskStatusRepository.findByName(TaskStatusLevel.LOCKED.name()).orElseThrow();
+        TaskStatus closed = taskStatusRepository.findByName(TaskStatusLevel.CLOSED.name()).orElseThrow();
 
         List<Task> allTasks = taskRepository.findAll();
         if (allTasks.size() < 2) return;

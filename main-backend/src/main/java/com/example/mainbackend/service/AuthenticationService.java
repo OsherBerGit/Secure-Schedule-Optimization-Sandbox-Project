@@ -1,6 +1,7 @@
 package com.example.mainbackend.service;
 
-import com.example.mainbackend.config.JwtUtil;
+import com.example.mainbackend.security.CustomUserDetailsService;
+import com.example.mainbackend.security.JwtUtil;
 import com.example.mainbackend.dto.auth.AuthenticationRequest;
 import com.example.mainbackend.dto.auth.AuthenticationResponse;
 import com.example.mainbackend.entity.User;

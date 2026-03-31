@@ -2,7 +2,7 @@ package com.example.mainbackend.mapper;
 
 import com.example.mainbackend.algorithm.dto.AlgoUserRequest;
 import com.example.mainbackend.algorithm.dto.AlgoVacationRequest;
-import com.example.mainbackend.constants.VacationStatusConstants;
+import com.example.mainbackend.constants.VacationStatusLevel;
 import com.example.mainbackend.dto.user.CreateUserRequest;
 import com.example.mainbackend.dto.user.UserDto;
 import com.example.mainbackend.dto.user.WorkerAvailabilityDto;
@@ -142,7 +142,7 @@ public class UserMapper {
         List<AlgoVacationRequest> approvedVacations = user.getVacations() != null
                 ? user.getVacations().stream()
                         .filter(v -> v.getStatus() != null
-                                && VacationStatusConstants.APPROVED.equalsIgnoreCase(v.getStatus().getName()))
+                                && VacationStatusLevel.APPROVED.name().equalsIgnoreCase(v.getStatus().getName()))
                         .map(v -> AlgoVacationRequest.builder()
                                 .id(v.getId())
                                 .startDate(v.getStartDate())

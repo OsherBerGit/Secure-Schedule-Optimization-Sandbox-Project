@@ -1,7 +1,7 @@
 package com.example.mainbackend.controller;
 
-import com.example.mainbackend.entity.SettlementStatus;
-import com.example.mainbackend.repository.SettlementStatusRepository;
+import com.example.mainbackend.dto.settlementstatus.SettlementStatusResponseDto;
+import com.example.mainbackend.service.SettlementStatusService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,12 +18,18 @@ import java.util.List;
 @RequestMapping("/api/settlement-statuses")
 public class SettlementStatusController {
 
-    private final SettlementStatusRepository settlementStatusRepository;
+    private final SettlementStatusService settlementStatusService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<SettlementStatus>> getAll() {
-        return ResponseEntity.ok(settlementStatusRepository.findAll());
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<SettlementStatusResponseDto>> getAllStatuses() {
+        return ResponseEntity.ok(settlementStatusService.getAllStatuses());
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<SettlementStatusResponseDto> getStatusById(@PathVariable Long id) {
+        return ResponseEntity.ok(settlementStatusService.getStatusById(id));
     }
 }
 

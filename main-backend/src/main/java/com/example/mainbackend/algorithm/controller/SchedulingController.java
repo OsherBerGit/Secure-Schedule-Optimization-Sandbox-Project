@@ -39,7 +39,7 @@ public class SchedulingController {
      *                     When null for ADMIN, all departments are included.
      */
     @PostMapping("/run")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER') and (#departmentId == null or @securityHelper.canManageDepartment(#departmentId))")
     public ResponseEntity<AlgoScheduleResponse> runSchedule(
             @RequestParam(defaultValue = "GREEDY") String strategy,
             @RequestParam(required = false) Long departmentId,
@@ -47,7 +47,6 @@ public class SchedulingController {
             Authentication authentication) {
 
         String nationalId = authentication.getName();
-
         AlgoScheduleResponse response = schedulingService.runScheduling(strategy, departmentId, configId, nationalId);
         return ResponseEntity.ok(response);
     }
@@ -64,7 +63,6 @@ public class SchedulingController {
                                              Authentication authentication) {
 
         String nationalId = authentication.getName();
-
         schedulingService.saveApprovedSchedule(request, nationalId);
         return ResponseEntity.ok().build();
     }
