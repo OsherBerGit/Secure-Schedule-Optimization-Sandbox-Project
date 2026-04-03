@@ -35,9 +35,9 @@ public final class AlgoTask {
 
     /**
      * Opaque role identifiers required to perform this task.
-     * Stored as Strings of skill IDs (e.g. "42") for compatibility with AlgoUser.skills.
+     * Stored as Longs of skill IDs (e.g. 42L) for compatibility with AlgoUser.skills.
      */
-    private final Set<String> requiredSkills;
+    private final Set<Long> requiredSkills;
 
     /**
      * * Detailed incoming constraints (predecessor ID + constraint type like FS, SS).
@@ -48,7 +48,7 @@ public final class AlgoTask {
                     Integer durationHours,
                     LocalDateTime deadline,
                     Integer priorityLevel,
-                    Set<String> requiredSkills,
+                    Set<Long> requiredSkills,
                     List<AlgoConstraint> constraints) {
         this.id                 = id;
         this.durationHours      = durationHours;
@@ -66,7 +66,7 @@ public final class AlgoTask {
     public Integer getDurationHours()        { return durationHours; }
     public LocalDateTime getDeadline()       { return deadline; }
     public Integer getPriorityLevel()        { return priorityLevel; }
-    public Set<String> getRequiredSkills()    { return requiredSkills; }
+    public Set<Long> getRequiredSkills()    { return requiredSkills; }
     public List<AlgoConstraint> getConstraints(){ return constraints; }
 
     /**

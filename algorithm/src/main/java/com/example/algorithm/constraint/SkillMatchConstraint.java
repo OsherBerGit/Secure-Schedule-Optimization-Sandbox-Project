@@ -28,8 +28,8 @@ public class SkillMatchConstraint implements ConstraintChecker {
 
     @Override
     public ConstraintResult check(ConstraintContext ctx) {
-        Set<String> required = ctx.task().getRequiredSkills();
-        Set<String> provided = ctx.candidate().getSkills();
+        Set<Long> required = ctx.task().getRequiredSkills();
+        Set<Long> provided = ctx.candidate().getSkills();
 
         // Rule 1: No specific skills required -> Anyone can do it
         if (required == null || required.isEmpty())

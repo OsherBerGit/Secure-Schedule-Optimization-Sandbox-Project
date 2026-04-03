@@ -22,8 +22,8 @@ public final class AlgoUser {
 
     private final Integer maxTasks;
 
-    /** Opaque skill identifiers (stored as strings of skill IDs) */
-    private final Set<String> skills;
+    /** Opaque skill identifiers (stored as skill IDs) */
+    private final Set<Long> skills;
 
     /** Approved vacation windows â€” treated as fully blocked availability */
     private final List<AlgoVacation> vacations;
@@ -31,7 +31,7 @@ public final class AlgoUser {
     public AlgoUser(Long id,
                     List<AlgoWorkerAvailability> availabilities,
                     Integer maxTasks,
-                    Set<String> skills,
+                    Set<Long> skills,
                     List<AlgoVacation> vacations) {
         this.id             = id;
         this.availabilities = availabilities != null
@@ -45,7 +45,7 @@ public final class AlgoUser {
     public Long getId()                                    { return id; }
     public List<AlgoWorkerAvailability> getAvailabilities() { return availabilities; }
     public Integer getMaxTasks()                           { return maxTasks; }
-    public Set<String> getSkills()                          { return skills; }
+    public Set<Long> getSkills()                          { return skills; }
     public List<AlgoVacation> getVacations()               { return vacations; }
 
     @Override

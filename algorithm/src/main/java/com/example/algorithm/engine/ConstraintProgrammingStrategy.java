@@ -8,6 +8,9 @@ import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.solver.variables.Task;
+import org.chocosolver.util.tools.ArrayUtils;
+import org.chocosolver.solver.search.strategy.selectors.variables.FirstFail;
+import org.chocosolver.solver.search.strategy.selectors.values.IntDomainMin;
 
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -129,15 +132,7 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
             int deadlineMins = (int) Math.min(deadlineMinsLong, MINUTES_IN_WEEK);
 
             // Relaxed Time Constraint: Allow scheduling from start of week (0)
-            int earliest = 0; 
-            int latest = deadlineMins - durationMins;
-
-            if (latest < earliest)
-                 // Even with relaxation, if deadline is before Monday 00:00 or duration is too long
-                 // we must force assignment to dummy, and allow any start time in valid range to avoid domain fail
-                 taskStarts[i] = model.intVar("start_" + task.getId(), 0, MINUTES_IN_WEEK);
-            else
-                 taskStarts[i] = model.intVar("start_" + task.getId(), earliest, latest);
+            taskStarts[i] = model.intVar("start_" + task.getId(), 0, MINUTES_IN_WEEK);
 
             taskDurations[i] = model.intVar(durationMins);
             taskEnds[i] = taskStarts[i].add(taskDurations[i]).intVar();
@@ -154,9 +149,13 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
             int[] domain = validIndices.stream().mapToInt(Integer::intValue).toArray();
             taskAssignees[i] = model.intVar("assignee_" + task.getId(), domain);
 
-            // If strict time impossible, force dummy
-            if (latest < earliest)
-                model.arithm(taskAssignees[i], "=", dummyUserIdx).post();
+            // Apply Deadlines ONLY if Scheduled
+            if (deadlineMins < MINUTES_IN_WEEK) {
+                model.ifThen(
+                    model.arithm(taskAssignees[i], "!=", dummyUserIdx),
+                    model.arithm(taskEnds[i], "<=", deadlineMins)
+                );
+            }
         }
 
         // 4. Precedence Constraints
@@ -167,12 +166,18 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
                     Long predId = constraint.predecessorId();
                     if (taskIndexMap.containsKey(predId)) {
                         int predIdx = taskIndexMap.get(predId);
+                        
+                        BoolVar bothAssigned = model.and(
+                            model.arithm(taskAssignees[i], "!=", dummyUserIdx),
+                            model.arithm(taskAssignees[predIdx], "!=", dummyUserIdx)
+                        ).reify();
+
                         // Start of this task >= End of predecessor
                         switch (constraint.type()) {
-                            case FS -> model.arithm(taskStarts[i], ">=", taskEnds[predIdx]).post();
-                            case SS -> model.arithm(taskStarts[i], ">=", taskStarts[predIdx]).post();
-                            case FF -> model.arithm(taskEnds[i], ">=", taskEnds[predIdx]).post();
-                            case SF -> model.arithm(taskEnds[i], ">=", taskStarts[predIdx]).post();
+                            case FS -> model.ifThen(bothAssigned, model.arithm(taskStarts[i], ">=", taskEnds[predIdx]));
+                            case SS -> model.ifThen(bothAssigned, model.arithm(taskStarts[i], ">=", taskStarts[predIdx]));
+                            case FF -> model.ifThen(bothAssigned, model.arithm(taskEnds[i], ">=", taskEnds[predIdx]));
+                            case SF -> model.ifThen(bothAssigned, model.arithm(taskEnds[i], ">=", taskStarts[predIdx]));
                         }
                     }
                 }
@@ -248,7 +253,7 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
 
         // 7. Solve
         Solver solver = model.getSolver();
-        solver.limitTime("5s"); 
+        solver.limitTime("10s");
 
         Solution bestSolution = new Solution(model);
         while(solver.solve())
@@ -268,11 +273,11 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
                         .reason("No eligible worker or time slot found (CP)")
                         .build());
                 else {
-                    int startMins = bestSolution.getIntVal(taskStarts[i]);
+                    int startMins = taskStarts[i].getLB();
                     AlgoUser user = users.get(uIdx);
                     LocalDateTime start = anchor.plusMinutes(startMins);
-                    LocalDateTime end = start.plusMinutes(task.getDurationHours() * 60);
-                    
+                    LocalDateTime end = start.plusMinutes((long) task.getDurationHours() * 60);
+
                     solution.add(TaskAssignment.builder()
                         .task(task)
                         .assignedEmployee(user)
@@ -358,11 +363,11 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
     }
 
     private boolean hasrequiredSkill(AlgoUser user, AlgoTask task) {
-        Set<String> requiredSkills = task.getRequiredSkills();
+        Set<Long> requiredSkills = task.getRequiredSkills();
 
         if (requiredSkills == null || requiredSkills.isEmpty()) return true;
 
-        Set<String> userSkills = user.getSkills();
+        Set<Long> userSkills = user.getSkills();
         if (userSkills == null || userSkills.isEmpty()) return false;
 
         return userSkills.containsAll(requiredSkills);

@@ -39,8 +39,6 @@ import java.util.stream.Collectors;
 @Component
 public final class AlgoMapper {
 
-    // â”€â”€ VacationDto â†’ AlgoVacation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
     /**
      * Converts a single {@link VacationDto} belonging to the given worker.
      *
@@ -69,8 +67,6 @@ public final class AlgoMapper {
         return result;
     }
 
-    // â”€â”€ WorkerAvailabilityDto â†’ AlgoWorkerAvailability â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
     /**
      * Converts a single inlined {@link UserDto.WorkerAvailabilityDto} to an
      * {@link AlgoWorkerAvailability} model.
@@ -91,8 +87,6 @@ public final class AlgoMapper {
         return result;
     }
 
-    // â”€â”€ UserDto â†’ AlgoUser â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
     /**
      * Converts a single {@link UserDto} to an {@link AlgoUser} model.
      * Vacations are read directly from {@code dto.vacations()}.
@@ -102,7 +96,7 @@ public final class AlgoMapper {
      * @return immutable {@link AlgoUser}
      */
     public AlgoUser toModel(UserDto dto) {
-        Set<String> skills = skillIdsToStrings(dto.skillIds());
+        Set<Long> skills = dto.skillIds() != null ? Set.copyOf(dto.skillIds()) : Collections.emptySet();
         List<AlgoVacation> vacations = toVacationModels(dto.vacations(), dto.id());
         List<AlgoWorkerAvailability> availabilities = toAvailabilityModels(dto.availabilities());
         return new AlgoUser(dto.id(), availabilities, dto.maxTasks(), skills, vacations);
@@ -120,8 +114,6 @@ public final class AlgoMapper {
         return result;
     }
 
-    // â”€â”€ TaskDto â†’ AlgoTask â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
     /**
      * Converts a single {@link TaskDto} to an {@link AlgoTask} model.
      * A null {@code priorityLevel} is normalised to {@code 0} inside {@link AlgoTask}.
@@ -130,8 +122,8 @@ public final class AlgoMapper {
      * @return immutable {@link AlgoTask}
      */
     public AlgoTask toModel(TaskDto dto) {
-        Set<String> requiredSkills = (dto.requiredSkillId() != null)
-                ? Collections.singleton(dto.requiredSkillId().toString())
+        Set<Long> requiredSkills = (dto.requiredSkillId() != null)
+                ? Collections.singleton(dto.requiredSkillId())
                 : Collections.emptySet();
 
         List<AlgoConstraint> constraints = dto.constraints() != null
@@ -181,8 +173,6 @@ public final class AlgoMapper {
         return new com.example.algorithm.model.AlgoConstraint(dto.predecessorId(), modelType);
     }
 
-    // â”€â”€ SchedulingConfigurationDto â†’ AlgoSchedulingConfiguration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
     /**
      * Converts a {@link SchedulingConfigurationDto} to an
      * {@link AlgoSchedulingConfiguration} model.
@@ -205,8 +195,6 @@ public final class AlgoMapper {
         );
     }
 
-    // â”€â”€ Full request convenience method â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
     /**
      * Extracts and converts all three model groups from a {@link SchedulingRequestDto}
      * at once, returning them as a {@link MappedRequest} value object.
@@ -224,21 +212,6 @@ public final class AlgoMapper {
                 toModel(request.config())
         );
     }
-
-    // â”€â”€ Helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-    /**
-     * Converts a {@code Set<Long>} of skill IDs to a {@code Set<String>}.
-     * Returns an empty set for null input.
-     */
-    private static Set<String> skillIdsToStrings(Set<Long> skillIds) {
-        if (skillIds == null || skillIds.isEmpty()) return Collections.emptySet();
-        return skillIds.stream()
-                .map(Object::toString)
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
-    // â”€â”€ MappedRequest value object â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * Lightweight value object returned by {@link AlgoMapper#toModels(SchedulingRequestDto)}.
