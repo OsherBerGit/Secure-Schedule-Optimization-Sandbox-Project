@@ -2,15 +2,20 @@ package com.example.mainbackend.dto.user;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import com.example.mainbackend.dto.skill.SkillDto;
 
 import java.util.List;
 import java.util.Set;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserDto {
     private Long id;
-    private String nationalId; // Israeli National ID (Teudat Zehut)
+    private String nationalId;
     private String firstName;
     private String lastName;
 
@@ -30,6 +35,7 @@ public class UserDto {
     // Access Level: Single role (ADMIN, MANAGER, WORKER)
     private String role;
 
-    // Functional Skills: List of job names
-    private Set<String> jobs;
+    // Functional Skills
+    private Set<SkillDto> skills;
+    private Set<Long> skillIds;
 }

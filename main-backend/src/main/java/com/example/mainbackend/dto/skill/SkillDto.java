@@ -1,4 +1,4 @@
-package com.example.mainbackend.dto.job;
+package com.example.mainbackend.dto.skill;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class JobDto {
+public class SkillDto {
     private Long id;
 
-    @NotBlank(message = "Job name is required")
+    @NotBlank(message = "Skill name is required")
     private String name;
 
     private String description;

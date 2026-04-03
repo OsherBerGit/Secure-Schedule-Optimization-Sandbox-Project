@@ -30,7 +30,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const payload = decodeJwt(accessToken);
       const nationalId = payload.sub;
       if (nationalId) {
-        axiosInstance.get<User>(`/users/national-id/${nationalId}`)
+        axiosInstance.get<User>(`/users/me`)
           .then(response => {
             const userData = response.data;
             // The role now comes directly from the backend response
@@ -55,18 +55,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (nationalId: string, password: string) => {
     try {
-      // 1. Authenticate — backend returns tokens
+      // 1. Authenticate - backend returns tokens
       const response = await authApi.login({ nationalId, password });
       const { accessToken, refreshToken } = response.data;
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
 
-      // 2. Decode nationalId from JWT, then fetch full user profile
-      const payload = decodeJwt(accessToken);
-      const id = payload.sub;
-      if (!id) throw new Error('Invalid token: missing subject');
-
-      const userResponse = await axiosInstance.get<User>(`/users/national-id/${id}`);
+      // 2. Fetch full user profile using the /me endpoint
+      const userResponse = await axiosInstance.get<User>(`/users/me`);
       const userData = userResponse.data;
 
       // 3. The user object from the backend now includes the correct single role.

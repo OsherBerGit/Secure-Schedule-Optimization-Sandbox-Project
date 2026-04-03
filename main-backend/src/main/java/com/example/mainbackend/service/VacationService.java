@@ -66,18 +66,17 @@ public class VacationService {
 
     /**
      * WORKER submits a vacation request — starts as PENDING.
-     * Worker identity is resolved from their nationalId (JWT principal).
+     * Worker identity is resolved from the workerId in the request.
      *
-     * @param nationalId the worker's nationalId extracted from the Security Context
-     * @param request    the vacation date range
+     * @param request    the vacation date range and workerId
      */
     @Transactional
-    public VacationResponseDto requestVacation(String nationalId, VacationRequestDto request) {
+    public VacationResponseDto requestVacation(VacationRequestDto request) {
         if (request.getStartDate().isAfter(request.getEndDate()))
             throw new IllegalArgumentException("Start date must be before or equal to end date");
 
-        User worker = userRepository.findByNationalId(nationalId)
-                .orElseThrow(() -> new IllegalArgumentException("Worker not found with national ID: " + nationalId));
+        User worker = userRepository.findById(request.getWorkerId())
+                .orElseThrow(() -> new IllegalArgumentException("Worker not found with ID: " + request.getWorkerId()));
 
         List<Vacation> existing = vacationRepository.findByWorkerId(worker.getId());
         for (Vacation v : existing)
@@ -153,6 +152,12 @@ public class VacationService {
 
     @Transactional(readOnly = true)
     public List<VacationResponseDto> getAllVacations() {
+        if (securityHelper.isManager()) {
+            Long deptId = securityHelper.getCurrentUserDepartmentId();
+            return vacationRepository.findAllByWorker_Department_Id(deptId).stream()
+                    .map(mapper::toDto)
+                    .toList();
+        }
         return vacationRepository.findAll().stream().map(mapper::toDto).toList();
     }
 

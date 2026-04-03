@@ -75,7 +75,7 @@ axiosInstance.interceptors.response.use(
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        window.dispatchEvent(new Event('unauthorized'));
         return Promise.reject(refreshError);
       }
     }

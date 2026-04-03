@@ -18,7 +18,7 @@ const ScheduleExplainability: React.FC<ScheduleExplainabilityProps> = ({ failure
                     <p className="explain-subtitle">
                         {failures.length} task
                         {failures.length !== 1 ? 's' : ''} could not
-                        be assigned — review the reasons below and adjust constraints or worker availability.
+                        be assigned - review the reasons below and adjust constraints or worker availability.
                     </p>
                 </div>
             </div>

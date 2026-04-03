@@ -46,10 +46,10 @@ public class TaskConstraintController {
 
     /**
      * Retrieves all constraints globally.
-     * RESTRICTED TO ADMIN ONLY.
+     * ALLOWED FOR: Any authenticated user (service will filter by department if manager).
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<TaskConstraintResponseDto>> getAllConstraints() {
         List<TaskConstraintResponseDto> constraints = taskConstraintService.getAllConstraints();
         return ResponseEntity.ok(constraints);

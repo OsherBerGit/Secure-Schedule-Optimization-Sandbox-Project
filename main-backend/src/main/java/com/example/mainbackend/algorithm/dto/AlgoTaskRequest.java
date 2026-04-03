@@ -15,8 +15,8 @@ public class AlgoTaskRequest {
     private LocalDateTime deadline;
     private Integer priorityLevel;
     
-    /** Functional skill required (Job ID). Replaces requiredRoles. */
-    private Long requiredJobId;
+    /** Functional skill required (Skill ID). Replaces requiredRoles. */
+    private Long requiredSkillId;
     
     private List<AlgoConstraintRequest> constraints;
 }

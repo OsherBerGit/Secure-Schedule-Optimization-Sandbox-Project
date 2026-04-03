@@ -51,10 +51,10 @@ public class SettlementController {
 
     /**
      * Retrieves all settlements globally.
-     * RESTRICTED TO ADMIN ONLY.
+     * ALLOWED FOR: Any authenticated user (service will filter by department if manager).
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SettlementResponseDto>> getAllSettlements() {
         List<SettlementResponseDto> settlements = settlementService.getAllSettlements();
         return ResponseEntity.ok(settlements);

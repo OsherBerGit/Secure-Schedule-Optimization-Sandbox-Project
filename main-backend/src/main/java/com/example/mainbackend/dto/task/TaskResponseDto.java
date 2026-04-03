@@ -34,8 +34,8 @@ public class TaskResponseDto {
     private Long version;
 
     /**
-     * Job required for the task.
+     * Skill required for the task.
      */
-    private Long requiredJobId;
-    private String requiredJobName;
+    private Long requiredSkillId;
+    private String requiredSkillName;
 }

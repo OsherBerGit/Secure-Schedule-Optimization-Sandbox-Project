@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import type { SchedulingConfiguration } from '../types'
 import SchedulingConfigurationForm from './config/SchedulingConfigurationForm' // Extracted form
+import { useAuth } from '../context/useAuth'
 import './SchedulingConfigurationModal.css'
 
 interface SchedulingConfigurationModalProps {
@@ -27,6 +28,9 @@ const SchedulingConfigurationModal: React.FC<SchedulingConfigurationModalProps> 
     onCreateConfig,
     initialConfigId 
 }) => {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'ADMIN';
+
     // UI Mode: 'select' (dropdown) or 'create' (form)
     const [mode, setMode] = useState<'select' | 'create'>('select')
     const [selectedId, setSelectedId] = useState<number | ''>(initialConfigId ?? '')
@@ -59,14 +63,16 @@ const SchedulingConfigurationModal: React.FC<SchedulingConfigurationModalProps> 
                     >
                         Select Existing
                     </button>
-                    <button 
-                        type="button"
-                        onClick={() => setMode('create')}
-                        className={mode === 'create' ? 'btn-primary' : 'btn-outline'}
-                        style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderBottom: 'none' }}
-                    >
-                        Create New +
-                    </button>
+                    {isAdmin && (
+                        <button
+                            type="button"
+                            onClick={() => setMode('create')}
+                            className={mode === 'create' ? 'btn-primary' : 'btn-outline'}
+                            style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderBottom: 'none' }}
+                        >
+                            Create New +
+                        </button>
+                    )}
                 </div>
 
                 {mode === 'select' ? (

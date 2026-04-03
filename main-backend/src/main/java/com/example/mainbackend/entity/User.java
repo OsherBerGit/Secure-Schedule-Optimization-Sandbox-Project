@@ -60,16 +60,16 @@ public class User {
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
-    // Functional Skills: A user can have multiple Job Titles (many-to-many)
+    // Functional Skills: A user can have multiple Skill Titles (many-to-many)
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-        name = "user_jobs",
+        name = "user_skills",
         joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "job_id"),
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "job_id"})
+        inverseJoinColumns = @JoinColumn(name = "skill_id"),
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "skill_id"})
     )
     @Builder.Default
-    private Set<Job> jobs = new HashSet<>();
+    private Set<Skill> skills = new HashSet<>();
 
     // Relationship Settlements - mappedBy establishes bidirectional relationship
     @OneToMany(mappedBy = "worker", cascade = CascadeType.ALL, orphanRemoval = true)

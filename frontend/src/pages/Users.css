@@ -86,7 +86,17 @@
 }
 
 .role-admin  { background: #fde8e8; color: #c0392b; }
+.role-manager { background: #e0f2f1; color: #00796b; }
 .role-worker { background: #e8f4fd; color: #2980b9; }
+
+.dept-badge {
+    background: #e1bee7;
+    color: #4a148c;
+    padding: 0.25rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
 
 .btn-edit, .btn-delete {
     padding: 0.4rem 0.8rem;
@@ -327,5 +337,3 @@
     transition: opacity 0.2s;
 }
 .btn-remove-row:hover { opacity: 0.75; }
-
-

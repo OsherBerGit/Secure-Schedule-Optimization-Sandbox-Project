@@ -44,7 +44,7 @@ const FitnessChart = ({ fitnessHistory }: FitnessChartProps) => {
                     fontWeight: 600,
                     letterSpacing: '0.02em',
                 }}>
-                    🧬 Memetic Algorithm — Convergence Graph
+                    🧬 Memetic Algorithm - Convergence Graph
                 </h3>
                 <p style={{
                     margin: '4px 0 0 0',

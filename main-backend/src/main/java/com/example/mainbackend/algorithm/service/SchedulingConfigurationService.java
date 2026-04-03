@@ -92,7 +92,7 @@ public class SchedulingConfigurationService {
         SchedulingConfiguration entity = mapper.mapToEntity(dto);
         entity.setCreatedBy(creator);
 
-        SchedulingConfiguration saved = repository.save(mapper.mapToEntity(dto));
+        SchedulingConfiguration saved = repository.save(entity);
         return mapper.mapToDto(saved);
     }
 

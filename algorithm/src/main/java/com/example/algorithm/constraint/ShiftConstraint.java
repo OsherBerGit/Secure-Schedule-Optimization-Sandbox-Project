@@ -48,6 +48,8 @@ public class ShiftConstraint implements ConstraintChecker {
 
         for (AlgoWorkerAvailability window : ctx.candidate().getAvailabilities()) {
 
+            if (window.startTime() == null || window.endTime() == null) continue;
+
             // (a) Same day of week
             if (window.dayOfWeek() != ctx.proposedStart().getDayOfWeek()) continue;
 

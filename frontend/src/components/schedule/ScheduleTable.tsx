@@ -84,18 +84,18 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({ tasks, workers, assignmen
                                 ? new Date(assignment.scheduledStart).toLocaleString()
                                 : task.startTime
                                     ? new Date(task.startTime).toLocaleString()
-                                    : '—'
+                                    : '-'
                             const endDisplay = assignment?.scheduledEnd
                                 ? new Date(assignment.scheduledEnd).toLocaleString()
                                 : task.deadline
                                     ? new Date(task.deadline).toLocaleString()
-                                    : '—'
+                                    : '-'
 
                             const uid = assignmentMap.get(task.id)
                             const worker = uid != null ? workers.find(w => w.id === uid) : null
                             const workerLabel = worker
                                 ? `${worker.firstName ?? ''} ${worker.lastName ?? ''}`.trim() || `Worker #${uid}`
-                                : uid != null ? `Worker #${uid}` : '—'
+                                : uid != null ? `Worker #${uid}` : '-'
 
                             return (
                                 <tr key={task.id}>

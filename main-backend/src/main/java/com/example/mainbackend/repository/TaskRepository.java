@@ -13,7 +13,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     /**
      * Returns only tasks with the given lifecycle status.
-     * Used by SchedulingService — Zero-Trust filter (LOCKED/CLOSED tasks excluded).
+     * Used by SchedulingService â€” Zero-Trust filter (LOCKED/CLOSED tasks excluded).
      */
     @Query("SELECT t FROM Task t WHERE t.status.name = :statusName")
     List<Task> findByStatusName(@Param("statusName") String statusName);
@@ -29,14 +29,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
      */
     List<Task> findByStatusId(Long statusId);
 
-    // ── ADMIN scope (all departments) ────────────────────────────────────────
+    // â”€â”€ ADMIN scope (all departments) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * Fetches ALL OPEN tasks with their requiredRoles eagerly loaded.
      * Used by SchedulingService (ADMIN scope).
      */
     @Query("SELECT DISTINCT t FROM Task t " +
-           "LEFT JOIN FETCH t.requiredJob " +
+           "LEFT JOIN FETCH t.requiredSkill " +
            "WHERE t.status.name = :statusName")
     List<Task> findOpenTasksWithRoles(@Param("statusName") String statusName);
 
@@ -50,14 +50,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
            "WHERE t.status.name = :statusName")
     List<Task> findOpenTasksWithConstraints(@Param("statusName") String statusName);
 
-    // ── MANAGER scope (single department) ────────────────────────────────────
+    // â”€â”€ MANAGER scope (single department) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * Fetches OPEN tasks for a specific department with their requiredRoles eagerly loaded.
      * Used by SchedulingService (MANAGER scope).
      */
     @Query("SELECT DISTINCT t FROM Task t " +
-           "LEFT JOIN FETCH t.requiredJob " +
+           "LEFT JOIN FETCH t.requiredSkill " +
            "WHERE t.status.name = :statusName AND t.department.id = :departmentId")
     List<Task> findOpenTasksWithRolesByDepartment(@Param("statusName") String statusName,
                                                   @Param("departmentId") Long departmentId);

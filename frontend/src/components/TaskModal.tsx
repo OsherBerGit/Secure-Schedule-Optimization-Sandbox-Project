@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
-import type { Task, CreateTaskRequest, UpdateTaskRequest, Status, Priority, Department, Job } from '../types'
-import { departmentApi, jobApi } from '../api'
+import type { Task, CreateTaskRequest, UpdateTaskRequest, Status, Priority, Department, Skill } from '../types'
+import { departmentApi, skillApi } from '../api'
 import { useAuth } from '../context/useAuth'
 
 interface TaskModalProps {
     task: Task | null
     statuses: Status[]
     priorities: Priority[]
-    onSubmit: (data: CreateTaskRequest | UpdateTaskRequest) => void
+    onSubmit: (data: CreateTaskRequest | UpdateTaskRequest) => Promise<any> | void
     onClose: () => void
 }
 
@@ -17,24 +17,27 @@ const TaskModal = ({ task, statuses, priorities, onSubmit, onClose }: TaskModalP
     const [title, setTitle] = useState(task?.title ?? '')
     const [description, setDescription] = useState(task?.description ?? '')
     const [deadline, setDeadline] = useState(task?.deadline ? task.deadline.substring(0, 16) : '')
-    const [durationHours, setDurationHours] = useState<number | ''>(task?.durationHours ?? '')
+    const [durationHours, setDurationHours] = useState<number | ''>(task?.durationHours ?? 1)
     const [priorityId, setPriorityId] = useState<number>(task?.priorityId ?? (priorities[0]?.id ?? 0))
     const [statusId, setStatusId] = useState<number>(task?.taskStatusId ?? (statuses[0]?.id ?? 0))
     const [departments, setDepartments] = useState<Department[]>([])
-    const [jobs, setJobs] = useState<Job[]>([])
+    const [skills, setSkills] = useState<Skill[]>([])
     const [departmentId, setDepartmentId] = useState<number | ''>('')
-    const [requiredJobId, setRequiredJobId] = useState<number | ''>(task?.requiredJob?.id ?? '')
+    const [requiredSkillId, setRequiredSkillId] = useState<number | ''>(task?.requiredSkill?.id ?? '')
     const [isLoading, setIsLoading] = useState(true)
 
     const isAdmin = user?.role === 'ADMIN'
     const isManager = user?.role === 'MANAGER'
 
+    const [errorMsg, setErrorMsg] = useState<string | null>(null)
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
     useEffect(() => {
         Promise.all([
-            jobApi.getAll(),
+            skillApi.getAll(),
             (isAdmin || isManager) ? departmentApi.getAll() : Promise.resolve({ data: [] })
-        ]).then(([jobRes, deptRes]) => {
-            setJobs(jobRes.data)
+        ]).then(([skillRes, deptRes]) => {
+            setSkills(skillRes.data)
             setDepartments(deptRes.data)
 
             if (task?.departmentName) {
@@ -47,12 +50,12 @@ const TaskModal = ({ task, statuses, priorities, onSubmit, onClose }: TaskModalP
         }).catch(console.error).finally(() => setIsLoading(false))
     }, [isAdmin, isManager, task, user])
 
-    function handleSubmit(e: FormEvent) {
+    async function handleSubmit(e: FormEvent) {
         e.preventDefault()
-        if (requiredJobId === '') {
-            alert('Please select a required job.')
-            return
-        }
+        setErrorMsg(null)
+        setFieldErrors({})
+
+        // If creating, logic expects OPEN status which is ID 1 or find by name. But we just omit it if your API defaults to it, or we rely on the init state.
         const data: CreateTaskRequest | UpdateTaskRequest = {
             title,
             description: description || undefined,
@@ -60,14 +63,42 @@ const TaskModal = ({ task, statuses, priorities, onSubmit, onClose }: TaskModalP
             durationHours: durationHours !== '' ? durationHours : undefined,
             priorityId,
             departmentId: departmentId !== '' ? departmentId : undefined,
-            requiredJobId: Number(requiredJobId)
+            requiredSkill: requiredSkillId !== '' ? Number(requiredSkillId) : null
         }
-        onSubmit(data)
+
+        if (task) {
+            (data as UpdateTaskRequest).statusId = statusId;
+        }
+
+        try {
+            const res = onSubmit(data)
+            if (res instanceof Promise) await res
+        } catch (err: any) {
+            if (err.response && err.response.status === 400 && err.response.data && typeof err.response.data === 'object') {
+                const mapData = err.response.data
+                const newFieldErrors: Record<string, string> = {}
+                for (const [field, message] of Object.entries(mapData)) {
+                    if (typeof message === 'string') {
+                        newFieldErrors[field] = message
+                    }
+                }
+                if (Object.keys(newFieldErrors).length > 0) {
+                    setFieldErrors(newFieldErrors)
+                    return
+                } else if (mapData.message) {
+                    setErrorMsg(mapData.message)
+                    return
+                }
+            }
+            setErrorMsg(err?.response?.data?.message || err.message || 'Request failed.')
+        }
     }
+
+    const isClosed = task?.taskStatusName === 'CLOSED'
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal modal-wide" onClick={e => e.stopPropagation()}>
 
                 <div className="modal-header">
                     <h2>{task ? 'Edit Task' : 'Add Task'}</h2>
@@ -75,86 +106,106 @@ const TaskModal = ({ task, statuses, priorities, onSubmit, onClose }: TaskModalP
                 </div>
 
                 <form onSubmit={handleSubmit} className="modal-form">
-
-                    <div className="form-group">
-                        <label>Title *</label>
-                        <input value={title} onChange={e => setTitle(e.target.value)} required />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Description</label>
-                        <textarea value={description ?? ''} onChange={e => setDescription(e.target.value)} rows={3} />
-                    </div>
-
-                    <div className="form-row">
+                    <fieldset disabled={isClosed} style={{ border: 'none', padding: 0, margin: 0 }}>
                         <div className="form-group">
-                            <label>Priority *</label>
-                            <select value={priorityId} onChange={e => setPriorityId(Number(e.target.value))} required>
-                                {priorities.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                ))}
-                            </select>
+                            <label>Title *</label>
+                            <input value={title} onChange={e => setTitle(e.target.value)} required />
+                            {fieldErrors.title && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.title}</small>}
                         </div>
 
-                        {isAdmin && (
+                        <div className="form-group">
+                            <label>Description</label>
+                            <textarea value={description ?? ''} onChange={e => setDescription(e.target.value)} rows={3} />
+                            {fieldErrors.description && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.description}</small>}
+                        </div>
+
+                        <div className="form-row">
                             <div className="form-group">
-                                <label>Department</label>
-                                <select
-                                    value={departmentId}
-                                    onChange={e => setDepartmentId(e.target.value === '' ? '' : Number(e.target.value))}
-                                >
-                                    <option value="">— Unassigned —</option>
-                                    {departments.map(d => (
-                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                <label>Priority *</label>
+                                <select value={priorityId} onChange={e => setPriorityId(Number(e.target.value))} required>
+                                    {priorities.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
                                     ))}
                                 </select>
+                                {fieldErrors.priorityId && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.priorityId}</small>}
                             </div>
-                        )}
-                        <div className="form-group">
-                            <label>Status *</label>
-                            <select value={statusId} onChange={e => setStatusId(Number(e.target.value))} required>
-                                {statuses.map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
-                            </select>
+
+                            {isAdmin && (
+                                <div className="form-group">
+                                    <label>Department</label>
+                                    <select
+                                        value={departmentId}
+                                        onChange={e => setDepartmentId(e.target.value === '' ? '' : Number(e.target.value))}
+                                    >
+                                        <option value="">- Unassigned -</option>
+                                        {departments.map(d => (
+                                            <option key={d.id} value={d.id}>{d.name}</option>
+                                        ))}
+                                    </select>
+                                    {fieldErrors.departmentId && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.departmentId}</small>}
+                                </div>
+                            )}
+
+                            {task && (
+                                <div className="form-group">
+                                    <label>Status *</label>
+                                    <select
+                                      value={statusId}
+                                      onChange={(e) => setStatusId(Number(e.target.value))}
+                                      required
+                                    >
+                                      {task.taskStatusName === 'OPEN' || task.taskStatusName === 'LOCKED' ? (
+                                        <>
+                                          <option value={statuses.find(s => s.name === 'OPEN')?.id}>OPEN</option>
+                                          <option value={statuses.find(s => s.name === 'LOCKED')?.id}>LOCKED</option>
+                                        </>
+                                      ) : (
+                                        <option value={task.taskStatusId ?? ''}>{task.taskStatusName}</option>
+                                      )}
+                                    </select>
+                                    {fieldErrors.statusId && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.statusId}</small>}
+                                </div>
+                            )}
                         </div>
-                    </div>
-
-                    <div className="form-group">
-                        <label>Required Job *</label>
-                        {isLoading ? <p>Loading jobs...</p> : (
-                            <select value={requiredJobId} onChange={e => setRequiredJobId(Number(e.target.value))} required>
-                                <option value="" disabled>Select a job</option>
-                                {jobs.map(job => (
-                                    <option key={job.id} value={job.id}>{job.name}</option>
-                                ))}
-                            </select>
-                        )}
-                    </div>
-
-                    <div className="form-row">
 
                         <div className="form-group">
-                            <label>Deadline</label>
-                            <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} />
+                            <label>Required Skill</label>
+                            {isLoading ? <p>Loading skills...</p> : (
+                                <select value={requiredSkillId} onChange={e => setRequiredSkillId(e.target.value === '' ? '' : Number(e.target.value))}>
+                                    <option value="">-- None --</option>
+                                    {skills.map(skill => (
+                                        <option key={skill.id} value={skill.id}>{skill.name}</option>
+                                    ))}
+                                </select>
+                            )}
+                            {fieldErrors.requiredSkill && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.requiredSkill}</small>}
                         </div>
 
-                        <div className="form-group">
-                            <label>Duration (hours)</label>
-                            <input
-                                type="number"
-                                value={durationHours}
-                                onChange={e => setDurationHours(e.target.value === '' ? '' : Number(e.target.value))}
-                                min={1}
-                            />
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Deadline</label>
+                                <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} />
+                                {fieldErrors.deadline && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.deadline}</small>}
+                            </div>
+
+                            <div className="form-group">
+                                <label>Duration (hours)</label>
+                                <input
+                                    type="number"
+                                    value={durationHours}
+                                    onChange={e => setDurationHours(e.target.value === '' ? '' : Number(e.target.value))}
+                                    min={1}
+                                    required
+                                />
+                                {fieldErrors.durationHours && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.durationHours}</small>}
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="modal-footer">
-                        <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="btn-save">Save</button>
-                    </div>
-
+                        <div className="modal-footer">
+                            <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
+                            {!isClosed && <button type="submit" className="btn-save">Save</button>}
+                        </div>
+                    </fieldset>
                 </form>
             </div>
         </div>

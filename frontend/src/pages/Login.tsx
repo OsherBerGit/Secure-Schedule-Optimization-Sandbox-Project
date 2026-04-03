@@ -12,7 +12,7 @@ const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
@@ -20,13 +20,8 @@ const Login: React.FC = () => {
     try {
       await login(nationalId, password);
       navigate('/dashboard');
-    } catch (err) {
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { response?: { data?: { message?: string } } };
-        setError(axiosError.response?.data?.message || 'Login failed. Please check your credentials.');
-      } else {
-        setError('Login failed. Please check your credentials.');
-      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
@@ -38,7 +33,7 @@ const Login: React.FC = () => {
         <h1>Secure Schedule</h1>
         <h2>Login</h2>
 
-        <form onSubmit={handleSubmit} className="login-form">
+        <form onSubmit={handleLogin} className="login-form">
           <div className="form-group">
             <label htmlFor="nationalId">National ID</label>
             <input

@@ -1,6 +1,7 @@
 package com.example.mainbackend.service;
 
 import com.example.mainbackend.dto.vacation.VacationCreateRequest;
+import com.example.mainbackend.dto.vacation.VacationRequestDto;
 import com.example.mainbackend.dto.vacation.VacationResponseDto;
 import com.example.mainbackend.entity.User;
 import com.example.mainbackend.entity.Vacation;
@@ -40,6 +41,7 @@ class VacationServiceTest {
     private User worker;
     private Vacation vacation;
     private VacationCreateRequest request;
+    private VacationRequestDto requestDto;
     private VacationResponseDto responseDto;
 
     @BeforeEach
@@ -59,6 +61,12 @@ class VacationServiceTest {
                 .build();
 
         request = VacationCreateRequest.builder()
+                .workerId(1L)
+                .startDate(LocalDate.of(2026, 3, 15))
+                .endDate(LocalDate.of(2026, 3, 20))
+                .build();
+
+        requestDto = VacationRequestDto.builder()
                 .workerId(1L)
                 .startDate(LocalDate.of(2026, 3, 15))
                 .endDate(LocalDate.of(2026, 3, 20))
@@ -213,4 +221,3 @@ class VacationServiceTest {
         assertTrue(exception.getMessage().contains("Vacation not found"));
     }
 }
-

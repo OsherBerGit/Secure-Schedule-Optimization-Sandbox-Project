@@ -25,7 +25,7 @@ const VacationModal = ({ vacation, isAdmin, onSubmit, onClose }: VacationModalPr
             const data: CreateVacationRequest = { workerId, startDate, endDate }
             onSubmit(data)
         } else {
-            // WORKER submits a request — no workerId needed
+            // WORKER submits a request - no workerId needed
             const data: VacationRequestDto = { startDate, endDate }
             onSubmit(data)
         }
@@ -35,7 +35,7 @@ const VacationModal = ({ vacation, isAdmin, onSubmit, onClose }: VacationModalPr
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxHeight: '80vh', overflow: 'visible' }}>
 
                 <div className="modal-header">
                     <h2>{title}</h2>

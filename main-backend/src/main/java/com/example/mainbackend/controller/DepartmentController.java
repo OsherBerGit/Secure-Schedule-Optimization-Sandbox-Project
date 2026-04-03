@@ -22,10 +22,10 @@ public class DepartmentController {
 
     /**
      * Retrieves all departments globally.
-     * RESTRICTED TO ADMIN ONLY.
+     * ALLOWED FOR: Any authenticated user.
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<Department>> getAllDepartments() {
         return ResponseEntity.ok(departmentService.getAllDepartments());
     }

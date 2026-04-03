@@ -158,7 +158,7 @@ const Statuses = () => {
                 {/* ── RIGHT: Assignment Statuses (read-only, system-seeded) ── */}
                 <section className="statuses-panel statuses-panel--readonly">
                     <h2 className="statuses-panel-title">📋 Assignment Statuses</h2>
-                    <p className="statuses-panel-subtitle">Execution states for Settlements — system-managed, read-only</p>
+                    <p className="statuses-panel-subtitle">Execution states for Settlements - system-managed, read-only</p>
 
                     {settlError && <div className="error-message">{settlError}</div>}
 
@@ -200,7 +200,7 @@ const Statuses = () => {
                                                     />
                                                     {s.colorCode}
                                                 </span>
-                                            ) : '—'}
+                                            ) : '-'}
                                         </td>
                                     </tr>
                                 ))}

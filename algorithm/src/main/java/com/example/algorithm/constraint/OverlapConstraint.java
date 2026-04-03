@@ -42,6 +42,8 @@ public class OverlapConstraint implements ConstraintChecker {
             // Check only assignments for the SAME employee
             if (existing.getAssignedEmployee() == null || !existing.getAssignedEmployee().getId().equals(ctx.candidate().getId())) continue;
 
+            if (existing.getScheduledStart() == null || existing.getScheduledEnd() == null) continue;
+
             // Standard Overlap Formula: (StartA < EndB) AND (EndA > StartB)
             boolean overlaps = newStart.isBefore(existing.getScheduledEnd()) && newEnd.isAfter(existing.getScheduledStart());
 

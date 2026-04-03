@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.security.Principal;
 
 /**
  * Controller for User management.
@@ -43,13 +44,27 @@ public class UserController {
 
     /**
      * Retrieves all users.
-     * RESTRICTED TO ADMIN ONLY (Managers should fetch by department).
+     * ALLOWED FOR: Any authenticated user (service will filter by department if manager).
      * @return ResponseEntity with list of all users and HTTP 200 status
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<UserDto>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    /**
+     * Retrieves the currently authenticated user's profile.
+     * ALLOWED FOR: Any authenticated user.
+     * @param principal the current authenticated principal (contains national ID)
+     * @return ResponseEntity with the user and HTTP 200 if found
+     */
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UserDto> getCurrentUser(Principal principal) {
+        return userService.getUserByNationalId(principal.getName())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
@@ -101,7 +116,7 @@ public class UserController {
      * @return ResponseEntity with list of users
      */
     @GetMapping("/role/{role}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<UserDto>> getUsersByRole(@PathVariable String role) {
         return ResponseEntity.ok(userService.getUsersByRole(role));
     }

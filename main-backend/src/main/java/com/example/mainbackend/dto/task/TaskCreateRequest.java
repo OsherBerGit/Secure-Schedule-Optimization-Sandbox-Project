@@ -1,31 +1,31 @@
 package com.example.mainbackend.dto.task;
 
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class TaskCreateRequest {
+
     @NotBlank(message = "Title is required")
-    @Size(min = 1, max = 255, message = "Title must be between 1 and 255 characters")
     private String title;
 
-    @Size(max = 2000, message = "Description cannot exceed 2000 characters")
     private String description;
 
+    @Future(message = "Deadline must be in the future")
     private LocalDateTime deadline;
 
-    @Positive(message = "Duration must be a positive number")
+    @NotNull(message = "Duration is required")
+    @Min(value = 1, message = "Duration must be at least 1 hour")
     private Integer durationHours;
 
     /**
@@ -37,15 +37,14 @@ public class TaskCreateRequest {
     // IDs for related entities
     @NotNull(message = "Priority is required")
     private Long priorityId;
-    // statusId removed — status is now tracked on Settlement, not Task
-    // assignedWorkerId removed — use POST /api/settlements to assign a worker to a task
+
+    private Long statusId;
 
     /**
-     * ID of the Job required to perform this task.
-     * Each task must require exactly one profession.
+     * ID of the Skill required to perform this task.
+     * Optional. If missing, any worker can potentially perform it.
      */
-    @NotNull(message = "Required Job is mandatory")
-    private Long requiredJob;
+    private Long requiredSkill;
 
     /**
      * Optional Department ID for assigning the task to a specific department.

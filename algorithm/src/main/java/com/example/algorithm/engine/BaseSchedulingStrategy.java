@@ -8,7 +8,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Shared helper utilities used by all scheduling strategy implementations.
@@ -17,7 +16,7 @@ import java.util.stream.Collectors;
 public abstract class BaseSchedulingStrategy implements SchedulingStrategy {
 
     protected final List<ConstraintChecker> hardConstraints = List.of(
-            new JobMatchConstraint(),
+            new SkillMatchConstraint(),
             new OverlapConstraint(),
             new PrecedenceConstraint(),
             new DeadlineConstraint(),
@@ -86,6 +85,7 @@ public abstract class BaseSchedulingStrategy implements SchedulingStrategy {
             return Optional.of(earliestPossible);
 
         List<AlgoWorkerAvailability> sortedAvailabilities = worker.getAvailabilities().stream()
+                .filter(a -> a.dayOfWeek() != null && a.startTime() != null && a.endTime() != null)
                 .sorted(Comparator.comparing(AlgoWorkerAvailability::dayOfWeek).thenComparing(AlgoWorkerAvailability::startTime))
                 .toList();
 
@@ -95,6 +95,8 @@ public abstract class BaseSchedulingStrategy implements SchedulingStrategy {
 
             for (AlgoWorkerAvailability shift : sortedAvailabilities) {
                 if (shift.dayOfWeek() == currentDay) {
+                    if (shift.startTime() == null || shift.endTime() == null) continue;
+
                     LocalDateTime shiftStart = dayToSearch.toLocalDate().atTime(shift.startTime());
                     LocalDateTime shiftEnd = dayToSearch.toLocalDate().atTime(shift.endTime());
 

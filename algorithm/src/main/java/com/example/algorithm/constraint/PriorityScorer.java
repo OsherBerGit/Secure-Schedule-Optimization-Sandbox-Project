@@ -25,7 +25,8 @@ public class PriorityScorer implements Scorer {
     public double score(ConstraintContext ctx, AlgoSchedulingConfiguration config) {
         // Higher priority (e.g., 5) results in a better (higher) score.
         // We multiply by the weight set in the configuration by the user.
-        double taskPriority = ctx.task().getPriorityLevel();
+        Integer priorityObj = ctx.task().getPriorityLevel();
+        double taskPriority = (priorityObj != null) ? priorityObj : 0.0;
 
         return taskPriority * config.getWeightPriority();
     }

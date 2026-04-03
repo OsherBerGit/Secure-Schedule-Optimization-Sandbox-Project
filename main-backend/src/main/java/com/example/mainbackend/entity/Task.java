@@ -33,7 +33,7 @@ public class Task {
     private TaskPriority priority;
 
     /**
-     * Task lifecycle status (OPEN → LOCKED → CLOSED).
+     * Task lifecycle status (OPEN → SCHEDULED → CLOSED).
      * Stored in the task_statuses table.
      */
     @ManyToOne(fetch = FetchType.LAZY)
@@ -59,8 +59,8 @@ public class Task {
     private Department department;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "job_id", nullable = false)
-    private Job requiredJob;
+    @JoinColumn(name = "skill_id", nullable = true)
+    private Skill requiredSkill;
 
     @OneToMany(mappedBy = "predecessorTask", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

@@ -11,7 +11,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -43,10 +42,8 @@ public class VacationController {
     @PostMapping("/request")
     @PreAuthorize("hasAnyRole('WORKER', 'MANAGER')")
     public ResponseEntity<VacationResponseDto> requestVacation(
-            @Valid @RequestBody VacationRequestDto request,
-            Authentication authentication) {
-        String nationalId = authentication.getName();
-        VacationResponseDto response = vacationService.requestVacation(nationalId, request);
+            @Valid @RequestBody VacationRequestDto request) {
+        VacationResponseDto response = vacationService.requestVacation(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -76,10 +73,10 @@ public class VacationController {
 
     /**
      * Retrieves all vacations globally.
-     * RESTRICTED TO ADMIN ONLY.
+     * ALLOWED FOR: Any authenticated user (service will filter by department if manager).
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<VacationResponseDto>> getAllVacations() {
         List<VacationResponseDto> vacations = vacationService.getAllVacations();
         return ResponseEntity.ok(vacations);

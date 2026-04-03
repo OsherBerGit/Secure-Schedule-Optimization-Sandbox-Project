@@ -28,16 +28,21 @@
     display: flex;
     border: 1px solid #ddd;
     border-radius: 6px;
+    align-items: stretch;
     overflow: hidden;
+    height: 40px;
+    box-sizing: border-box;
 }
 .view-toggle button {
-    padding: 0.5rem 1rem;
+    padding: 0 1rem;
+    height: 100%;
     border: none;
     background: white;
     cursor: pointer;
     font-size: 0.9rem;
     color: #666;
     transition: all 0.2s;
+    box-sizing: border-box;
 }
 .view-toggle button.active {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -45,7 +50,7 @@
     font-weight: 600;
 }
 
-/* Generate button — regular alias kept for backwards compat */
+/* Generate button - regular alias kept for backwards compat */
 .btn-generate {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -108,8 +113,53 @@
 .alert-error { background: #fde8e8; color: #c0392b; border: 1px solid #f5c6cb; }
 .alert-info  { background: #e8f4fd; color: #2980b9; border: 1px solid #bee5eb; }
 
+.draft-success-banner {
+    background-color: #dcfce7;
+    color: #166534;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #bbf7d0;
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    font-weight: 500;
+}
+
 /* Loading */
 .loading { text-align: center; padding: 3rem; color: #888; font-size: 1.1rem; }
+
+/* Loading Overlay */
+.loading-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin: 2rem 0;
+    min-height: 300px;
+}
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1.5rem;
+}
+.loading-overlay h2 {
+    color: #4a5568;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 
 /* Summary cards */
 .summary-cards {
@@ -257,6 +307,11 @@
 .schedule-table tr:hover td { background: #fafafa; }
 .task-title-cell { font-weight: 500; }
 
+.scrollable-table-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
 .no-data-cell {
     text-align: center;
     color: #aaa;
@@ -308,33 +363,33 @@
 /* Strategy selector + generate button group */
 .schedule-generate-group {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 0.6rem;
+    height: 40px; /* Force uniform height for all items in group */
 }
 
 .department-select {
-    padding: 0.5rem 0.75rem;
+    padding: 0 0.75rem; /* Remove vertical padding, rely on stretch/height */
+    height: 100%;
     border: 1px solid #ddd;
     border-radius: 6px;
     font-size: 0.9rem;
     background: #fff;
     cursor: pointer;
     color: #333;
+    box-sizing: border-box;
 }
 
 .strategy-select {
-    padding: 0.5rem 0.75rem;
+    padding: 0 0.75rem; /* Remove vertical padding, rely on stretch/height */
+    height: 100%;
     border: 1px solid #ddd;
     border-radius: 6px;
     font-size: 0.9rem;
     background: #fff;
     cursor: pointer;
     color: #333;
-}
-
-.strategy-select:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+    box-sizing: border-box;
 }
 
 /* Algorithm Result Panel */
@@ -372,24 +427,10 @@
 .result-stat--success { border-color: #68d391; background: #f0fff4; }
 .result-stat--warn    { border-color: #fbd38d; background: #fffaf0; }
 
-.stat-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #2d3748;
-}
-
-.stat-label {
-    font-size: 0.75rem;
-    color: #718096;
-    margin-top: 0.1rem;
-}
-
 .result-assignments {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
-    max-height: 260px;
-    overflow-y: auto;
 }
 
 .result-row {
@@ -566,7 +607,10 @@
 /* Base styles for buttons in the action group */
 .schedule-generate-group .btn-secondary,
 .schedule-generate-group .generate-btn {
-    padding: 0.6rem 1.2rem;
+    padding: 0 1.2rem;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
     border: none;
     border-radius: 6px;
     font-size: 0.9rem;
@@ -574,6 +618,7 @@
     cursor: pointer;
     transition: background-color 0.2s, opacity 0.2s, transform 0.1s;
     white-space: nowrap;
+    box-sizing: border-box;
 }
 
 /* Algorithm Configuration Button (.btn-secondary) */
@@ -601,13 +646,12 @@
 
 /* Generate Schedule Draft Button (.generate-btn) */
 .generate-btn {
-    background-color: #4a5568; /* Dark slate */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
     color: white;
-    padding: 0.7rem 1.5rem; /* Slightly larger padding */
 }
 
 .generate-btn:hover:not(:disabled) {
-    background-color: #2d3748; /* Darker slate on hover */
+    background: linear-gradient(135deg, #5a6ed0 0%, #683e92 100%) !important;
 }
 
 .generate-btn:active:not(:disabled) {

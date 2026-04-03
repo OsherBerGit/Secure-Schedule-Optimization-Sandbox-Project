@@ -9,6 +9,7 @@ import com.example.mainbackend.mapper.TaskConstraintMapper;
 import com.example.mainbackend.repository.ConstraintTypeRepository;
 import com.example.mainbackend.repository.TaskConstraintRepository;
 import com.example.mainbackend.repository.TaskRepository;
+import com.example.mainbackend.security.SecurityHelper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class TaskConstraintService {
     private final TaskRepository taskRepository;
     private final ConstraintTypeRepository constraintTypeRepository;
     private final TaskConstraintMapper mapper;
+    private final SecurityHelper securityHelper;
 
     @Transactional
     public TaskConstraintResponseDto createConstraint(TaskConstraintCreateRequest request) {
@@ -69,6 +71,14 @@ public class TaskConstraintService {
 
     @Transactional
     public List<TaskConstraintResponseDto> getAllConstraints() {
+        if (securityHelper.isManager()) {
+            Long deptId = securityHelper.getCurrentUserDepartmentId();
+            return taskConstraintRepository.findAll().stream()
+                    .filter(c -> c.getPredecessorTask().getDepartment() != null
+                              && c.getPredecessorTask().getDepartment().getId().equals(deptId))
+                    .map(mapper::toDto)
+                    .toList();
+        }
         return taskConstraintRepository.findAll().stream()
                 .map(mapper::toDto)
                 .toList();

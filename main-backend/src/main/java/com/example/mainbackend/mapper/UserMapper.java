@@ -6,7 +6,8 @@ import com.example.mainbackend.constants.VacationStatusLevel;
 import com.example.mainbackend.dto.user.CreateUserRequest;
 import com.example.mainbackend.dto.user.UserDto;
 import com.example.mainbackend.dto.user.WorkerAvailabilityDto;
-import com.example.mainbackend.entity.Job;
+import com.example.mainbackend.dto.skill.SkillDto;
+import com.example.mainbackend.entity.Skill;
 import com.example.mainbackend.entity.User;
 import org.springframework.stereotype.Component;
 
@@ -42,8 +43,17 @@ public class UserMapper {
                         : Collections.emptyList())
                 .departmentName(user.getDepartment() != null ? user.getDepartment().getName() : null)
                 .role(user.getRole() != null ? user.getRole().getRoleName() : null)
-                .jobs(user.getJobs() != null
-                        ? user.getJobs().stream().map(Job::getName).collect(Collectors.toSet())
+                .skills(user.getSkills() != null
+                        ? user.getSkills().stream()
+                                .map(s -> SkillDto.builder()
+                                        .id(s.getId())
+                                        .name(s.getName())
+                                        .description(s.getDescription())
+                                        .build())
+                                .collect(Collectors.toSet())
+                        : Collections.emptySet())
+                .skillIds(user.getSkills() != null
+                        ? user.getSkills().stream().map(Skill::getId).collect(Collectors.toSet())
                         : Collections.emptySet())
                 .build();
     }
@@ -166,8 +176,8 @@ public class UserMapper {
                 .id(user.getId())
                 .availabilities(availabilities)
                 .maxTasks(user.getMaxTasks())
-                .jobIds(user.getJobs() != null
-                        ? user.getJobs().stream().map(Job::getId).collect(Collectors.toSet())
+                .skillIds(user.getSkills() != null
+                        ? user.getSkills().stream().map(Skill::getId).collect(Collectors.toSet())
                         : Collections.emptySet())
                 .vacations(approvedVacations)
                 .build();

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { ConstraintType } from '../types'
-import { constraintTypeApi } from '../api'
+import type { Skill } from '../types'
+import { skillApi } from '../api'
 import './LookupTable.css'
 
-const ConstraintTypes = () => {
-    const [items, setItems] = useState<ConstraintType[]>([])
+const Skills = () => {
+    const [items, setItems] = useState<Skill[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -16,14 +16,17 @@ const ConstraintTypes = () => {
     const [editId, setEditId] = useState<number | null>(null)
     const [editName, setEditName] = useState('')
     const [editDesc, setEditDesc] = useState('')
+    const [isModalOpen, setIsModalOpen] = useState(false)
 
     const fetchAll = useCallback(async () => {
         setIsLoading(true)
+        setError(null)
         try {
-            const res = await constraintTypeApi.getAll()
+            const res = await skillApi.getAll()
             setItems(res.data)
-        } catch {
-            setError('Failed to load constraint types')
+        } catch (err: any) {
+            console.error("Failed to load skills:", err)
+            setError(err?.response?.data?.message || err.message || 'Failed to load skills')
         } finally {
             setIsLoading(false)
         }
@@ -32,64 +35,62 @@ const ConstraintTypes = () => {
     useEffect(() => { void fetchAll() }, [fetchAll])
 
     async function handleCreate(e: React.FormEvent) {
-        e.preventDefault()
-        if (!newName.trim()) return
+        e.preventDefault();
+        console.log("1. Button Clicked. Current input value:", newName);
+        
+        if (!newName.trim()) {
+            setError("Input is empty!");
+            return;
+        }
+        
         try {
-            await constraintTypeApi.create({ name: newName.trim(), description: newDesc.trim() || undefined })
-            setNewName('')
-            setNewDesc('')
-            await fetchAll()
-        } catch {
-            setError('Failed to create constraint type')
+            console.log("2. Sending API request...");
+            const response = await skillApi.create(newName.trim(), newDesc.trim() || undefined);
+            console.log("3. API Success:", response);
+            setNewName('');
+            setNewDesc('');
+            setIsModalOpen(false);
+            setError(null);
+            await fetchAll();
+        } catch (err: any) {
+            console.error("4. API Error:", err);
+            setError("Failed to add: " + (err.response?.data?.message || err.message));
         }
     }
 
     async function handleUpdate(id: number) {
         if (!editName.trim()) return
+        setError(null)
         try {
-            await constraintTypeApi.update(id, { name: editName.trim(), description: editDesc.trim() || undefined })
+            await skillApi.update(id, editName.trim(), editDesc.trim() || undefined)
             setEditId(null)
             await fetchAll()
-        } catch {
-            setError('Failed to update constraint type')
+        } catch (err: any) {
+            console.error("Failed to update skill:", err)
+            setError(err?.response?.data?.message || err.message || 'Failed to update skill')
         }
     }
 
     async function handleDelete(id: number) {
-        if (!window.confirm('Delete this constraint type?')) return
+        if (!window.confirm('Delete this skill?')) return
+        setError(null)
         try {
-            await constraintTypeApi.delete(id)
+            await skillApi.delete(id)
             await fetchAll()
-        } catch {
-            setError('Failed to delete constraint type')
+        } catch (err: any) {
+            console.error("Failed to delete skill:", err)
+            setError(err?.response?.data?.message || err.message || 'Failed to delete skill')
         }
     }
 
     return (
         <div className="lookup-container">
             <div className="lookup-header">
-                <h1>🔗 Constraint Types</h1>
+                <h1>💡 Skills</h1>
+                <button className="btn-add" onClick={() => setIsModalOpen(true)}>+ Add Skill</button>
             </div>
 
             {error && <div className="error-message">{error}</div>}
-
-            <form className="lookup-add-form" onSubmit={handleCreate}>
-                <input
-                    type="text"
-                    placeholder="Name (e.g. FINISH_TO_START)"
-                    value={newName}
-                    onChange={e => setNewName(e.target.value)}
-                    className="lookup-input"
-                />
-                <input
-                    type="text"
-                    placeholder="Description (optional)"
-                    value={newDesc}
-                    onChange={e => setNewDesc(e.target.value)}
-                    className="lookup-input"
-                />
-                <button type="submit" className="btn-add">+ Add</button>
-            </form>
 
             {isLoading ? (
                 <div className="loading">Loading...</div>
@@ -145,8 +146,45 @@ const ConstraintTypes = () => {
                     </tbody>
                 </table>
             )}
+
+            {isModalOpen && (
+                <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Add New Skill</h2>
+                            <button className="btn-close" onClick={() => setIsModalOpen(false)}>×</button>
+                        </div>
+                        {error && <div className="error-message">{error}</div>}
+                        <form className="modal-form" onSubmit={handleCreate}>
+                            <div className="form-group">
+                                <label>Name *</label>
+                                <input
+                                    type="text"
+                                    placeholder="Enter the skill name..."
+                                    value={newName}
+                                    onChange={e => setNewName(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Description</label>
+                                <input
+                                    type="text"
+                                    placeholder="Enter a short description..."
+                                    value={newDesc}
+                                    onChange={e => setNewDesc(e.target.value)}
+                                />
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                                <button type="submit" className="btn-save">Save</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
 
-export default ConstraintTypes
+export default Skills

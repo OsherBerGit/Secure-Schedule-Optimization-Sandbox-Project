@@ -9,7 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-public class Job {
+public class Skill {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;

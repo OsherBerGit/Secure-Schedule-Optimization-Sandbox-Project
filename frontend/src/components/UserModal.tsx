@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
-import type { User, CreateUserRequest, UpdateUserRequest, Department, WorkerAvailability, Job } from '../types'
-import { departmentApi, jobApi } from '../api'
+import type { User, CreateUserRequest, UpdateUserRequest, Department, WorkerAvailability, Skill } from '../types'
+import { departmentApi, skillApi } from '../api'
 
 interface UserModalProps {
     user: User | null
-    onSubmit: (data: CreateUserRequest | UpdateUserRequest) => void
+    onSubmit: (data: CreateUserRequest | UpdateUserRequest) => Promise<any> | void
     onClose: () => void
 }
 
@@ -32,15 +32,16 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
     const [phoneNumber, setPhoneNumber] = useState('')
     const [role, setRole] = useState<'ADMIN' | 'MANAGER' | 'WORKER'>('WORKER')
     const [selectedDept, setSelectedDept] = useState('')
-    const [selectedJobIds, setSelectedJobIds] = useState<number[]>([])
+    const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>([])
     const [availRows, setAvailRows] = useState<AvailRow[]>([])
+    const [maxTasks, setMaxTasks] = useState<number | ''>(user?.maxTasks ?? 5)
 
-    // ── Data Fetching State ──────────────────────────────────────────────────
+    // ── Data Fetching State ────────────────────────────────────────────────────────────────────────────────────────────────────────
     const [departments, setDepartments] = useState<Department[]>([])
-    const [jobs, setJobs] = useState<Job[]>([])
+    const [skills, setSkills] = useState<Skill[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
-    // ── Helper to convert backend availability format to form row format ─────
+    // ── Helper to convert backend availability format to form row format ────
     const toRows = (avs: WorkerAvailability[]): AvailRow[] =>
         avs.map(a => ({
             id: a.id,
@@ -54,10 +55,10 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
         setIsLoading(true)
         Promise.all([
             departmentApi.getAll(),
-            jobApi.getAll()
-        ]).then(([deptRes, jobRes]) => {
+            skillApi.getAll()
+        ]).then(([deptRes, skillRes]) => {
             setDepartments(deptRes.data)
-            setJobs(jobRes.data)
+            setSkills(skillRes.data)
         }).catch(() => {
             // Handle errors if necessary, e.g., show a toast notification
         }).finally(() => {
@@ -75,8 +76,9 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
             setPhoneNumber(user.phoneNumber ?? '')
             setRole(user.role ?? 'WORKER')
             setSelectedDept(user.departmentName ?? '')
-            setSelectedJobIds(user.jobs?.map(j => j.id) ?? [])
+            setSelectedSkillIds(user.skills?.map(s => s.id) ?? [])
             setAvailRows(user.availabilities ? toRows(user.availabilities) : [])
+            setMaxTasks(user.maxTasks ?? 5)
         } else {
             // Reset to default values for a new user
             setNationalId('')
@@ -86,8 +88,9 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
             setPhoneNumber('')
             setRole('WORKER')
             setSelectedDept('')
-            setSelectedJobIds([])
+            setSelectedSkillIds([])
             setAvailRows([])
+            setMaxTasks(5)
         }
         setPassword('') // Always clear password field
     }, [user])
@@ -108,17 +111,22 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
         setAvailRows(prev => prev.map((r, i) => i === idx ? { ...r, [key]: val } : r))
     }
     
-    function handleJobChange(jobId: number) {
-        setSelectedJobIds(prev =>
-            prev.includes(jobId)
-                ? prev.filter(id => id !== jobId)
-                : [...prev, jobId]
+    function handleSkillChange(skillId: number) {
+        setSelectedSkillIds(prev =>
+            prev.includes(skillId)
+                ? prev.filter(id => id !== skillId)
+                : [...prev, skillId]
         )
     }
 
-    // ── Form Submission ──────────────────────────────────────────────────────
-    function handleSubmit(e: FormEvent) {
+    const [errorMsg, setErrorMsg] = useState<string | null>(null)
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+    // ── Form Submission ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+    async function handleSubmit(e: FormEvent) {
         e.preventDefault()
+        setErrorMsg(null)
+        setFieldErrors({})
 
         const availabilities: WorkerAvailability[] = availRows.map(r => ({
             id: r.id,
@@ -127,32 +135,58 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
             endTime:   r.endTime.length === 5   ? r.endTime   + ':00' : r.endTime,
         }))
 
-        if (user) {
-            const data: UpdateUserRequest = {
-                firstName:      firstName  || undefined,
-                lastName:       lastName   || undefined,
-                email:          email      || undefined,
-                phoneNumber:    phoneNumber || undefined,
-                role,
-                departmentName: selectedDept || null,
-                availabilities,
-                jobIds: selectedJobIds
+        try {
+            if (user) {
+                const data: UpdateUserRequest = {
+                    firstName:      firstName  || undefined,
+                    lastName:       lastName   || undefined,
+                    email:          email      || undefined,
+                    phoneNumber:    phoneNumber || undefined,
+                    role,
+                    departmentName: selectedDept || null,
+                    availabilities,
+                    skillIds: selectedSkillIds,
+                    maxTasks: maxTasks !== '' ? maxTasks : undefined
+                }
+                const res = onSubmit(data)
+                if (res instanceof Promise) await res
+            } else {
+                const data: CreateUserRequest = {
+                    nationalId,
+                    password,
+                    firstName: firstName || undefined,
+                    lastName: lastName || undefined,
+                    email: email || undefined,
+                    phoneNumber: phoneNumber || undefined,
+                    role,
+                    departmentName: selectedDept || undefined,
+                    availabilities,
+                    skillIds: selectedSkillIds,
+                    maxTasks: maxTasks !== '' ? maxTasks : undefined
+                }
+                const res = onSubmit(data)
+                if (res instanceof Promise) await res
             }
-            onSubmit(data)
-        } else {
-            const data: CreateUserRequest = {
-                nationalId,
-                password,
-                firstName: firstName || undefined,
-                lastName: lastName || undefined,
-                email: email || undefined,
-                phoneNumber: phoneNumber || undefined,
-                role,
-                departmentName: selectedDept || undefined,
-                availabilities,
-                jobIds: selectedJobIds
+        } catch (err: any) {
+            // Check if backend returned a 400 with a field error map
+            if (err.response && err.response.status === 400 && err.response.data && typeof err.response.data === 'object') {
+                const data = err.response.data
+                const newFieldErrors: Record<string, string> = {}
+                for (const [field, message] of Object.entries(data)) {
+                    if (typeof message === 'string') {
+                        newFieldErrors[field] = message
+                    }
+                }
+                if (Object.keys(newFieldErrors).length > 0) {
+                    setFieldErrors(newFieldErrors)
+                    return
+                } else if (data.message) {
+                    setErrorMsg(data.message)
+                    return
+                }
             }
-            onSubmit(data)
+            // Fallback generic error
+            setErrorMsg(err?.response?.data?.message || err.message || 'Request failed.')
         }
     }
 
@@ -166,16 +200,17 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="modal-form">
-
                     {!user && (
                         <>
                             <div className="form-group">
                                 <label>National ID</label>
                                 <input value={nationalId} onChange={e => setNationalId(e.target.value)} required placeholder="e.g. 123456789" />
+                                {fieldErrors.nationalId && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.nationalId}</small>}
                             </div>
                             <div className="form-group">
                                 <label>Password</label>
-                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+                                {fieldErrors.password && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.password}</small>}
                             </div>
                         </>
                     )}
@@ -184,10 +219,12 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
                         <div className="form-group">
                             <label>First Name</label>
                             <input value={firstName} onChange={e => setFirstName(e.target.value)} />
+                            {fieldErrors.firstName && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.firstName}</small>}
                         </div>
                         <div className="form-group">
                             <label>Last Name</label>
                             <input value={lastName} onChange={e => setLastName(e.target.value)} />
+                            {fieldErrors.lastName && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.lastName}</small>}
                         </div>
                     </div>
 
@@ -195,10 +232,12 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
                         <div className="form-group">
                             <label>Email</label>
                             <input type="email" value={email} onChange={e => setEmail(e.target.value)} />
+                            {fieldErrors.email && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.email}</small>}
                         </div>
                         <div className="form-group">
                             <label>Phone Number</label>
-                            <input value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} />
+                            <input type="tel" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} />
+                            {fieldErrors.phoneNumber && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.phoneNumber}</small>}
                         </div>
                     </div>
 
@@ -210,32 +249,40 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
                                 <option value="MANAGER">MANAGER</option>
                                 <option value="ADMIN">ADMIN</option>
                             </select>
+                            {fieldErrors.role && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.role}</small>}
                         </div>
                         <div className="form-group">
                             <label>Department</label>
                             <select value={selectedDept} onChange={e => setSelectedDept(e.target.value)}>
-                                <option value="">— None —</option>
+                                <option value="">- None -</option>
                                 {departments.map(d => (
                                     <option key={d.id} value={d.name}>{d.name}</option>
                                 ))}
                             </select>
+                            {fieldErrors.departmentName && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.departmentName}</small>}
                         </div>
                     </div>
 
                     <div className="form-group">
-                        <label>Jobs</label>
-                        {isLoading ? <p>Loading...</p> : (
-                            <div className="grid grid-cols-3 gap-2 p-2 border rounded-md bg-gray-50">
-                                {jobs.map(job => (
-                                    <div key={job.id} className="flex items-center">
+                        <label>Max Tasks</label>
+                        <input type="number" value={maxTasks} onChange={e => setMaxTasks(e.target.value === '' ? '' : Number(e.target.value))} required min={1} />
+                        {fieldErrors.maxTasks && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.maxTasks}</small>}
+                    </div>
+
+                    <div className="form-group">
+                        <label>Skills</label>
+                        {isLoading ? <p>Loading skills...</p> : (
+                            <div className="skills-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc' }}>
+                                {skills.map(skill => (
+                                    <div key={skill.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <input
                                             type="checkbox"
-                                            id={`job-${job.id}`}
-                                            checked={selectedJobIds.includes(job.id)}
-                                            onChange={() => handleJobChange(job.id)}
-                                            className="mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            id={`skill-${skill.id}`}
+                                            checked={selectedSkillIds.includes(skill.id)}
+                                            onChange={() => handleSkillChange(skill.id)}
+                                            style={{ margin: 0, width: '16px', height: '16px', cursor: 'pointer' }}
                                         />
-                                        <label htmlFor={`job-${job.id}`} className="text-sm text-gray-700">{job.name}</label>
+                                        <label htmlFor={`skill-${skill.id}`} style={{ fontSize: '0.85rem', color: '#4a5568', margin: 0, cursor: 'pointer' }}>{skill.name}</label>
                                     </div>
                                 ))}
                             </div>

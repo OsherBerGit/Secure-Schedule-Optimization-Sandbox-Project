@@ -11,11 +11,9 @@ import Vacations from './pages/Vacations';
 import Tasks from './pages/Tasks.tsx';
 import Settlements from './pages/Settlements';
 import Schedule from './pages/Schedule';
-import Priorities from './pages/Priorities';
-import Statuses from './pages/Statuses';
-import ConstraintTypes from './pages/ConstraintTypes';
 import TaskConstraints from './pages/TaskConstraints';
 import Departments from './pages/Departments';
+import Skills from './pages/Skills';
 
 import './App.css';
 
@@ -32,7 +30,7 @@ function App() {
             <Route
                 path="/users"
                 element={
-                    <ProtectedRoute allowedRoles={['ADMIN']}>
+                    <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
                         <Users />
                     </ProtectedRoute>
                 }
@@ -42,7 +40,7 @@ function App() {
           <Route
             path="/tasks"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
                 <Tasks />
               </ProtectedRoute>
             }
@@ -50,7 +48,7 @@ function App() {
           <Route
             path="/vacations"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'WORKER']}>
                 <Vacations />
               </ProtectedRoute>
             }
@@ -58,7 +56,7 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'WORKER']}>
                 <Dashboard />
               </ProtectedRoute>
             }
@@ -66,7 +64,7 @@ function App() {
           <Route
             path="/schedule"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'WORKER']}>
                 <Schedule />
               </ProtectedRoute>
             }
@@ -74,37 +72,13 @@ function App() {
           <Route
             path="/settlements"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
                 <Settlements />
               </ProtectedRoute>
             }
           />
 
           {/* Admin-only lookup table management */}
-          <Route
-            path="/priorities"
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
-                <Priorities />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/statuses"
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
-                <Statuses />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/constraint-types"
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
-                <ConstraintTypes />
-              </ProtectedRoute>
-            }
-          />
           <Route
             path="/departments"
             element={
@@ -113,12 +87,20 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/skills"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <Skills />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Task constraints — visible to all authenticated users, create/delete is ADMIN only (enforced in component) */}
+          {/* Task constraints - visible to all authenticated users, create/delete is ADMIN only (enforced in component) */}
           <Route
             path="/task-constraints"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
                 <TaskConstraints />
               </ProtectedRoute>
             }

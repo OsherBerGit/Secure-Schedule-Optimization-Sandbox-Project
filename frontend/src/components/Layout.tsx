@@ -1,4 +1,4 @@
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import './Layout.css'
 
@@ -13,8 +13,9 @@ interface NavItem {
 }
 
 const Layout = ({ children }: LayoutProps) => {
-    const { isAuthenticated, user } = useAuth()
+    const { isAuthenticated, user, logout } = useAuth()
     const location = useLocation()
+    const navigate = useNavigate()
 
     // Don't render the nav on auth/error pages
     const hideNav = ['/login', '/unauthorized'].includes(location.pathname)
@@ -23,21 +24,23 @@ const Layout = ({ children }: LayoutProps) => {
         return <>{children}</>
     }
 
-    const currentRole = user?.role ?? (user?.roles?.includes('ADMIN') ? 'ADMIN' 
-                                     : user?.roles?.includes('MANAGER') ? 'MANAGER' 
-                                     : 'WORKER');
+    const currentRole = user?.role ?? 'WORKER';
+
+    const handleLogout = async () => {
+        await logout()
+        navigate('/login')
+    }
 
     const navLinks: NavItem[] = [
         { to: '/dashboard', label: 'Dashboard', roles: ['ADMIN', 'MANAGER', 'WORKER'] },
         { to: '/users', label: 'Users', roles: ['ADMIN', 'MANAGER'] },
-        { to: '/departments', label: 'Departments', roles: ['ADMIN'] },
-        { to: '/tasks', label: 'Tasks', roles: ['ADMIN', 'MANAGER', 'WORKER'] },
-        { to: '/schedule', label: 'Schedule', roles: ['ADMIN', 'MANAGER', 'WORKER'] },
-        { to: '/settlements', label: 'Settlements', roles: ['ADMIN', 'MANAGER', 'WORKER'] },
+        { to: '/tasks', label: 'Tasks', roles: ['ADMIN', 'MANAGER'] },
+        { to: '/schedule', label: 'Schedule', roles: ['ADMIN', 'MANAGER'] },
         { to: '/vacations', label: 'Vacations', roles: ['ADMIN', 'MANAGER', 'WORKER'] },
-        { to: '/statuses', label: 'Task Statuses', roles: ['ADMIN'] },
-        { to: '/priorities', label: 'Priorities', roles: ['ADMIN'] },
-        { to: '/constraint-types', label: 'Constraint Types', roles: ['ADMIN'] },
+        { to: '/settlements', label: 'Settlements', roles: ['ADMIN', 'MANAGER'] },
+        { to: '/task-constraints', label: 'Task Constraints', roles: ['ADMIN', 'MANAGER'] },
+        { to: '/departments', label: 'Departments', roles: ['ADMIN'] },
+        { to: '/skills', label: 'Skills', roles: ['ADMIN'] },
     ];
 
     return (
@@ -54,6 +57,10 @@ const Layout = ({ children }: LayoutProps) => {
                             {user?.firstName ?? user?.email ?? 'User'}
                             <span className="nav-role-pill">{currentRole}</span>
                         </span>
+                        <button 
+                            className="btn-logout" 
+                            onClick={handleLogout}
+                        >Logout</button>
                     </div>
                 </div>
             </nav>
@@ -82,4 +89,3 @@ const Layout = ({ children }: LayoutProps) => {
 }
 
 export default Layout
-

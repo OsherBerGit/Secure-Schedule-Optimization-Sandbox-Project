@@ -4,13 +4,13 @@ import com.example.mainbackend.dto.user.CreateUserRequest;
 import com.example.mainbackend.dto.user.UserDto;
 import com.example.mainbackend.dto.user.WorkerAvailabilityDto;
 import com.example.mainbackend.entity.Department;
-import com.example.mainbackend.entity.Job;
+import com.example.mainbackend.entity.Skill;
 import com.example.mainbackend.entity.Role;
 import com.example.mainbackend.entity.User;
 import com.example.mainbackend.entity.WorkerAvailability;
 import com.example.mainbackend.mapper.UserMapper;
 import com.example.mainbackend.repository.DepartmentRepository;
-import com.example.mainbackend.repository.JobRepository;
+import com.example.mainbackend.repository.SkillRepository;
 import com.example.mainbackend.repository.RoleRepository;
 import com.example.mainbackend.repository.UserRepository;
 import com.example.mainbackend.security.SecurityHelper;
@@ -35,7 +35,7 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final DepartmentRepository departmentRepository;
     private final SecurityHelper securityHelper;
-    private final JobRepository jobRepository;
+    private final SkillRepository skillRepository;
 
     // Create
     @Transactional
@@ -49,7 +49,7 @@ public class UserService {
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         User user = userMapper.fromCreateRequest(request, encodedPassword);
 
-        // Assign role — default to WORKER if not specified
+        // Assign role â€” default to WORKER if not specified
         String roleName = (request.getRole() != null && !request.getRole().isBlank())
                 ? request.getRole().toUpperCase()
                 : "WORKER";
@@ -58,22 +58,21 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleName));
         user.setRole(role);
 
-        // Assign Jobs (Multi-profession support)
-        if (request.getJobs() != null && !request.getJobs().isEmpty()) {
-            Set<Job> jobs = new HashSet<>();
-            for (String title : request.getJobs())
-                jobRepository.findByName(title).ifPresent(jobs::add);
-            user.setJobs(jobs);
+        // Assign skills (Multi-profession support)
+        if (request.getSkillIds() != null && !request.getSkillIds().isEmpty()) {
+            Set<Skill> skills = new HashSet<>();
+            for (Long skillId : request.getSkillIds())
+                skillRepository.findById(skillId).ifPresent(skills::add);
+            user.setSkills(skills);
         }
 
         // Set department by name if provided
-        if (request.getDepartmentName() != null && !request.getDepartmentName().isBlank()) {
+        if (request.getDepartmentName() != null && !request.getDepartmentName().isBlank())
             departmentRepository.findByName(request.getDepartmentName())
                     .ifPresent(user::setDepartment);
-        }
 
         // Set availabilities if provided
-        if (request.getAvailabilities() != null) {
+        if (request.getAvailabilities() != null)
             for (WorkerAvailabilityDto dto : request.getAvailabilities()) {
                 WorkerAvailability av = WorkerAvailability.builder()
                         .dayOfWeek(dto.getDayOfWeek())
@@ -83,7 +82,6 @@ public class UserService {
                         .build();
                 user.getAvailabilities().add(av);
             }
-        }
 
         User savedUser = userRepository.save(user);
         return userMapper.toDto(savedUser);
@@ -127,6 +125,13 @@ public class UserService {
     // Read - Get all users by role (e.g. "WORKER" or "ADMIN")
     @Transactional(readOnly = true)
     public List<UserDto> getUsersByRole(String roleName) {
+        if (securityHelper.isManager()) {
+            Long departmentId = securityHelper.getCurrentUserDepartmentId();
+            return userRepository.findByRole_RoleName(roleName).stream()
+                    .filter(u -> u.getDepartment() != null && u.getDepartment().getId().equals(departmentId))
+                    .map(userMapper::toDto)
+                    .collect(Collectors.toList());
+        }
         return userRepository.findByRole_RoleName(roleName).stream() // Updated Method Name
                 .map(userMapper::toDto)
                 .collect(Collectors.toList());
@@ -153,8 +158,14 @@ public class UserService {
                                     throw new IllegalArgumentException("Email already exists: " + userDto.getEmail());
                                 });
 
-                    // User mapper to update basic entity fields
-                    userMapper.updateEntityFromDto(existingUser, userDto);
+                    // Update basic entity fields manually to avoid overwriting non-mutable or missing DTO fields
+                    if (userDto.getFirstName() != null) existingUser.setFirstName(userDto.getFirstName());
+                    if (userDto.getLastName() != null) existingUser.setLastName(userDto.getLastName());
+                    if (userDto.getEmail() != null) existingUser.setEmail(userDto.getEmail());
+                    if (userDto.getPhoneNumber() != null) existingUser.setPhoneNumber(userDto.getPhoneNumber());
+                    if (userDto.getSalary() != null) existingUser.setSalary(userDto.getSalary());
+                    if (userDto.getAddress() != null) existingUser.setAddress(userDto.getAddress());
+                    if (userDto.getMaxTasks() != null) existingUser.setMaxTasks(userDto.getMaxTasks());
 
                     // Update department by name
                     if (userDto.getDepartmentName() != null && !userDto.getDepartmentName().isBlank()) {
@@ -162,9 +173,8 @@ public class UserService {
                                 .orElseThrow(() -> new IllegalArgumentException(
                                         "Department not found: " + userDto.getDepartmentName()));
                         existingUser.setDepartment(dept);
-                    } else {
+                    } else
                         existingUser.setDepartment(null);
-                    }
 
                     // Update role if provided
                     if (userDto.getRole() != null && !userDto.getRole().isEmpty()) {
@@ -174,16 +184,24 @@ public class UserService {
                         existingUser.setRole(role);
                     }
 
-                    // Update jobs if provided
-                    if (userDto.getJobs() != null) {
-                        Set<Job> jobs = new HashSet<>();
-                        for (String title : userDto.getJobs())
-                            jobRepository.findByName(title).ifPresent(jobs::add);
-                        existingUser.setJobs(jobs);
+                    // Update skills if provided
+                    if (userDto.getSkillIds() != null) {
+                        Set<Skill> skills = new HashSet<>();
+                        for (Long skillId : userDto.getSkillIds())
+                            skillRepository.findById(skillId).ifPresent(skills::add);
+
+                        if (existingUser.getSkills() == null)
+                            existingUser.setSkills(new HashSet<>());
+
+                        existingUser.getSkills().clear();
+                        existingUser.getSkills().addAll(skills);
                     }
 
                     // Replace availabilities
                     if (userDto.getAvailabilities() != null) {
+                        if (existingUser.getAvailabilities() == null)
+                            existingUser.setAvailabilities(new java.util.ArrayList<>());
+
                         existingUser.getAvailabilities().clear();
                         for (WorkerAvailabilityDto dto : userDto.getAvailabilities()) {
                             WorkerAvailability av = WorkerAvailability.builder()

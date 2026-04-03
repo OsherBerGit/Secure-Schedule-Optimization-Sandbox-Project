@@ -9,13 +9,12 @@ import './Dashboard.css';
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = user?.role === 'ADMIN' || user?.roles?.includes('ADMIN');
-  // MANAGER is a future role — check via the roles array to stay type-safe
-  const isManager = user?.roles?.includes('MANAGER') ?? false;
+  const isAdmin = user?.role === 'ADMIN';
+  const isManager = user?.role === 'MANAGER';
 
   // Build a context-aware greeting subtitle
   const greetingSuffix = isManager && user?.departmentName
-    ? ` — ${user.departmentName} Department`
+    ? ` - ${user.departmentName} Department`
     : '';
 
   const [mySettlements, setMySettlements] = useState<Settlement[]>([]);
@@ -100,7 +99,7 @@ const Dashboard: React.FC = () => {
                             className="status-badge"
                             style={s.statusColorCode ? { background: s.statusColorCode + '22', color: s.statusColorCode, border: `1px solid ${s.statusColorCode}44` } : undefined}
                           >
-                            {s.statusName ?? '—'}
+                            {s.statusName ?? '-'}
                           </span>
                         </td>
                         <td>{new Date(s.settlementDate).toLocaleDateString()}</td>
@@ -123,56 +122,61 @@ const Dashboard: React.FC = () => {
         )}
 
         <div className="dashboard-grid">
-          {/* ── Hero card — Schedule is the primary action of the system ── */}
-          <div className="dashboard-card hero-card" onClick={() => navigate('/schedule')}>
-            <h3>📅 Schedule</h3>
-            <p>Run the scheduling algorithm, review Gantt charts, and approve assignments</p>
-          </div>
+          {/* ── Hero card - Schedule is the primary action of the system ── */}
+          {(isAdmin || isManager) && (
+            <div className="dashboard-card hero-card" onClick={() => navigate('/schedule')}>
+              <h3>📅 Schedule</h3>
+              <p>Run the scheduling algorithm, review Gantt charts, and approve assignments</p>
+            </div>
+          )}
 
-          {isAdmin && (
-            <div className="dashboard-card" onClick={() => navigate('/users')}>
+          {/* Add 'Users' ('People') card back to the main row of primary cards */}
+          {(isAdmin || isManager) && (
+            <div className="dashboard-card primary-card" onClick={() => navigate('/users')}>
               <h3>👥 Users</h3>
               <p>Manage system users</p>
             </div>
           )}
 
-          <div className="dashboard-card" onClick={() => navigate('/tasks')}>
-            <h3>📋 Tasks</h3>
-            <p>View and manage tasks</p>
-          </div>
-
-          {isAdmin && (
-            <>
-              <div className="dashboard-card" onClick={() => navigate('/priorities')}>
-                <h3>⭐ Task Priorities</h3>
-                <p>Manage task priorities</p>
-              </div>
-              <div className="dashboard-card" onClick={() => navigate('/statuses')}>
-                <h3>📊 Task Statuses</h3>
-                <p>Manage task &amp; assignment statuses</p>
-              </div>
-              <div className="dashboard-card" onClick={() => navigate('/constraint-types')}>
-                <h3>🔗 Constraint Types</h3>
-                <p>Manage constraint types</p>
-              </div>
-              <div className="dashboard-card" onClick={() => navigate('/departments')}>
-                <h3>🏢 Departments</h3>
-                <p>Manage company departments</p>
-              </div>
-            </>
+          {(isAdmin || isManager) && (
+            <div className="dashboard-card primary-card" onClick={() => navigate('/tasks')}>
+              <h3>📋 Tasks</h3>
+              <p>View and manage tasks</p>
+            </div>
           )}
-          <div className="dashboard-card" onClick={() => navigate('/task-constraints')}>
-            <h3>⚙️ Task Constraints</h3>
-            <p>View task constraints</p>
-          </div>
-          <div className="dashboard-card" onClick={() => navigate('/vacations')}>
+
+          <div className="dashboard-card secondary-card" onClick={() => navigate('/vacations')}>
             <h3>🏖️ Vacations</h3>
             <p>Manage vacation requests</p>
           </div>
-          <div className="dashboard-card" onClick={() => navigate('/settlements')}>
-            <h3>💰 Settlements</h3>
-            <p>View work settlements</p>
-          </div>
+
+          {(isAdmin || isManager) && (
+            <div className="dashboard-card secondary-card" onClick={() => navigate('/settlements')}>
+              <h3>💰 Settlements</h3>
+              <p>View work settlements</p>
+            </div>
+          )}
+
+          {(isAdmin || isManager) && (
+            <div className="dashboard-card secondary-card" onClick={() => navigate('/task-constraints')}>
+              <h3>⚙️ Task Constraints</h3>
+              <p>View task constraints</p>
+            </div>
+          )}
+
+          {isAdmin && (
+            <div className="dashboard-card secondary-card" onClick={() => navigate('/departments')}>
+              <h3>🏢 Departments</h3>
+              <p>Manage organizational departments</p>
+            </div>
+          )}
+
+          {isAdmin && (
+            <div className="dashboard-card secondary-card" onClick={() => navigate('/skills')}>
+              <h3>💡 Skills</h3>
+              <p>Manage workforce skills and qualifications</p>
+            </div>
+          )}
         </div>
       </main>
     </div>

@@ -4,12 +4,16 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 import java.util.List;
 import java.util.Set;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CreateUserRequest {
 
     @NotBlank(message = "National ID is required")
@@ -44,20 +48,20 @@ public class CreateUserRequest {
     @Valid
     private List<WorkerAvailabilityDto> availabilities;
 
-    @Positive(message = "Max tasks must be positive")
-    private Integer maxTasks;
-
     /**
      * Role to assign to the new user: ADMIN, MANAGER or WORKER.
      * Defaults to WORKER if not provided.
      */
     private String role;
 
-    /**
-     * Optional: List of Job names to assign to the user.
-     */
-    private Set<String> jobs;
+    private String departmentName; // Optional, useful for MANAGER and WORKER
 
-    /** Optional: name of the department to assign this user to on creation. */
-    private String departmentName;
+    @NotNull(message = "Max tasks is required")
+    @Min(value = 1, message = "Max tasks must be at least 1")
+    private Integer maxTasks;
+
+    /**
+     * Optional: List of Skill IDs to assign to the user.
+     */
+    private Set<Long> skillIds;
 }

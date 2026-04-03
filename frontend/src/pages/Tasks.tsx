@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { Task, CreateTaskRequest, UpdateTaskRequest, Status, Priority, Department } from '../types'
-import { taskApi, statusApi, priorityApi, departmentApi } from '../api'
+import type { Task, CreateTaskRequest, UpdateTaskRequest, Department, Status, Priority, Skill } from '../types'
+import { taskApi, statusApi, priorityApi, departmentApi, skillApi } from '../api'
 import { useAuth } from '../context/useAuth'
 import TaskModal from '../components/TaskModal'
 import './Tasks.css'
@@ -19,23 +19,26 @@ function statusClass(name: string | null): string {
 
 const Tasks = () => {
     const { user: currentUser } = useAuth()
-    const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.roles?.includes('ADMIN')
-    const isManager = currentUser?.role === 'MANAGER' || currentUser?.roles?.includes('MANAGER')
+    const isAdmin = currentUser?.role === 'ADMIN'
+    const isManager = currentUser?.role === 'MANAGER'
     const canManage = isAdmin || isManager
 
     const [tasks, setTasks] = useState<Task[]>([])
+    const [departments, setDepartments] = useState<Department[]>([])
     const [statuses, setStatuses] = useState<Status[]>([])
     const [priorities, setPriorities] = useState<Priority[]>([])
-    const [departments, setDepartments] = useState<Department[]>([])
+    const [skills, setSkills] = useState<Skill[]>([])
+
+    // Filters
+    const [filterDepartment, setFilterDepartment] = useState<string>('')
+    const [filterStatus, setFilterStatus] = useState<string>('')
+    const [filterPriority, setFilterPriority] = useState<string>('')
+    const [filterSkill, setFilterSkill] = useState<string>('')
+
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [showModal, setShowModal] = useState(false)
     const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-
-    // Filter states
-    const [filterDepartment, setFilterDepartment] = useState<string>('')
-    const [filterStatus, setFilterStatus] = useState<string>('')
-    const [filterPriority, setFilterPriority] = useState<string>('')
 
     const fetchTasks = useCallback(async () => {
         setIsLoading(true)
@@ -51,9 +54,18 @@ const Tasks = () => {
 
     useEffect(() => {
         void fetchTasks()
-        statusApi.getAll().then(res => setStatuses(res.data)).catch(() => {})
+        statusApi.getAll().then(res => setStatuses(res.data)).catch(() => {
+            // fallback statusses
+            setStatuses([
+                { id: 1, name: 'OPEN' },
+                { id: 2, name: 'LOCKED' },
+                { id: 3, name: 'SCHEDULED' },
+                { id: 4, name: 'CLOSED' }
+            ] as Status[])
+        })
         priorityApi.getAll().then(res => setPriorities(res.data)).catch(() => {})
         departmentApi.getAll().then(res => setDepartments(res.data)).catch(() => {})
+        skillApi.getAll().then(res => setSkills(res.data)).catch(() => {})
     }, [fetchTasks])
 
     const filteredTasks = useMemo(() => {
@@ -64,9 +76,11 @@ const Tasks = () => {
             if (filterStatus && (t.taskStatusName || '') !== filterStatus) return false
             // Priority Filter
             if (filterPriority && (t.priorityName || '') !== filterPriority) return false
+            // Skill Filter
+            if (filterSkill && (t.requiredSkill?.name || '') !== filterSkill) return false
             return true
         })
-    }, [tasks, filterDepartment, filterStatus, filterPriority])
+    }, [tasks, filterDepartment, filterStatus, filterPriority, filterSkill])
 
     function handleEdit(task: Task) {
         setSelectedTask(task)
@@ -81,13 +95,11 @@ const Tasks = () => {
 
     function handleSubmit(formData: CreateTaskRequest | UpdateTaskRequest) {
         if (selectedTask) {
-            taskApi.update(selectedTask.id, formData as UpdateTaskRequest)
+            return taskApi.update(selectedTask.id, formData as UpdateTaskRequest)
                 .then(() => { setShowModal(false); setSelectedTask(null); fetchTasks() })
-                .catch(err => setError(err.message))
         } else {
-            taskApi.create(formData as CreateTaskRequest)
+            return taskApi.create(formData as CreateTaskRequest)
                 .then(() => { setShowModal(false); fetchTasks() })
-                .catch(err => setError(err.message))
         }
     }
 
@@ -105,7 +117,7 @@ const Tasks = () => {
             {error && <div className="error-message">{error}</div>}
 
             <div className="filter-row">
-                {isAdmin && (
+                {canManage && (
                     <select
                         className="modern-select"
                         value={filterDepartment}
@@ -139,10 +151,23 @@ const Tasks = () => {
                         <option key={p.id} value={p.name}>{p.name}</option>
                     ))}
                 </select>
+
+                <select
+                    className="modern-select"
+                    value={filterSkill}
+                    onChange={e => setFilterSkill(e.target.value)}
+                >
+                    <option value="">All Skills</option>
+                    {skills.map(s => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
+                </select>
             </div>
 
             {isLoading ? (
                 <div className="loading">Loading...</div>
+            ) : filteredTasks.length === 0 ? (
+                <div className="empty-state" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No records found matching the selected filters.</div>
             ) : (
                 <table className="tasks-table">
                     <thead>
@@ -151,6 +176,7 @@ const Tasks = () => {
                             <th>Status</th>
                             <th>Priority</th>
                             <th>Department</th>
+                            <th>Required Skill</th>
                             <th>Deadline</th>
                             <th>Duration</th>
                             <th>Start Time</th>
@@ -158,48 +184,47 @@ const Tasks = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredTasks.length === 0 ? (
-                            <tr>
-                                <td colSpan={canManage ? 8 : 7} className="no-data">No tasks found</td>
+                        {filteredTasks.map(task => (
+                            <tr key={task.id}>
+                                <td className="task-title">{task.title}</td>
+                                <td>
+                                    <span className={`status-badge ${statusClass(task.taskStatusName)}`}
+                                          style={
+                                              // Fall back to the API-supplied colour code if present
+                                              task.taskStatusColorCode
+                                                  ? { background: task.taskStatusColorCode + '22', color: task.taskStatusColorCode, border: `1px solid ${task.taskStatusColorCode}55` }
+                                                  : undefined
+                                          }
+                                    >
+                                        {task.taskStatusName ?? '-'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span className={`priority-badge priority-${task.priorityName?.toLowerCase()}`}>
+                                        {task.priorityName ?? '-'}
+                                    </span>
+                                </td>
+                                <td>
+                                    {task.departmentName
+                                        ? <span className="dept-badge">{task.departmentName}</span>
+                                        : <span className="dept-general">General / All</span>}
+                                </td>
+                                <td>
+                                    {task.requiredSkill
+                                        ? <span className="role-badge role-worker" style={{ fontSize: '0.75rem' }}>{task.requiredSkill.name}</span>
+                                        : <span style={{ color: '#888' }}>-</span>}
+                                </td>
+                                <td>{task.deadline ? new Date(task.deadline).toLocaleDateString() : '-'}</td>
+                                <td>{task.durationHours != null ? `${task.durationHours}h` : '-'}</td>
+                                <td>{task.startTime ? new Date(task.startTime).toLocaleString() : <span className="unassigned">Not scheduled</span>}</td>
+                                {canManage && (
+                                    <td style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button className="btn-edit" onClick={() => handleEdit(task)}>Edit</button>
+                                        <button className="btn-delete" onClick={() => handleDelete(task.id)}>Delete</button>
+                                    </td>
+                                )}
                             </tr>
-                        ) : (
-                            filteredTasks.map(task => (
-                                <tr key={task.id}>
-                                    <td className="task-title">{task.title}</td>
-                                    <td>
-                                        <span className={`status-badge ${statusClass(task.taskStatusName)}`}
-                                              style={
-                                                  // Fall back to the API-supplied colour code if present
-                                                  task.taskStatusColorCode
-                                                      ? { background: task.taskStatusColorCode + '22', color: task.taskStatusColorCode, border: `1px solid ${task.taskStatusColorCode}55` }
-                                                      : undefined
-                                              }
-                                        >
-                                            {task.taskStatusName ?? '—'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className={`priority-badge priority-${task.priorityName?.toLowerCase()}`}>
-                                            {task.priorityName ?? '—'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {task.departmentName
-                                            ? <span className="dept-badge">{task.departmentName}</span>
-                                            : <span className="dept-general">General / All</span>}
-                                    </td>
-                                    <td>{task.deadline ? new Date(task.deadline).toLocaleDateString() : '—'}</td>
-                                    <td>{task.durationHours != null ? `${task.durationHours}h` : '—'}</td>
-                                    <td>{task.startTime ? new Date(task.startTime).toLocaleString() : <span className="unassigned">Not scheduled</span>}</td>
-                                    {canManage && (
-                                        <td>
-                                            <button className="btn-edit" onClick={() => handleEdit(task)}>Edit</button>
-                                            <button className="btn-delete" onClick={() => handleDelete(task.id)}>Delete</button>
-                                        </td>
-                                    )}
-                                </tr>
-                            ))
-                        )}
+                        ))}
                     </tbody>
                 </table>
             )}
@@ -218,4 +243,3 @@ const Tasks = () => {
 }
 
 export default Tasks
-

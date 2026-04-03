@@ -8,7 +8,7 @@ import type {
   CreateUserRequest,
   UpdateUserRequest,
   Department,
-  Job,
+  Skill,
   Task,
   CreateTaskRequest,
   UpdateTaskRequest,
@@ -58,7 +58,7 @@ export const userApi = {
   create: (data: CreateUserRequest) =>
     axiosInstance.post<User>('/users', data),
 
-  // Backend PUT /users/{id} accepts UserDto — forward the full shape
+  // Backend PUT /users/{id} accepts UserDto - forward the full shape
   update: (id: number, data: UpdateUserRequest) =>
     axiosInstance.put<User>(`/users/${id}`, data),
 
@@ -67,6 +67,9 @@ export const userApi = {
 
   getByRole: (role: string) =>
     axiosInstance.get<User[]>(`/users/role/${role}`),
+
+  getByDepartment: (departmentId: number) =>
+    axiosInstance.get<User[]>(`/users/department/${departmentId}`),
 
   getByEmail: (email: string) =>
     axiosInstance.get<User>(`/users/email/${email}`),
@@ -90,9 +93,15 @@ export const departmentApi = {
     axiosInstance.delete(`/departments/${id}`),
 };
 
-// Job API
-export const jobApi = {
-  getAll: () => axiosInstance.get<Job[]>('/jobs'),
+// Skill API
+export const skillApi = {
+  getAll: () => axiosInstance.get<Skill[]>('/skill'),
+  create: (name: string, description?: string) =>
+    axiosInstance.post<Skill>('/skill', { name, description }),
+  update: (id: number, name: string, description?: string) =>
+    axiosInstance.put<Skill>(`/skill/${id}`, { name, description }),
+  delete: (id: number) =>
+    axiosInstance.delete(`/skill/${id}`),
 };
 
 // Task API
@@ -114,24 +123,24 @@ export const taskApi = {
 
   getByWorker: (workerId: number) =>
     axiosInstance.get<Task[]>(`/tasks/worker/${workerId}`),
-  // getByStatus removed — status is now on Settlement
+  // getByStatus removed - status is now on Settlement
 };
 
 // Status API
 export const statusApi = {
   getAll: () =>
-    axiosInstance.get<Status[]>('/statuses'),
+    axiosInstance.get<Status[]>('/task-statuses'),
   getById: (id: number) =>
-    axiosInstance.get<Status>(`/statuses/${id}`),
+    axiosInstance.get<Status>(`/task-statuses/${id}`),
   create: (data: { name: string }) =>
-    axiosInstance.post<Status>('/statuses', data),
+    axiosInstance.post<Status>('/task-statuses', data),
   update: (id: number, data: { name: string }) =>
-    axiosInstance.put<Status>(`/statuses/${id}`, data),
+    axiosInstance.put<Status>(`/task-statuses/${id}`, data),
   delete: (id: number) =>
-    axiosInstance.delete(`/statuses/${id}`),
+    axiosInstance.delete(`/task-statuses/${id}`),
 };
 
-// Settlement Status API — read-only, values are system-seeded
+// Settlement Status API - read-only, values are system-seeded
 export const settlementStatusApi = {
   getAll: () =>
     axiosInstance.get<SettlementStatus[]>('/settlement-statuses'),
@@ -247,11 +256,11 @@ export const vacationApi = {
     }),
 };
 
-// Schedule API — calls main-backend which forwards to the algorithm service
+// Schedule API - calls main-backend which forwards to the algorithm service
 export const scheduleApi = {
   /** PHASE 1: Generates a draft schedule preview. Nothing is saved to the DB.
    *  @param strategy      "GREEDY" (default) | "ROUND_ROBIN" | "MEMETIC" | "CONSTRAINT_PROGRAMMING"
-   *  @param departmentId  Optional ADMIN-only scope — omit for global scheduling
+   *  @param departmentId  Optional ADMIN-only scope - omit for global scheduling
    */
   run: (strategy: ScheduleStrategy = 'GREEDY', departmentId?: number | null) => {
     const params = new URLSearchParams({ strategy });
@@ -273,7 +282,7 @@ export const scheduleApi = {
   }
 };
 
-// Scheduling Configuration API — CRUD for algorithm parameters
+// Scheduling Configuration API - CRUD for algorithm parameters
 export const schedulingConfigApi = {
   getActive: () => axiosInstance.get<import('../types').SchedulingConfiguration>('/scheduling-configs/active'),
   

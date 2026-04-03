@@ -10,6 +10,7 @@ const Departments = () => {
     const [newName, setNewName] = useState('')
     const [editId, setEditId] = useState<number | null>(null)
     const [editName, setEditName] = useState('')
+    const [isModalOpen, setIsModalOpen] = useState(false)
 
     const fetchDepartments = useCallback(async () => {
         setIsLoading(true)
@@ -25,15 +26,26 @@ const Departments = () => {
 
     useEffect(() => { void fetchDepartments() }, [fetchDepartments])
 
-    async function handleCreate(e: React.FormEvent) {
-        e.preventDefault()
-        if (!newName.trim()) return
+    async function handleAddDepartment(e: React.FormEvent) {
+        e.preventDefault();
+        console.log("1. Button Clicked. Current input value:", newName);
+
+        if (!newName.trim()) {
+            setError("Input is empty!");
+            return;
+        }
+
         try {
-            await departmentApi.create(newName.trim())
-            setNewName('')
-            await fetchDepartments()
-        } catch {
-            setError('Failed to create department')
+            console.log("2. Sending API request...");
+            const response = await departmentApi.create(newName.trim());
+            console.log("3. API Success:", response);
+            setNewName('');
+            setIsModalOpen(false);
+            setError(null);
+            await fetchDepartments();
+        } catch (err: any) {
+            console.error("4. API Error:", err);
+            setError("Failed to add: " + (err.response?.data?.message || err.message));
         }
     }
 
@@ -63,20 +75,10 @@ const Departments = () => {
         <div className="lookup-container">
             <div className="lookup-header">
                 <h1>🏢 Departments</h1>
+                <button className="btn-add" onClick={() => setIsModalOpen(true)}>+ Add Department</button>
             </div>
 
             {error && <div className="error-message">{error}</div>}
-
-            <form className="lookup-add-form" onSubmit={handleCreate}>
-                <input
-                    type="text"
-                    placeholder="New department name (e.g. Engineering)"
-                    value={newName}
-                    onChange={e => setNewName(e.target.value)}
-                    className="lookup-input"
-                />
-                <button type="submit" className="btn-add">+ Add</button>
-            </form>
 
             {isLoading ? (
                 <div className="loading">Loading...</div>
@@ -124,9 +126,36 @@ const Departments = () => {
                     </tbody>
                 </table>
             )}
+
+            {isModalOpen && (
+                <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Add New Department</h2>
+                            <button className="btn-close" onClick={() => setIsModalOpen(false)}>×</button>
+                        </div>
+                        {error && <div className="error-message">{error}</div>}
+                        <form className="modal-form" onSubmit={handleAddDepartment}>
+                            <div className="form-group">
+                                <label>New department name *</label>
+                                <input
+                                    type="text"
+                                    placeholder="Enter the department name..."
+                                    value={newName}
+                                    onChange={e => setNewName(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                                <button type="submit" className="btn-save">Save</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
 
 export default Departments
-

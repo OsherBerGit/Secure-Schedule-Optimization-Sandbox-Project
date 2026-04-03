@@ -17,6 +17,6 @@ public class AlgoUserRequest {
     private List<WorkerAvailabilityDto> availabilities;
     private Integer maxTasks;
     /** Functional skills for scheduling. Replaces roles. */
-    private Set<Long> jobIds;
+    private Set<Long> skillIds;
     private List<AlgoVacationRequest> vacations;
 }

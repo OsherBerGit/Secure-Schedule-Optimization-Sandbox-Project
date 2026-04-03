@@ -24,14 +24,15 @@ public class TaskService {
     private final TaskPriorityRepository taskPriorityRepository;
     private final TaskStatusRepository taskStatusRepository;
     private final SettlementRepository settlementRepository;
-    private final JobRepository jobRepository; // Added dependency
+    private final TaskConstraintRepository taskConstraintRepository;
+    private final SkillRepository skillRepository; // Added dependency
     private final TaskMapper taskMapper;
     private final SecurityHelper securityHelper;
     private final DepartmentRepository departmentRepository;
 
     @Transactional
     public TaskResponseDto createTask(TaskCreateRequest request) {
-        Task task = buildTaskFromRequest(request, null);
+        Task task = buildTaskFromRequest(request);
 
         // Department Access Control
         if (securityHelper.isManager()) {
@@ -74,14 +75,78 @@ public class TaskService {
     @Transactional
     public Optional<TaskResponseDto> updateTask(Long id, TaskCreateRequest request) {
         return taskRepository.findById(id).map(existing -> {
-            Task updated = buildTaskFromRequest(request, existing);
-            return taskMapper.toDto(taskRepository.save(updated));
+
+            boolean requiresStatusReset = false;
+            // 1. Check if requiredSkill is changed
+            if (request.getRequiredSkill() != null
+                    && existing.getRequiredSkill() != null
+                    && !request.getRequiredSkill().equals(existing.getRequiredSkill().getId())) {
+                List<Settlement> settlements = settlementRepository.findByTaskId(id);
+                if (!settlements.isEmpty()) {
+                    settlementRepository.deleteAll(settlements);
+                    requiresStatusReset = true;
+                }
+            }
+
+            // 2. Resolve the new status
+            TaskStatus newStatus = existing.getStatus();
+            if (requiresStatusReset) {
+                newStatus = taskStatusRepository.findByName(TaskStatusLevel.OPEN.name())
+                        .orElseThrow(() -> new IllegalStateException("OPEN status not seeded"));
+            } else if (request.getStatusId() != null && !request.getStatusId().equals(existing.getStatus().getId())) {
+                newStatus = taskStatusRepository.findById(request.getStatusId())
+                        .orElseThrow(() -> new IllegalArgumentException("TaskStatus not found: " + request.getStatusId()));
+
+                // If moving to LOCKED, drop settlements
+                if (newStatus.getName().equals(TaskStatusLevel.LOCKED.name())) {
+                    List<Settlement> settlements = settlementRepository.findByTaskId(id);
+                    if (!settlements.isEmpty()) {
+                        settlementRepository.deleteAll(settlements);
+                    }
+                }
+            }
+
+            // Update existing entity manually
+            existing.setTitle(request.getTitle());
+            existing.setDescription(request.getDescription());
+            existing.setDeadline(request.getDeadline());
+            existing.setDurationHours(request.getDurationHours());
+
+            TaskPriority priority = taskPriorityRepository.findById(request.getPriorityId())
+                    .orElseThrow(() -> new RuntimeException("Priority not found: " + request.getPriorityId()));
+            existing.setPriority(priority);
+            existing.setStatus(newStatus);
+
+            if (request.getRequiredSkill() != null) {
+                Skill skill = skillRepository.findById(request.getRequiredSkill())
+                        .orElseThrow(() -> new IllegalArgumentException("skill not found: " + request.getRequiredSkill()));
+                existing.setRequiredSkill(skill);
+            } else {
+                existing.setRequiredSkill(null);
+            }
+
+            return taskMapper.toDto(taskRepository.save(existing));
         });
     }
 
     @Transactional
     public boolean deleteTask(Long id) {
         if (!taskRepository.existsById(id)) return false;
+
+        // Delete settlements first to prevent FK constraint violation
+        List<Settlement> settlements = settlementRepository.findByTaskId(id);
+        if (!settlements.isEmpty())
+            settlementRepository.deleteAll(settlements);
+
+        // Delete constraints where this task is involved
+        List<TaskConstraint> outConstraints = taskConstraintRepository.findByPredecessorTaskId(id);
+        if (!outConstraints.isEmpty())
+            taskConstraintRepository.deleteAll(outConstraints);
+
+        List<TaskConstraint> inConstraints = taskConstraintRepository.findBySuccessorTaskId(id);
+        if (!inConstraints.isEmpty())
+            taskConstraintRepository.deleteAll(inConstraints);
+
         taskRepository.deleteById(id);
         return true;
     }
@@ -100,7 +165,7 @@ public class TaskService {
 
     /**
      * Returns only OPEN tasks for the scheduling algorithm.
-     * No category check needed — task_statuses table holds only task lifecycle statuses.
+     * No category check needed â€” task_statuses table holds only task lifecycle statuses.
      */
     @Transactional(readOnly = true)
     public List<Task> getOpenTasksForScheduling() { return taskRepository.findByStatusName(TaskStatusLevel.OPEN.name()); }
@@ -117,12 +182,16 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    private Task buildTaskFromRequest(TaskCreateRequest request, Task existing) {
+    private Task buildTaskFromRequest(TaskCreateRequest request) {
         TaskPriority priority = taskPriorityRepository.findById(request.getPriorityId())
                 .orElseThrow(() -> new RuntimeException("Priority not found: " + request.getPriorityId()));
 
         // Default status for new tasks is OPEN
-        TaskStatus openStatus = taskStatusRepository.findByName(TaskStatusLevel.OPEN.name())
+        TaskStatus resolvedStatus;
+        if (request.getStatusId() != null)
+            resolvedStatus = taskStatusRepository.findById(request.getStatusId()).orElseThrow();
+        else
+            resolvedStatus = taskStatusRepository.findByName(TaskStatusLevel.OPEN.name())
                 .orElseThrow(() -> new IllegalStateException("OPEN status not seeded in task_statuses"));
 
         Task.TaskBuilder builder = Task.builder()
@@ -131,27 +200,16 @@ public class TaskService {
                 .deadline(request.getDeadline())
                 .durationHours(request.getDurationHours())
                 .priority(priority)
-                .status(existing != null ? existing.getStatus() : openStatus);
+                .status(resolvedStatus);
 
-        // Handle required Job
-        if (request.getRequiredJob() != null) {
-            Job job = jobRepository.findById(request.getRequiredJob())
-                    .orElseThrow(() -> new IllegalArgumentException("Job not found: " + request.getRequiredJob()));
-            builder.requiredJob(job);
-        } else if (existing != null) {
-            // Keep existing job if not updating it?
-            // Usually update semantics differ (PATCH vs PUT), but here we assume full update or we check null.
-            // Request uses `requiredJobId`, DTO validation ensures it is NotNull for create.
-            // For update, if null, we might keep existing. But TaskCreateRequest has @NotNull on it if checked.
-            builder.requiredJob(existing.getRequiredJob());
-        }
+        // Handle required skill
+        if (request.getRequiredSkill() != null) {
+            Skill skill = skillRepository.findById(request.getRequiredSkill())
+                    .orElseThrow(() -> new IllegalArgumentException("skill not found: " + request.getRequiredSkill()));
+            builder.requiredSkill(skill);
+        } else
+            builder.requiredSkill(null);
 
-        if (existing != null) {
-            builder.id(existing.getId())
-                    .startTime(existing.getStartTime())
-                    .outgoingConstraints(existing.getOutgoingConstraints())
-                    .incomingConstraints(existing.getIncomingConstraints());
-        }
 
         return builder.build();
     }

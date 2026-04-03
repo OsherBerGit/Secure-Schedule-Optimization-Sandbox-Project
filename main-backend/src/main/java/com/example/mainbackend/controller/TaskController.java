@@ -37,7 +37,7 @@ public class TaskController {
      * @return ResponseEntity with list of all tasks and HTTP 200 status
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<TaskResponseDto>> getAllTasks() {
         return ResponseEntity.ok(taskService.getAllTasks());
     }

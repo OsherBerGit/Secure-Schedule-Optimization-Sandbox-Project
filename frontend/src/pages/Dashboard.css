@@ -77,7 +77,7 @@
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
 }
 
@@ -95,23 +95,19 @@
   box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
 }
 
-.dashboard-card h3 {
-  margin: 0 0 0.5rem 0;
-  color: #667eea;
-  font-size: 1.5rem;
-}
-
-.dashboard-card p {
-  margin: 0;
+.dashboard-card:hover p {
   color: #666;
-  font-size: 0.95rem;
 }
 
-/* ── Hero card — Schedule CTA ───────────────────────────────────────────── */
-.hero-card {
+.primary-card {
+  grid-column: span 2;
+}
+
+.dashboard-card.hero-card {
   grid-column: 1 / -1;
-  background: linear-gradient(135deg, #eef2ff 0%, #ede9fe 60%, #ddd6fe 100%);
-  border: 1px solid #c7d2fe;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -133,22 +129,28 @@
 
 .hero-card h3 {
   font-size: 2rem;
-  color: #4338ca;
+  color: white;
   margin-bottom: 0.6rem;
 }
 
 .hero-card p {
   font-size: 1.05rem;
-  color: #5b21b6;
+  color: #bfdbfe;
   max-width: 540px;
 }
 
-.hero-card:hover {
+.dashboard-card.hero-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 28px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 28px rgba(118, 75, 162, 0.4);
+  color: white !important;
 }
 
-/* ── My Assignments section (worker view) ───────────────────────────── */
+.dashboard-card.hero-card:hover h3,
+.dashboard-card.hero-card:hover p {
+  color: white !important;
+}
+
+/* ── My Assignments section (worker view) ────────────────────────────────── */
 .my-assignments-section {
   background: white;
   border-radius: 10px;
@@ -246,4 +248,3 @@
   border: 1px solid #f5c6cb;
   font-size: 0.9rem;
 }
-

@@ -9,21 +9,21 @@ import java.util.stream.Collectors;
 /**
  * Represents a Task as seen by the scheduling algorithm.
  *
- * <p>Zero-Trust compliant: no titles, descriptions, or status strings —
+ * <p>Zero-Trust compliant: no titles, descriptions, or status strings â€”
  * only scheduling-relevant numeric and temporal data.
  * Pure Java: no Spring, Jackson, or Lombok annotations.</p>
  *
- * <p>Immutable by design — fields are set once via the constructor and exposed
+ * <p>Immutable by design â€” fields are set once via the constructor and exposed
  * through read-only getters to prevent accidental mutation inside the engine.</p>
  *
  * <p>Field alignment with {@code TaskDto}:</p>
  * <ul>
- *   <li>{@code id}                — direct copy from {@code TaskDto.id}</li>
- *   <li>{@code durationHours}     — direct copy from {@code TaskDto.durationHours}</li>
- *   <li>{@code deadline}          — direct copy from {@code TaskDto.deadline}</li>
- *   <li>{@code priorityLevel}     — direct copy from {@code TaskDto.priorityLevel} (defaults to 0)</li>
- *   <li>{@code requiredJobs}      — {@code TaskDto.requiredJobId} converted to {@code Set<String>}</li>
- *   <li>{@code predecessorTaskIds}— direct copy from {@code TaskDto.predecessorTaskIds}</li>
+ *   <li>{@code id}                â€” direct copy from {@code TaskDto.id}</li>
+ *   <li>{@code durationHours}     â€” direct copy from {@code TaskDto.durationHours}</li>
+ *   <li>{@code deadline}          â€” direct copy from {@code TaskDto.deadline}</li>
+ *   <li>{@code priorityLevel}     â€” direct copy from {@code TaskDto.priorityLevel} (defaults to 0)</li>
+ *   <li>{@code requiredSkills}      â€” {@code TaskDto.requiredSkillId} converted to {@code Set<String>}</li>
+ *   <li>{@code predecessorTaskIds}â€” direct copy from {@code TaskDto.predecessorTaskIds}</li>
  * </ul>
  */
 public final class AlgoTask {
@@ -35,9 +35,9 @@ public final class AlgoTask {
 
     /**
      * Opaque role identifiers required to perform this task.
-     * Stored as Strings of job IDs (e.g. "42") for compatibility with AlgoUser.jobs.
+     * Stored as Strings of skill IDs (e.g. "42") for compatibility with AlgoUser.skills.
      */
-    private final Set<String> requiredJobs;
+    private final Set<String> requiredSkills;
 
     /**
      * * Detailed incoming constraints (predecessor ID + constraint type like FS, SS).
@@ -48,14 +48,14 @@ public final class AlgoTask {
                     Integer durationHours,
                     LocalDateTime deadline,
                     Integer priorityLevel,
-                    Set<String> requiredJobs,
+                    Set<String> requiredSkills,
                     List<AlgoConstraint> constraints) {
         this.id                 = id;
         this.durationHours      = durationHours;
         this.deadline           = deadline;
         this.priorityLevel      = priorityLevel != null ? priorityLevel : 0;
-        this.requiredJobs = requiredJobs != null
-                ? Collections.unmodifiableSet(requiredJobs)
+        this.requiredSkills = requiredSkills != null
+                ? Collections.unmodifiableSet(requiredSkills)
                 : Collections.emptySet();
         this.constraints = constraints != null
                 ? Collections.unmodifiableList(constraints)
@@ -66,7 +66,7 @@ public final class AlgoTask {
     public Integer getDurationHours()        { return durationHours; }
     public LocalDateTime getDeadline()       { return deadline; }
     public Integer getPriorityLevel()        { return priorityLevel; }
-    public Set<String> getRequiredJobs()    { return requiredJobs; }
+    public Set<String> getRequiredSkills()    { return requiredSkills; }
     public List<AlgoConstraint> getConstraints(){ return constraints; }
 
     /**
@@ -92,7 +92,7 @@ public final class AlgoTask {
                 + ", durationHours=" + durationHours
                 + ", deadline=" + deadline
                 + ", priorityLevel=" + priorityLevel
-                + ", requiredJobs=" + requiredJobs
+                + ", requiredSkills=" + requiredSkills
                 + ", predecessorTaskIds=" + constraints + '}';
     }
 }

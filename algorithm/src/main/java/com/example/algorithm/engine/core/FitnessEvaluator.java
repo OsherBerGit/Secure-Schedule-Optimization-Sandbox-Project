@@ -156,6 +156,7 @@ public class FitnessEvaluator {
             return Optional.of(earliestPossible);
 
         List<AlgoWorkerAvailability> sortedAvailabilities = worker.getAvailabilities().stream()
+                .filter(a -> a.dayOfWeek() != null && a.startTime() != null && a.endTime() != null)
                 .sorted(Comparator.comparing(AlgoWorkerAvailability::dayOfWeek).thenComparing(AlgoWorkerAvailability::startTime))
                 .toList();
 

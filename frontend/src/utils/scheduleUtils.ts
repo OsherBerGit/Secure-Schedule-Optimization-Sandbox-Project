@@ -3,7 +3,7 @@
  * the detailed message (worker IDs, days, times) from the backend.
  *
  * Examples:
- *   "Memetic: constraint violation during decode — Worker 3 unavailable on MONDAY"
+ *   "Memetic: constraint violation during decode - Worker 3 unavailable on MONDAY"
  *     → "Worker 3 unavailable on MONDAY"
  *   "Greedy: no eligible worker found for task"
  *     → "No eligible worker found for task"
@@ -14,7 +14,7 @@ export function formatReason(rawReason: string): string {
     if (!rawReason) return 'Unknown reason'
 
     // Strip known algorithm prefixes (case-insensitive), including the separator that follows
-    const prefixPattern = /^(memetic|greedy|round.?robin)\s*:\s*(constraint violation during decode\s*[—–-]+\s*|[^—–]*(decode|scheduling)\s*[—–-]+\s*)?/i
+    const prefixPattern = /^(memetic|greedy|round.?robin)\s*:\s*(constraint violation during decode\s*[-–-]+\s*|[^-–]*(decode|scheduling)\s*[-–-]+\s*)?/i
     const stripped = rawReason.replace(prefixPattern, '').trim()
 
     const result = stripped.length > 0 ? stripped : rawReason.trim()

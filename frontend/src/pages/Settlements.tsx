@@ -9,7 +9,7 @@ import './Settlements.css'
 // Jackson may serialize LocalDateTime as an array [2025,3,4,10,30,0] or ISO string.
 // This helper handles both formats safely.
 function formatDate(value: string | number[] | null | undefined): string {
-    if (!value) return '—'
+    if (!value) return '-'
     if (Array.isArray(value)) {
         const [y, mo, d, h = 0, m = 0] = value as number[]
         return new Date(y, mo - 1, d, h, m).toLocaleString()
@@ -20,7 +20,7 @@ function formatDate(value: string | number[] | null | undefined): string {
 
 const Settlements = () => {
     const { user: currentUser } = useAuth()
-    const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.roles?.includes('ADMIN')
+    const isAdmin = currentUser?.role === 'ADMIN'
 
     const [settlements, setSettlements] = useState<Settlement[]>([])
     const [tasks, setTasks] = useState<Task[]>([])
@@ -111,7 +111,7 @@ const Settlements = () => {
                                                 className="status-badge"
                                                 style={s.statusColorCode ? { background: s.statusColorCode + '22', color: s.statusColorCode, border: `1px solid ${s.statusColorCode}44` } : undefined}
                                             >
-                                                {s.statusName ?? '—'}
+                                                {s.statusName ?? '-'}
                                             </span>
                                         </td>
                                         <td>{formatDate(s.settlementDate)}</td>

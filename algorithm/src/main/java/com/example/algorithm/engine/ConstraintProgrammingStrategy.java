@@ -122,7 +122,10 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
             int durationMins = task.getDurationHours() * 60;
             
             // Calculate deadline in minutes from anchor
-            long deadlineMinsLong = ChronoUnit.MINUTES.between(anchor, task.getDeadline());
+            LocalDateTime deadline = task.getDeadline();
+            long deadlineMinsLong = (deadline != null)
+                    ? ChronoUnit.MINUTES.between(anchor, deadline)
+                    : MINUTES_IN_WEEK;
             int deadlineMins = (int) Math.min(deadlineMinsLong, MINUTES_IN_WEEK);
 
             // Relaxed Time Constraint: Allow scheduling from start of week (0)
@@ -142,7 +145,7 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
             // Assignee domain: eligible users + Dummy
             List<Integer> validIndices = new ArrayList<>();
             for (int u = 0; u < nUsers; u++)
-                if (hasRequiredJob(users.get(u), task))
+                if (hasrequiredSkill(users.get(u), task))
                     validIndices.add(u);
             
             // ALWAYS add dummy worker to allow skipping
@@ -296,13 +299,15 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
         boolean[] isAvailable = new boolean[MINUTES_IN_WEEK];
 
         // 1. Mark availability from shift patterns
-        if (user.getAvailabilities() != null)
-            for (AlgoWorkerAvailability avail : user.getAvailabilities()) {
-                int dayIndex = avail.dayOfWeek().getValue() - 1; // 0=Mon
-                int startDayMins = dayIndex * MINUTES_IN_DAY;
+            if (user.getAvailabilities() != null)
+                for (AlgoWorkerAvailability avail : user.getAvailabilities()) {
+                    if (avail.startTime() == null || avail.endTime() == null) continue;
 
-                int startMins = startDayMins + avail.startTime().toSecondOfDay() / 60;
-                int endMins = startDayMins + avail.endTime().toSecondOfDay() / 60;
+                    int dayIndex = avail.dayOfWeek().getValue() - 1; // 0=Mon
+                    int startDayMins = dayIndex * MINUTES_IN_DAY;
+
+                    int startMins = startDayMins + avail.startTime().toSecondOfDay() / 60;
+                    int endMins = startDayMins + avail.endTime().toSecondOfDay() / 60;
 
                 for (int m = startMins; m < endMins && m < MINUTES_IN_WEEK; m++)
                     isAvailable[m] = true;
@@ -313,11 +318,13 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
             LocalDate anchorDate = anchor.toLocalDate();
             LocalDate weekEnd = anchorDate.plusDays(7);
 
-            for (AlgoVacation vac : user.getVacations()) {
-                LocalDate vStart = vac.getStartDate();
-                LocalDate vEnd = vac.getEndDate();
+                for (AlgoVacation vac : user.getVacations()) {
+                    LocalDate vStart = vac.getStartDate();
+                    LocalDate vEnd = vac.getEndDate();
 
-                if (!vEnd.isBefore(anchorDate) && !vStart.isAfter(weekEnd)) {
+                    if (vStart == null || vEnd == null) continue;
+
+                    if (!vEnd.isBefore(anchorDate) && !vStart.isAfter(weekEnd)) {
                     LocalDate effStart = vStart.isBefore(anchorDate) ? anchorDate : vStart;
                     LocalDate effEnd = vEnd.isAfter(weekEnd) ? weekEnd : vEnd;
 
@@ -350,14 +357,14 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
         return blocked;
     }
 
-    private boolean hasRequiredJob(AlgoUser user, AlgoTask task) {
-        Set<String> requiredJobs = task.getRequiredJobs();
+    private boolean hasrequiredSkill(AlgoUser user, AlgoTask task) {
+        Set<String> requiredSkills = task.getRequiredSkills();
 
-        if (requiredJobs == null || requiredJobs.isEmpty()) return true;
+        if (requiredSkills == null || requiredSkills.isEmpty()) return true;
 
-        Set<String> userJobs = user.getJobs();
-        if (userJobs == null || userJobs.isEmpty()) return false;
+        Set<String> userSkills = user.getSkills();
+        if (userSkills == null || userSkills.isEmpty()) return false;
 
-        return userJobs.containsAll(requiredJobs);
+        return userSkills.containsAll(requiredSkills);
     }
 }

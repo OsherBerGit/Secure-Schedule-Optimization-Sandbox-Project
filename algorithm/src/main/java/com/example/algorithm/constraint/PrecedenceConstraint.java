@@ -58,6 +58,10 @@ public class PrecedenceConstraint implements ConstraintChecker {
 
             LocalDateTime predStart = predAssignment.getScheduledStart();
             LocalDateTime predEnd   = predAssignment.getScheduledEnd();
+
+            if (predStart == null || predEnd == null)
+                return ConstraintResult.fail("Predecessor task [id=" + predId + "] scheduled times are null.");
+
             LocalDateTime proposedStart = ctx.proposedStart();
             LocalDateTime proposedEnd   = ctx.proposedEnd();
 

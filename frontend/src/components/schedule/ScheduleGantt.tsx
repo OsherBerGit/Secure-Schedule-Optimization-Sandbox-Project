@@ -1,15 +1,18 @@
 import React, { useMemo } from 'react'
 import type { Task, User } from '../../types'
 import { getPriorityColor } from '../../utils/scheduleUtils'
+import { useAuth } from '../../context/useAuth'
 
 interface ScheduleGanttProps {
     tasks: Task[]
     workers: User[]
     assignmentMap: Map<number, number | null>
+    onTaskClick?: (task: Task) => void
 }
 
-const ScheduleGantt: React.FC<ScheduleGanttProps> = ({ tasks, workers, assignmentMap }) => {
-    
+const ScheduleGantt: React.FC<ScheduleGanttProps> = ({ tasks, workers, assignmentMap, onTaskClick }) => {
+    const { user: currentUser } = useAuth()
+
     // Memoize calculations to prevent re-renders
     const { minDate, maxDate, totalMs, workerSchedules } = useMemo(() => {
         const scheduledTasks = tasks.filter(t => t.startTime)
@@ -68,24 +71,32 @@ const ScheduleGantt: React.FC<ScheduleGanttProps> = ({ tasks, workers, assignmen
                 </div>
 
                 {/* Rows per worker */}
-                {workerSchedules.filter(ws => ws.tasks.length > 0).map(ws => (
-                    <div key={ws.worker.id} className="gantt-row">
-                        <div className="gantt-label-col">
+                {workerSchedules.filter(ws => ws.tasks.length > 0).map(ws => {
+                    const isMyRow = currentUser?.id === ws.worker.id
+                    const isWorkerRole = currentUser?.role === 'WORKER'
+
+                    return (
+                    <div key={ws.worker.id} className={`gantt-row ${isWorkerRole && isMyRow ? 'highlighted-row' : ''}`}>
+                        <div className="gantt-label-col" style={isWorkerRole && isMyRow ? { fontWeight: 'bold', background: '#f0f5ff' } : {}}>
                             <div className="worker-name">
                                 {ws.worker.firstName} {ws.worker.lastName}
+                                {isMyRow && " (Me)"}
                             </div>
                             <div className="worker-task-count">
                                 {ws.tasks.length} task{ws.tasks.length !== 1 ? 's' : ''}
                             </div>
                         </div>
-                        <div className="gantt-bar-col">
+                        <div className="gantt-bar-col" style={isWorkerRole && !isMyRow ? { opacity: 0.4 } : {}}>
                             {ws.tasks.map(task => (
                                 <div
                                     key={task.id}
                                     className="gantt-bar"
+                                    onClick={() => onTaskClick?.(task)}
                                     style={{
                                         ...getBarStyle(task),
                                         background: getPriorityColor(task.priorityName),
+                                        opacity: isWorkerRole && !isMyRow ? 0.6 : 1,
+                                        cursor: onTaskClick ? 'pointer' : 'default',
                                     }}
                                     title={`${task.title}\nStatus: ${task.taskStatusName}\nPriority: ${task.priorityName}\nDuration: ${task.durationHours}h`}
                                 >
@@ -94,7 +105,7 @@ const ScheduleGantt: React.FC<ScheduleGanttProps> = ({ tasks, workers, assignmen
                             ))}
                         </div>
                     </div>
-                ))}
+                )})}
             </div>
         </div>
     )

@@ -19,16 +19,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findAllByDepartmentId(Long departmentId);
 
     /**
-     * Loads ALL users with their jobs eagerly in a single query.
+     * Loads ALL users with their skills eagerly in a single query.
      * Used by SchedulingService (ADMIN scope) to avoid N+1 when building AlgoUserRequests.
      */
-    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.jobs")
-    List<User> findAllWithJobs();
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.skills")
+    List<User> findAllWithSkills();
 
     /**
-     * Loads users belonging to a specific department with their jobs eagerly.
+     * Loads users belonging to a specific department with their skills eagerly.
      * Used by SchedulingService (MANAGER scope).
      */
-    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.jobs WHERE u.department.id = :departmentId")
-    List<User> findAllWithJobsByDepartment(@Param("departmentId") Long departmentId);
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.skills WHERE u.department.id = :departmentId")
+    List<User> findAllWithSkillsByDepartment(@Param("departmentId") Long departmentId);
 }

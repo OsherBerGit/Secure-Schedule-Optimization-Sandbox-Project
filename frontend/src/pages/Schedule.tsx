@@ -10,7 +10,7 @@ import SchedulingConfigurationModal from '../components/SchedulingConfigurationM
 import ScheduleGantt from '../components/schedule/ScheduleGantt'
 import ScheduleTable from '../components/schedule/ScheduleTable'
 import ScheduleExplainability from '../components/schedule/ScheduleExplainability'
-import UnscheduledWarning from '../components/schedule/UnscheduledWarning'
+import type { Task } from '../types'
 import './Schedule.css'
 
 const Schedule = () => {
@@ -18,7 +18,7 @@ const Schedule = () => {
 
     // 1. Data Hook
     const {
-        tasks, workers, departments, isLoading: isDataLoading, refreshData, error: dataError
+        tasks, workers, departments, settlements, isLoading: isDataLoading, refreshData, error: dataError
     } = useScheduleData()
 
     // 2. Algorithm Hook
@@ -38,6 +38,7 @@ const Schedule = () => {
     const [viewMode, setViewMode] = useState<'gantt' | 'table'>('gantt')
     const [strategy, setStrategy] = useState<ScheduleStrategy>('GREEDY')
     const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null)
+    const [selectedGanttTask, setSelectedGanttTask] = useState<Task | null>(null)
 
     // Fetch configs when modal opens
     useEffect(() => {
@@ -45,14 +46,47 @@ const Schedule = () => {
     }, [isConfigModalOpen, fetchConfigs])
 
     // Derived State
-    const assignmentMap = new Map<number, number | null>(
-        scheduleResult?.assignments.map(a => [a.taskId, a.assignedUserId]) ?? []
-    )
+    const mergedTasks = tasks.map(t => {
+        const draft = scheduleResult?.assignments.find(a => a.taskId === t.id)
+        if (draft) {
+            return {
+                ...t,
+                startTime: draft.scheduledStart ?? t.startTime,
+            }
+        }
+        return t
+    })
 
-    const scheduledTasks = tasks.filter(t => t.startTime)
-    const unassignedTasks  = tasks.filter(t => !assignmentMap.has(t.id) || assignmentMap.get(t.id) == null)
-    // Warning for tasks that are assigned in the draft but don't have a start time yet (should be rare if algorithm works)
-    const unscheduledWarningTasks = tasks.filter(t => assignmentMap.get(t.id) != null && !t.startTime)
+    // assignmentMap combines saved database assignments (settlements) and overrides with new draft assignments
+    const assignmentMap = new Map<number, number | null>()
+
+    // First apply saved DB state
+    settlements?.forEach(s => {
+        if (s.taskId) assignmentMap.set(s.taskId, s.workerId)
+    })
+
+    // Then override with algorithm draft if running
+    if (scheduleResult?.assignments) {
+        scheduleResult.assignments.forEach(a => {
+            assignmentMap.set(a.taskId, a.assignedUserId)
+        })
+    }
+
+    // Filter tasks by selected department
+    const selectedDepartmentName = selectedDepartmentId 
+        ? departments.find(d => d.id === selectedDepartmentId)?.name 
+        : null;
+
+    const displayTasks = selectedDepartmentName
+        ? mergedTasks.filter(t => t.departmentName === selectedDepartmentName)
+        : mergedTasks
+
+    const displayWorkers = selectedDepartmentName
+        ? workers.filter(w => w.departmentName === selectedDepartmentName)
+        : workers
+
+    const scheduledTasks = displayTasks.filter(t => t.startTime)
+    // const unassignedTasks = displayTasks.filter(t => assignmentMap.get(t.id) == null)
 
     // Handlers
     const handleGenerate = async () => {
@@ -62,13 +96,13 @@ const Schedule = () => {
     }
 
     const handleApprove = async () => {
-        await saveSchedule(tasks)
+        await saveSchedule(mergedTasks)
         await refreshData()
     }
 
     const handleCreateConfig = async (newConfig: Omit<import('../types').SchedulingConfiguration, 'id' | 'isActive'>) => {
         // We set isActive=false by default for new custom configs
-        const configToCreate = { ...newConfig, isActive: false };
+        const configToCreate = { ...newConfig, isActive: false, createdByUserId: currentUser?.id ? Number(currentUser.id) : undefined };
         const created = await createConfig(configToCreate)
         if (created && created.id) {
             selectConfig(created.id)
@@ -79,88 +113,92 @@ const Schedule = () => {
 
     const error = dataError || algoError || configError
 
+    const isWorker = currentUser?.role === 'WORKER'
+
     return (
         <div className="schedule-container">
 
             {/* Header */}
-            <div className="schedule-header">
-                <div className="schedule-title">
-                    <h1>📅 Schedule</h1>
-                    <p className="schedule-subtitle">
-                        {scheduledTasks.length} of {tasks.length} tasks scheduled
-                    </p>
-                </div>
-                <div className="schedule-actions">
-                    <div className="view-toggle">
-                        <button
-                            className={viewMode === 'gantt' ? 'active' : ''}
-                            onClick={() => setViewMode('gantt')}
-                        >
-                            Gantt
-                        </button>
-                        <button
-                            className={viewMode === 'table' ? 'active' : ''}
-                            onClick={() => setViewMode('table')}
-                        >
-                            Table
-                        </button>
+            {!isWorker && (
+                <div className="schedule-header">
+                    <div className="schedule-title">
+                        <h1>📅 Schedule</h1>
+                        <p className="schedule-subtitle">
+                            {scheduledTasks.length} of {tasks.length} tasks scheduled
+                        </p>
                     </div>
-                    {currentUser?.role === 'ADMIN' && (
-                        <div className="schedule-generate-group">
-                            <select
-                                className="department-select"
-                                value={selectedDepartmentId ?? ''}
-                                onChange={e => {
-                                    const val = e.target.value
-                                    setSelectedDepartmentId(val ? Number(val) : null)
-                                }}
-                                disabled={isGenerating}
-                            >
-                                <option value="">Global (All Departments)</option>
-                                {departments.map(d => (
-                                    <option key={d.id} value={d.id}>{d.name}</option>
-                                ))}
-                            </select>
-
-                            <select
-                                className="strategy-select"
-                                value={strategy}
-                                onChange={e => setStrategy(e.target.value as ScheduleStrategy)}
-                                disabled={isGenerating}
-                            >
-                                <option value="GREEDY">Greedy (Fastest)</option>
-                                <option value="ROUND_ROBIN">Round Robin (Fairness)</option>
-                                <option value="CONSTRAINT_PROGRAMMING">Constraint Programming (Exact)</option>
-                                <option value="MEMETIC">Memetic (Genetic + Local Search)</option>
-                            </select>
-
+                    <div className="schedule-actions">
+                        <div className="view-toggle">
                             <button
-                                className={`btn-secondary ${strategy !== 'MEMETIC' ? 'btn-ghost' : ''}`}
-                                disabled={strategy !== 'MEMETIC'}
-                                title={strategy !== 'MEMETIC' ? "Available only for Memetic Algorithm" : "Configure Algorithm Parameters"}
-                                onClick={openConfigModal}
-                                style={strategy !== 'MEMETIC' ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                className={viewMode === 'gantt' ? 'active' : ''}
+                                onClick={() => setViewMode('gantt')}
                             >
-                               ⚙️ Algorithm Configuration
+                                Gantt
                             </button>
-
                             <button
-                                className="generate-btn"
-                                onClick={handleGenerate}
-                                disabled={isGenerating || tasks.length === 0}
+                                className={viewMode === 'table' ? 'active' : ''}
+                                onClick={() => setViewMode('table')}
                             >
-                                {isGenerating ? 'Optimizing...' : 'Generate Schedule Draft'}
+                                Table
                             </button>
-
-                            {scheduleResult && scheduleResult.strategyUsed === 'MEMETIC' && (
-                                <span style={{ marginLeft: '1rem', fontStyle: 'italic', color: '#666' }}>
-                                    Used Config ID: {selectedConfigId || 'Default'}
-                                </span>
-                            )}
                         </div>
-                    )}
+                        {(currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER') && (
+                            <div className="schedule-generate-group">
+                                <select
+                                    className="department-select"
+                                    value={selectedDepartmentId ?? ''}
+                                    onChange={e => {
+                                        const val = e.target.value
+                                        setSelectedDepartmentId(val ? Number(val) : null)
+                                    }}
+                                    disabled={isGenerating}
+                                >
+                                    <option value="">Global (All Departments)</option>
+                                    {departments.map(d => (
+                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                    ))}
+                                </select>
+
+                                <select
+                                    className="strategy-select"
+                                    value={strategy}
+                                    onChange={e => setStrategy(e.target.value as ScheduleStrategy)}
+                                    disabled={isGenerating}
+                                >
+                                    <option value="GREEDY">Greedy (Fastest)</option>
+                                    <option value="ROUND_ROBIN">Round Robin (Fairness)</option>
+                                    <option value="CONSTRAINT_PROGRAMMING">Constraint Programming (Exact)</option>
+                                    <option value="MEMETIC">Memetic (Genetic + Local Search)</option>
+                                </select>
+
+                                <button
+                                    className={`btn-secondary ${strategy !== 'MEMETIC' ? 'btn-ghost' : ''}`}
+                                    disabled={strategy !== 'MEMETIC'}
+                                    title={strategy !== 'MEMETIC' ? "Available only for Memetic Algorithm" : "Configure Algorithm Parameters"}
+                                    onClick={openConfigModal}
+                                    style={strategy !== 'MEMETIC' ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                >
+                                   ⚙️ Algorithm Configuration
+                                </button>
+
+                                <button
+                                    className="generate-btn"
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating || tasks.length === 0}
+                                >
+                                    {isGenerating ? 'Optimizing...' : 'Generate Schedule Draft'}
+                                </button>
+
+                                {scheduleResult && scheduleResult.strategyUsed === 'MEMETIC' && (
+                                    <span style={{ marginLeft: '1rem', fontStyle: 'italic', color: '#666' }}>
+                                        Used Config ID: {selectedConfigId || 'Default'}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Batch Validation Errors */}
             {validationErrors.length > 0 && (
@@ -172,12 +210,12 @@ const Schedule = () => {
 
             {/* Success/Error Alerts */}
             {error && !validationErrors.length && <div className="error-msg">{error}</div>}
-            {successMsg && <div className="success-msg">{successMsg}</div>}
+            {successMsg && <div className="draft-success-banner">{successMsg}</div>}
 
             {/* Algorithm Result Panel */}
             {scheduleResult && (
                 <div className="result-panel">
-                    <h3 className="result-title">📊 Draft Preview — {scheduleResult.strategyUsed}</h3>
+                    <h3 className="result-title">📊 Draft Preview - {scheduleResult.strategyUsed}</h3>
                     <div className="result-stats">
                         <div className="result-stat">
                             <span className="stat-value">{scheduleResult.totalTasks}</span>
@@ -194,27 +232,29 @@ const Schedule = () => {
                     </div>
                     {/* Only show simplified assignment list if needed, or rely on Gantt/Table */}
                     {/* For now, keeping the list as it provides quick feedback */}
-                    <div className="result-assignments">
-                        {scheduleResult.assignments.map(a => (
-                            <div key={a.taskId} className={`result-row ${a.assignedUserId ? 'assigned' : 'unassigned'}`}>
-                                <span className="result-task">{a.taskTitle}</span>
-                                <span className="result-arrow">→</span>
-                                <span className="result-user">
-                                    {a.assignedUserFullName ?? '⚠️ Unassigned'}
-                                </span>
-                                {a.scheduledStart && (
-                                    <span className="result-dates">
-                                        {new Date(a.scheduledStart).toLocaleDateString()} –{' '}
-                                        {a.scheduledEnd ? new Date(a.scheduledEnd).toLocaleDateString() : '?'}
+                    <div className="scrollable-table-container">
+                        <div className="result-assignments">
+                            {scheduleResult.assignments.map(a => (
+                                <div key={a.taskId} className={`result-row ${a.assignedUserId ? 'assigned' : 'unassigned'}`}>
+                                    <span className="result-task">{a.taskTitle}</span>
+                                    <span className="result-arrow">→</span>
+                                    <span className="result-user">
+                                        {a.assignedUserFullName ?? '⚠️ Unassigned'}
                                     </span>
-                                )}
-                                <span className="result-reason">{a.reason}</span>
-                            </div>
-                        ))}
+                                    {a.scheduledStart && (
+                                        <span className="result-dates">
+                                            {new Date(a.scheduledStart).toLocaleDateString()} –{' '}
+                                            {a.scheduledEnd ? new Date(a.scheduledEnd).toLocaleDateString() : '?'}
+                                        </span>
+                                    )}
+                                    <span className="result-reason">{a.reason}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Approve & Save */}
-                    {currentUser?.role === 'ADMIN' && (
+                    {(currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER') && (
                         <div className="result-approve-row">
                             <p className="result-approve-hint">
                                 ℹ️ This is a <strong>draft preview</strong>. Nothing has been saved yet.
@@ -241,30 +281,6 @@ const Schedule = () => {
                 <div className="loading">Loading schedule data...</div>
             ) : (
                 <>
-                    {/* Summary Cards */}
-                    <div className="summary-cards">
-                        <div className="summary-card">
-                            <span className="card-value">{tasks.length}</span>
-                            <span className="card-label">Total Tasks</span>
-                        </div>
-                        <div className="summary-card">
-                            <span className="card-value">{scheduledTasks.length}</span>
-                            <span className="card-label">Scheduled</span>
-                        </div>
-                        <div className="summary-card">
-                            <span className="card-value">{unscheduledWarningTasks.length}</span>
-                            <span className="card-label">Unscheduled</span>
-                        </div>
-                        <div className="summary-card">
-                            <span className="card-value">{unassignedTasks.length}</span>
-                            <span className="card-label">Unassigned</span>
-                        </div>
-                        <div className="summary-card">
-                            <span className="card-value">{workers.length}</span>
-                            <span className="card-label">Workers</span>
-                        </div>
-                    </div>
-
                     {scheduledTasks.length === 0 && !scheduleResult ? (
                         <div className="empty-state">
                             <div className="empty-icon">📋</div>
@@ -276,26 +292,19 @@ const Schedule = () => {
                             </p>
                         </div>
                     ) : viewMode === 'gantt' ? (
-                        <ScheduleGantt
-                            tasks={tasks}
-                            workers={workers}
-                            assignmentMap={assignmentMap}
-                        />
+                        <ScheduleGantt tasks={scheduledTasks} workers={displayWorkers} assignmentMap={assignmentMap} onTaskClick={setSelectedGanttTask} />
                     ) : (
-                        <ScheduleTable
-                            tasks={tasks}
-                            workers={workers}
-                            assignmentMap={assignmentMap}
-                            assignments={scheduleResult?.assignments ?? []}
-                        />
+                        <div className="scrollable-table-container">
+                            <ScheduleTable tasks={scheduledTasks} workers={displayWorkers} assignments={scheduleResult?.assignments ?? []} assignmentMap={assignmentMap} />
+                        </div>
                     )}
 
-                    {/* Warnings and Explainability */}
-                    <UnscheduledWarning tasks={unscheduledWarningTasks} />
-
-                    {scheduleResult?.unscheduledTasks && (
-                        <ScheduleExplainability failures={scheduleResult.unscheduledTasks} />
-                    )}
+                    {/* Explainability */}
+                    <div className="scrollable-table-container">
+                        {scheduleResult?.unscheduledTasks && (
+                            <ScheduleExplainability failures={scheduleResult.unscheduledTasks} />
+                        )}
+                    </div>
                 </>
             )}
 
@@ -313,9 +322,35 @@ const Schedule = () => {
             )}
 
             {isGenerating && (
-                <div className="progress-indicator">
-                    <div className="spinner" />
-                    <span>Optimizing schedule, please wait...</span>
+                <div className="loading-overlay">
+                    <div className="loading-spinner"></div>
+                    <h2>Optimizing Schedule...</h2>
+                </div>
+            )}
+
+            {/* Read-Only Task Modal */}
+            {selectedGanttTask && (
+                <div className="modal-overlay" onClick={() => setSelectedGanttTask(null)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Task Details</h2>
+                            <button className="btn-close" onClick={() => setSelectedGanttTask(null)}>×</button>
+                        </div>
+                        <div className="modal-content" style={{ padding: '1.5rem' }}>
+                            <p><strong>Title:</strong> {selectedGanttTask.title}</p>
+                            <p><strong>Assigned Worker:</strong> {(() => {
+                                const assignedId = assignmentMap.get(selectedGanttTask.id)
+                                const user = displayWorkers.find(w => w.id === assignedId)
+                                return user ? `${user.firstName} ${user.lastName}` : 'Unassigned'
+                            })()}</p>
+                            <p><strong>Status:</strong> {selectedGanttTask.taskStatusName}</p>
+                            <p><strong>Start Time:</strong> {selectedGanttTask.startTime ? new Date(selectedGanttTask.startTime).toLocaleString() : 'N/A'}</p>
+                            <p><strong>End Time:</strong> {selectedGanttTask.deadline ? new Date(selectedGanttTask.deadline).toLocaleString() : 'N/A'}</p>
+                        </div>
+                        <div className="modal-footer">
+                            <button type="button" className="btn-cancel" onClick={() => setSelectedGanttTask(null)}>Close</button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

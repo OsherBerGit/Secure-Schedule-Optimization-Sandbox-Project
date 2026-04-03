@@ -2,9 +2,7 @@ package com.example.mainbackend.algorithm.entity;
 
 import com.example.mainbackend.entity.User;
 import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 /**
  * Stores a named set of weights and algorithm parameters used by the scheduling engine.
@@ -14,6 +12,8 @@ import lombok.Setter;
 @Setter
 @Builder
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "scheduling_configuration")
 public class SchedulingConfiguration {
 

@@ -33,7 +33,7 @@ export const useScheduleAlgorithm = () => {
             const assigned = res.data.assignedTasks
             const unassigned = res.data.unassignedTasks
             setSuccessMsg(
-                `✅ Draft generated using ${res.data.strategyUsed} — ` +
+                `✅ Draft generated using ${res.data.strategyUsed} - ` +
                 `${assigned} assigned, ${unassigned} unassigned. ` +
                 `Review below and click "Approve & Save" to persist.`
             )
@@ -74,7 +74,7 @@ export const useScheduleAlgorithm = () => {
 
             await scheduleApi.save({ assignments })
             
-            const msg = `✅ Schedule approved and saved — ${scheduleResult.assignedTasks} task(s) scheduled.`
+            const msg = `✅ Schedule approved and saved - ${scheduleResult.assignedTasks} task(s) scheduled.`
             setSuccessMsg(msg)
             setScheduleResult(null) // Clear draft state
             return msg

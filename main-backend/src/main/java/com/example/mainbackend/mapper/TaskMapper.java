@@ -33,8 +33,8 @@ public class TaskMapper {
                 .taskStatusColorCode(task.getStatus() != null ? task.getStatus().getColorCode() : null)
                 .departmentName(task.getDepartment() != null ? task.getDepartment().getName() : null)
                 .version(task.getVersion())
-                .requiredJobId(task.getRequiredJob() != null ? task.getRequiredJob().getId() : null)
-                .requiredJobName(task.getRequiredJob() != null ? task.getRequiredJob().getName() : null)
+                .requiredSkillId(task.getRequiredSkill() != null ? task.getRequiredSkill().getId() : null)
+                .requiredSkillName(task.getRequiredSkill() != null ? task.getRequiredSkill().getName() : null)
                 .build();
     }
 
@@ -75,7 +75,7 @@ public class TaskMapper {
                 .durationHours(task.getDurationHours())
                 .deadline(task.getDeadline())
                 .priorityLevel(task.getPriority() != null ? task.getPriority().getValue() : null)
-                .requiredJobId(task.getRequiredJob() != null ? task.getRequiredJob().getId() : null)
+                .requiredSkillId(task.getRequiredSkill() != null ? task.getRequiredSkill().getId() : null)
                 .constraints(mapConstraints(task.getIncomingConstraints(), openTaskIds))
                 .build();
     }

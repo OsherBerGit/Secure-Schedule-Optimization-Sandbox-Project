@@ -5,7 +5,7 @@ export interface Department {
   name: string;
 }
 
-export interface Job {
+export interface Skill {
   id: number;
   name: string;
   description?: string;
@@ -32,7 +32,7 @@ export interface User {
   departmentName: string | null;
   departmentId?: number; // Decoded from JWT
   role: 'ADMIN' | 'MANAGER' | 'WORKER';
-  jobs: Job[];
+  skills: Skill[];
 }
 
 export interface CreateUserRequest {
@@ -45,7 +45,7 @@ export interface CreateUserRequest {
   role: 'ADMIN' | 'MANAGER' | 'WORKER';
   departmentName?: string;
   availabilities?: WorkerAvailability[];
-  jobIds?: number[];
+  skillIds?: number[];
 }
 
 export interface UpdateUserRequest {
@@ -56,7 +56,7 @@ export interface UpdateUserRequest {
   role?: 'ADMIN' | 'MANAGER' | 'WORKER';
   departmentName?: string | null;
   availabilities?: WorkerAvailability[];
-  jobIds?: number[];
+  skillIds?: number[];
 }
 
 export interface Task {
@@ -77,7 +77,7 @@ export interface Task {
   
   /** Optimistic locking version from backend. */
   version: number;
-  requiredJob?: Job;
+  requiredSkill?: Skill;
 }
 
 export interface SchedulingConfiguration {
@@ -92,6 +92,7 @@ export interface SchedulingConfiguration {
   populationSize: number;
   maxGenerations: number;
   isActive: boolean;
+  createdByUserId?: number;
 }
 
 export interface CreateTaskRequest {
@@ -101,7 +102,7 @@ export interface CreateTaskRequest {
   durationHours?: number;
   priorityId: number;
   departmentId?: number;
-  requiredJobId: number;
+  requiredSkill?: number | null;
 }
 
 export interface UpdateTaskRequest {
@@ -111,7 +112,9 @@ export interface UpdateTaskRequest {
   durationHours?: number;
   priorityId: number;
   departmentId?: number;
-  requiredJobId: number;
+  requiredSkill?: number | null;
+  statusId?: number;
+  taskStatusId?: number;
 }
 
 export interface Status {
@@ -187,7 +190,7 @@ export interface UpdateVacationRequest {
   endDate: string;
 }
 
-// Worker self-request — no workerId needed
+// Worker self-request - no workerId needed
 export interface VacationRequestDto {
   startDate: string;
   endDate: string;
@@ -206,7 +209,7 @@ export interface Settlement {
   completionDate: string | null;
   taskTitle: string;
   workerName: string;
-  // Settlement execution status (PENDING, IN_PROGRESS, COMPLETED, FAILED) — from settlement_statuses table
+  // Settlement execution status (PENDING, IN_PROGRESS, COMPLETED, FAILED) - from settlement_statuses table
   statusId: number | null;
   statusName: string | null;
   statusColorCode: string | null;
