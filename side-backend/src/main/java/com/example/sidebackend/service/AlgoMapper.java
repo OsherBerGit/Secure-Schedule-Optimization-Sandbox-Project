@@ -23,10 +23,8 @@ import java.util.stream.Collectors;
  * </ul>
  *
  * <h3>skill ID convention</h3>
- * Both {@code UserDto.skillIds} and {@code TaskDto.requiredSkillId} are processed as technical IDs.
- * {@code AlgoUser.skills} and {@code AlgoTask.requiredSkill} remain {@code Set<String>} in the engine.
- * The mapper converts each {@code Long} ID to its {@code String} representation (e.g. {@code 42L â†’ "42"})
- * to facilitate high-performance {@code Set.contains()} checks during scheduling.
+ * Both {@code UserDto.skillIds} and {@code TaskDto.requiredSkillIds} are processed as technical IDs.
+ * Temporal constraints (e.g., maximum working hours, vacations) are parsed into generic intervals.
  *
  * <h3>Usage</h3>
  * <pre>{@code
@@ -122,8 +120,8 @@ public final class AlgoMapper {
      * @return immutable {@link AlgoTask}
      */
     public AlgoTask toModel(TaskDto dto) {
-        Set<Long> requiredSkills = (dto.requiredSkillId() != null)
-                ? Collections.singleton(dto.requiredSkillId())
+        Set<Long> requiredSkills = (dto.requiredSkillIds() != null)
+                ? new java.util.HashSet<>(dto.requiredSkillIds())
                 : Collections.emptySet();
 
         List<AlgoConstraint> constraints = dto.constraints() != null

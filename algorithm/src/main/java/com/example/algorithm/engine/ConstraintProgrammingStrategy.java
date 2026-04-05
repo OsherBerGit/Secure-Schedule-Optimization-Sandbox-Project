@@ -9,7 +9,9 @@ import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.solver.variables.Task;
 import org.chocosolver.util.tools.ArrayUtils;
+import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.search.strategy.selectors.variables.FirstFail;
+import org.chocosolver.solver.search.strategy.selectors.values.IntDomainMax;
 import org.chocosolver.solver.search.strategy.selectors.values.IntDomainMin;
 
 import java.time.DayOfWeek;
@@ -134,7 +136,7 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
             // Relaxed Time Constraint: Allow scheduling from start of week (0)
             taskStarts[i] = model.intVar("start_" + task.getId(), 0, MINUTES_IN_WEEK);
 
-            taskDurations[i] = model.intVar(durationMins);
+            taskDurations[i] = model.intVar("dur_" + i, new int[]{0, durationMins});
             taskEnds[i] = taskStarts[i].add(taskDurations[i]).intVar();
 
             // Assignee domain: eligible users + Dummy
@@ -148,6 +150,9 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
             
             int[] domain = validIndices.stream().mapToInt(Integer::intValue).toArray();
             taskAssignees[i] = model.intVar("assignee_" + task.getId(), domain);
+
+            model.ifThen(model.arithm(taskAssignees[i], "=", dummyUserIdx), model.arithm(taskDurations[i], "=", 0));
+            model.ifThen(model.arithm(taskAssignees[i], "!=", dummyUserIdx), model.arithm(taskDurations[i], "=", durationMins));
 
             // Apply Deadlines ONLY if Scheduled
             if (deadlineMins < MINUTES_IN_WEEK) {
@@ -179,6 +184,12 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
                             case FF -> model.ifThen(bothAssigned, model.arithm(taskEnds[i], ">=", taskEnds[predIdx]));
                             case SF -> model.ifThen(bothAssigned, model.arithm(taskEnds[i], ">=", taskStarts[predIdx]));
                         }
+
+                        // Logical Dependency Propagation
+                        model.ifThen(
+                            model.arithm(taskAssignees[predIdx], "=", dummyUserIdx),
+                            model.arithm(taskAssignees[i], "=", dummyUserIdx)
+                        );
                     }
                 }
             }
@@ -253,9 +264,9 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
 
         // 7. Solve
         Solver solver = model.getSolver();
-        solver.limitTime("10s");
+        solver.limitTime("30s");
 
-        Solution bestSolution = new Solution(model);
+        Solution bestSolution = new Solution(model, ArrayUtils.append(taskAssignees, taskStarts, taskEnds, isScheduled));
         while(solver.solve())
              bestSolution.record();
 

@@ -203,6 +203,7 @@ const Vacations = () => {
                 <VacationModal
                     vacation={selectedVacation}
                     isAdmin={!!canManage}
+                    workers={users}
                     onSubmit={handleSubmit}
                     onClose={() => { setShowModal(false); setSelectedVacation(null) }}
                 />

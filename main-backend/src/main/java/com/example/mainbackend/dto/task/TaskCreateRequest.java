@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.Set;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -44,7 +46,7 @@ public class TaskCreateRequest {
      * ID of the Skill required to perform this task.
      * Optional. If missing, any worker can potentially perform it.
      */
-    private Long requiredSkill;
+    private Set<Long> requiredSkills;
 
     /**
      * Optional Department ID for assigning the task to a specific department.

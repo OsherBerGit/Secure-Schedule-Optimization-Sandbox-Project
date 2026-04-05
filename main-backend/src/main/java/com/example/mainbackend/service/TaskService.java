@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -77,10 +78,21 @@ public class TaskService {
         return taskRepository.findById(id).map(existing -> {
 
             boolean requiresStatusReset = false;
-            // 1. Check if requiredSkill is changed
-            if (request.getRequiredSkill() != null
-                    && existing.getRequiredSkill() != null
-                    && !request.getRequiredSkill().equals(existing.getRequiredSkill().getId())) {
+            // 1. Check if requiredSkills is changed
+            if (request.getRequiredSkills() != null
+                    && existing.getRequiredSkills() != null) {
+                Set<Long> existingSkillIds = existing.getRequiredSkills().stream()
+                        .map(Skill::getId)
+                        .collect(Collectors.toSet());
+                if (!request.getRequiredSkills().equals(existingSkillIds)) {
+                    List<Settlement> settlements = settlementRepository.findByTaskId(id);
+                    if (!settlements.isEmpty()) {
+                        settlementRepository.deleteAll(settlements);
+                        requiresStatusReset = true;
+                    }
+                }
+            } else if ((request.getRequiredSkills() != null && !request.getRequiredSkills().isEmpty())
+                    || (existing.getRequiredSkills() != null && !existing.getRequiredSkills().isEmpty())) {
                 List<Settlement> settlements = settlementRepository.findByTaskId(id);
                 if (!settlements.isEmpty()) {
                     settlementRepository.deleteAll(settlements);
@@ -117,12 +129,14 @@ public class TaskService {
             existing.setPriority(priority);
             existing.setStatus(newStatus);
 
-            if (request.getRequiredSkill() != null) {
-                Skill skill = skillRepository.findById(request.getRequiredSkill())
-                        .orElseThrow(() -> new IllegalArgumentException("skill not found: " + request.getRequiredSkill()));
-                existing.setRequiredSkill(skill);
+            if (request.getRequiredSkills() != null && !request.getRequiredSkills().isEmpty()) {
+                List<Skill> skills = skillRepository.findAllById(request.getRequiredSkills());
+                if (skills.size() != request.getRequiredSkills().size()) {
+                    throw new IllegalArgumentException("One or more skills not found.");
+                }
+                existing.setRequiredSkills(new java.util.HashSet<>(skills));
             } else {
-                existing.setRequiredSkill(null);
+                existing.setRequiredSkills(new java.util.HashSet<>());
             }
 
             return taskMapper.toDto(taskRepository.save(existing));
@@ -165,7 +179,7 @@ public class TaskService {
 
     /**
      * Returns only OPEN tasks for the scheduling algorithm.
-     * No category check needed â€” task_statuses table holds only task lifecycle statuses.
+     * No category check needed task_statuses table holds only task lifecycle statuses.
      */
     @Transactional(readOnly = true)
     public List<Task> getOpenTasksForScheduling() { return taskRepository.findByStatusName(TaskStatusLevel.OPEN.name()); }
@@ -203,13 +217,13 @@ public class TaskService {
                 .status(resolvedStatus);
 
         // Handle required skill
-        if (request.getRequiredSkill() != null) {
-            Skill skill = skillRepository.findById(request.getRequiredSkill())
-                    .orElseThrow(() -> new IllegalArgumentException("skill not found: " + request.getRequiredSkill()));
-            builder.requiredSkill(skill);
+        if (request.getRequiredSkills() != null && !request.getRequiredSkills().isEmpty()) {
+            List<Skill> skills = skillRepository.findAllById(request.getRequiredSkills());
+            if (skills.size() != request.getRequiredSkills().size())
+                throw new IllegalArgumentException("One or more skills not found.");
+            builder.requiredSkills(new java.util.HashSet<>(skills));
         } else
-            builder.requiredSkill(null);
-
+            builder.requiredSkills(new java.util.HashSet<>());
 
         return builder.build();
     }

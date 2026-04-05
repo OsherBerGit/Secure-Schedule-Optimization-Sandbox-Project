@@ -21,6 +21,7 @@ function formatDate(value: string | number[] | null | undefined): string {
 const Settlements = () => {
     const { user: currentUser } = useAuth()
     const isAdmin = currentUser?.role === 'ADMIN'
+    const canAdd = currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER'
 
     const [settlements, setSettlements] = useState<Settlement[]>([])
     const [tasks, setTasks] = useState<Task[]>([])
@@ -33,8 +34,8 @@ const Settlements = () => {
         setIsLoading(true)
         setError(null)
         try {
-            // Admins see all; workers see only their own
-            const res = isAdmin
+            // Admins and Managers see all (backend filters by department for managers); workers see only their own
+            const res = (isAdmin || currentUser?.role === 'MANAGER')
                 ? await settlementApi.getAll()
                 : await settlementApi.getMySettlements()
             setSettlements(res.data)
@@ -43,7 +44,7 @@ const Settlements = () => {
         } finally {
             setIsLoading(false)
         }
-    }, [isAdmin])
+    }, [isAdmin, currentUser?.role])
 
     useEffect(() => {
         void fetchSettlements()
@@ -63,17 +64,11 @@ const Settlements = () => {
             .catch(err => setError(err instanceof Error ? err.message : 'Failed to mark as done'))
     }
 
-    function handleSubmit(formData: CreateSettlementRequest) {
-        settlementApi.create(formData)
-            .then(() => { setShowModal(false); fetchSettlements() })
-            .catch(err => setError(err instanceof Error ? err.message : 'Failed to save'))
-    }
-
     return (
         <div className="settlements-container">
             <div className="settlements-header">
                 <h1>💰 Settlements</h1>
-                {isAdmin && (
+                {canAdd && (
                     <button className="btn-add" onClick={() => setShowModal(true)}>+ Add Settlement</button>
                 )}
             </div>
@@ -148,7 +143,11 @@ const Settlements = () => {
                 <SettlementModal
                     tasks={tasks}
                     workers={workers}
-                    onSubmit={handleSubmit}
+                    settlements={settlements}
+                    onSuccess={() => {
+                        setShowModal(false)
+                        void fetchSettlements()
+                    }}
                     onClose={() => setShowModal(false)}
                 />
             )}

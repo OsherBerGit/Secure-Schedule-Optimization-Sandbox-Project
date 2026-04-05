@@ -77,7 +77,7 @@ const Tasks = () => {
             // Priority Filter
             if (filterPriority && (t.priorityName || '') !== filterPriority) return false
             // Skill Filter
-            if (filterSkill && (t.requiredSkill?.name || '') !== filterSkill) return false
+            if (filterSkill && !t.requiredSkills?.some(s => s.name === filterSkill)) return false
             return true
         })
     }, [tasks, filterDepartment, filterStatus, filterPriority, filterSkill])
@@ -210,17 +210,25 @@ const Tasks = () => {
                                         : <span className="dept-general">General / All</span>}
                                 </td>
                                 <td>
-                                    {task.requiredSkill
-                                        ? <span className="role-badge role-worker" style={{ fontSize: '0.75rem' }}>{task.requiredSkill.name}</span>
-                                        : <span style={{ color: '#888' }}>-</span>}
+                                    {task.requiredSkills && task.requiredSkills.length > 0 ? (
+                                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                            {task.requiredSkills.map(s => (
+                                                <span key={s.id} className="role-badge role-worker" style={{ fontSize: '0.75rem', backgroundColor: '#e2e8f0', color: '#4a5568', padding: '0.2rem 0.5rem', borderRadius: '12px' }}>{s.name}</span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <span style={{ color: '#888', fontStyle: 'italic', fontSize: '0.85rem' }}>No skills</span>
+                                    )}
                                 </td>
                                 <td>{task.deadline ? new Date(task.deadline).toLocaleDateString() : '-'}</td>
                                 <td>{task.durationHours != null ? `${task.durationHours}h` : '-'}</td>
                                 <td>{task.startTime ? new Date(task.startTime).toLocaleString() : <span className="unassigned">Not scheduled</span>}</td>
                                 {canManage && (
-                                    <td style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <button className="btn-edit" onClick={() => handleEdit(task)}>Edit</button>
-                                        <button className="btn-delete" onClick={() => handleDelete(task.id)}>Delete</button>
+                                    <td>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button className="btn-edit" onClick={() => handleEdit(task)}>Edit</button>
+                                            <button className="btn-delete" onClick={() => handleDelete(task.id)}>Delete</button>
+                                        </div>
                                     </td>
                                 )}
                             </tr>

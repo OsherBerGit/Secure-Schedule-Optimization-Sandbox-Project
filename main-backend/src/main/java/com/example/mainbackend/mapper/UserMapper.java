@@ -146,7 +146,7 @@ public class UserMapper {
      * @param user the User entity (must have roles already loaded)
      * @return anonymous AlgoUserRequest for the algorithm engine
      */
-    public AlgoUserRequest toAlgoRequest(User user) {
+    public AlgoUserRequest toAlgoRequest(User user, int effectiveMaxTasks) {
         if (user == null) return null;
 
         List<AlgoVacationRequest> approvedVacations = user.getVacations() != null
@@ -175,7 +175,7 @@ public class UserMapper {
         return AlgoUserRequest.builder()
                 .id(user.getId())
                 .availabilities(availabilities)
-                .maxTasks(user.getMaxTasks())
+                .maxTasks(effectiveMaxTasks)
                 .skillIds(user.getSkills() != null
                         ? user.getSkills().stream().map(Skill::getId).collect(Collectors.toSet())
                         : Collections.emptySet())

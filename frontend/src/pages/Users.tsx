@@ -248,8 +248,10 @@ const Users = () => {
                                         )}
                                     </td>
                                     <td>
-                                        <button className="btn-edit" onClick={() => handleEdit(user)}>Edit</button>
-                                        <button className="btn-delete" onClick={() => handleDelete(user.id)}>Delete</button>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button className="btn-edit" onClick={() => handleEdit(user)}>Edit</button>
+                                            <button className="btn-delete" onClick={() => handleDelete(user.id)}>Delete</button>
+                                        </div>
                                     </td>
                                 </tr>
                             )

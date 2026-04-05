@@ -36,4 +36,9 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
 
     @Query("SELECT s FROM Settlement s JOIN FETCH s.task JOIN FETCH s.worker JOIN FETCH s.status WHERE s.worker.nationalId = :nationalId")
     List<Settlement> findByWorker_NationalId(@Param("nationalId") String nationalId);
+
+    long countByWorker_IdAndStatus_NameIn(Long workerId, java.util.Collection<String> statusNames);
+
+    @Query("SELECT s.worker.id, COUNT(s) FROM Settlement s WHERE s.worker.id IN :workerIds AND s.status.name IN :statusNames GROUP BY s.worker.id")
+    List<Object[]> countActiveSettlementsByWorkerIds(@Param("workerIds") java.util.Collection<Long> workerIds, @Param("statusNames") java.util.Collection<String> statusNames);
 }

@@ -47,13 +47,18 @@
     color: #555;
     font-size: 0.9rem;
     border-bottom: 2px solid #eee;
+    cursor: pointer;
+    user-select: none;
 }
+
+.users-table th:hover { background: #eaeaea; }
 
 .users-table td {
     padding: 0.9rem 1rem;
     border-bottom: 1px solid #f0f0f0;
     color: #333;
     font-size: 0.95rem;
+    vertical-align: middle;
 }
 
 .users-table tr:last-child td { border-bottom: none; }

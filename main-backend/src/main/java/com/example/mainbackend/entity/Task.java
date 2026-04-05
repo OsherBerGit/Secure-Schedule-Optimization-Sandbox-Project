@@ -5,11 +5,13 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Represents a work requirement in the system.
- * Lifecycle: OPEN → LOCKED (assigned by algorithm) → CLOSED (all settlements done).
+ * Lifecycle: OPEN -> LOCKED (assigned by algorithm) -> CLOSED (all settlements done).
  */
 @Getter
 @Setter
@@ -33,7 +35,7 @@ public class Task {
     private TaskPriority priority;
 
     /**
-     * Task lifecycle status (OPEN → SCHEDULED → CLOSED).
+     * Task lifecycle status (OPEN -> SCHEDULED -> CLOSED).
      * Stored in the task_statuses table.
      */
     @ManyToOne(fetch = FetchType.LAZY)
@@ -52,15 +54,22 @@ public class Task {
     /**
      * The department this task belongs to.
      * Used by scheduling scope: MANAGERs only see tasks in their own department.
-     * Nullable — tasks not yet assigned to a department are visible to ADMINs only.
+     * Nullable - tasks not yet assigned to a department are visible to ADMINs only.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "skill_id", nullable = true)
-    private Skill requiredSkill;
+    // Functional Skills: A task can require multiple Skill Titles (many-to-many)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "task_skills",
+            joinColumns = @JoinColumn(name = "task_id"),
+            inverseJoinColumns = @JoinColumn(name = "skill_id"),
+            uniqueConstraints = @UniqueConstraint(columnNames = {"task_id", "skill_id"})
+    )
+    @Builder.Default
+    private Set<Skill> requiredSkills = new HashSet<>();
 
     @OneToMany(mappedBy = "predecessorTask", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

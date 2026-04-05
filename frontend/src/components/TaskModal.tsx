@@ -23,7 +23,9 @@ const TaskModal = ({ task, statuses, priorities, onSubmit, onClose }: TaskModalP
     const [departments, setDepartments] = useState<Department[]>([])
     const [skills, setSkills] = useState<Skill[]>([])
     const [departmentId, setDepartmentId] = useState<number | ''>('')
-    const [requiredSkillId, setRequiredSkillId] = useState<number | ''>(task?.requiredSkill?.id ?? '')
+    const [requiredSkillIds, setRequiredSkillIds] = useState<number[]>(
+        task?.requiredSkills?.map(s => s.id) ?? []
+    )
     const [isLoading, setIsLoading] = useState(true)
 
     const isAdmin = user?.role === 'ADMIN'
@@ -50,6 +52,12 @@ const TaskModal = ({ task, statuses, priorities, onSubmit, onClose }: TaskModalP
         }).catch(console.error).finally(() => setIsLoading(false))
     }, [isAdmin, isManager, task, user])
 
+    function handleSkillChange(id: number) {
+        setRequiredSkillIds(prev =>
+            prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+        )
+    }
+
     async function handleSubmit(e: FormEvent) {
         e.preventDefault()
         setErrorMsg(null)
@@ -63,7 +71,7 @@ const TaskModal = ({ task, statuses, priorities, onSubmit, onClose }: TaskModalP
             durationHours: durationHours !== '' ? durationHours : undefined,
             priorityId,
             departmentId: departmentId !== '' ? departmentId : undefined,
-            requiredSkill: requiredSkillId !== '' ? Number(requiredSkillId) : null
+            requiredSkillIds: requiredSkillIds
         }
 
         if (task) {
@@ -169,16 +177,24 @@ const TaskModal = ({ task, statuses, priorities, onSubmit, onClose }: TaskModalP
                         </div>
 
                         <div className="form-group">
-                            <label>Required Skill</label>
+                            <label>Required Skills</label>
                             {isLoading ? <p>Loading skills...</p> : (
-                                <select value={requiredSkillId} onChange={e => setRequiredSkillId(e.target.value === '' ? '' : Number(e.target.value))}>
-                                    <option value="">-- None --</option>
+                                <div className="skills-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc' }}>
                                     {skills.map(skill => (
-                                        <option key={skill.id} value={skill.id}>{skill.name}</option>
+                                        <div key={skill.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <input
+                                                type="checkbox"
+                                                id={`skill-${skill.id}`}
+                                                checked={requiredSkillIds.includes(skill.id)}
+                                                onChange={() => handleSkillChange(skill.id)}
+                                                style={{ margin: 0, width: '16px', height: '16px', cursor: 'pointer' }}
+                                            />
+                                            <label htmlFor={`skill-${skill.id}`} style={{ fontSize: '0.85rem', color: '#4a5568', margin: 0, cursor: 'pointer' }}>{skill.name}</label>
+                                        </div>
                                     ))}
-                                </select>
+                                </div>
                             )}
-                            {fieldErrors.requiredSkill && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.requiredSkill}</small>}
+                            {fieldErrors.requiredSkillIds && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.requiredSkillIds}</small>}
                         </div>
 
                         <div className="form-row">

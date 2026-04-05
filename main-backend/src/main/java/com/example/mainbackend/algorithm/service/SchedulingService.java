@@ -36,14 +36,14 @@ import java.util.stream.Collectors;
 /**
  * Orchestrates the full scheduling flow:
  *  1. Fetch the active scheduling configuration (weights, population size, etc.)
- *  2. Fetch only OPEN tasks Ã¢â‚¬â€ Zero-Trust: LOCKED/SCHEDULED/CLOSED tasks are never sent to the algorithm
+ *  2. Fetch only OPEN tasks Zero-Trust: LOCKED/SCHEDULED/CLOSED tasks are never sent to the algorithm
  *  3. Build a minimal, anonymous request (no PII) for the algorithm service
- *  4. Apply results: Task Ã¢â€ â€™ SCHEDULED (lifecycle), Settlement Ã¢â€ â€™ ASSIGNED (execution)
+ *  4. Apply results: Task  SCHEDULED (lifecycle), Settlement ASSIGNED (execution)
  *
  * Rules enforced:
- *  - Zero-Trust Ã¢â‚¬â€ only IDs and capacity data leave this service to the algorithm
- *  - Mapper Pattern Ã¢â‚¬â€ entity-to-DTO conversion delegated to TaskMapper / UserMapper
- *  - N+1 prevention Ã¢â‚¬â€ JOIN FETCH queries used for tasks and users
+ *  - Zero-Trust only IDs and capacity data leave this service to the algorithm
+ *  - Mapper Pattern entity-to-DTO conversion delegated to TaskMapper / UserMapper
+ *  - N+1 prevention JOIN FETCH queries used for tasks and users
  */
 @Service
 @Slf4j
@@ -61,17 +61,17 @@ public class SchedulingService {
     private final TaskMapper taskMapper;
 
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ Public API Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // Public API
 
     /**
-     * PHASE 1 Ã¢â‚¬â€ Preview / Draft Mode.
+     * PHASE 1 Preview / Draft Mode.
      *
      * Runs the scheduling algorithm and returns an enriched preview response.
      * Nothing is written to the database. Task statuses remain OPEN; no settlements
      * are created. The frontend stores this as a draft for admin review before
      * calling {@link #saveApprovedSchedule}.
      *
-     * @param strategy     the scheduling strategy name (GREEDY, ROUND_ROBIN, MEMETIC)
+     * @param strategy     the scheduling strategy name
      * @param departmentId optional department scope for ADMIN users; ignored for MANAGER
      * @param configId     optional configuration ID (uses active if null)
      */
@@ -89,7 +89,7 @@ public class SchedulingService {
 
         AlgoScheduleResponse response = algorithmClient.requestSchedule(request);
 
-        // Enrich with human-readable names for the preview Ã¢â‚¬â€ no DB writes
+        // Enrich with human-readable names for the preview no DB writes
         enrichForPreview(response);
         return response;
     }
@@ -103,12 +103,12 @@ public class SchedulingService {
     }
 
     /**
-     * PHASE 2 Ã¢â‚¬â€ Approve and Save.
+     * PHASE 2 Approve and Save.
      * Refactored for strict Zero-Trust validation, N+1 prevention, and ACID compliance.
      *
      * Persists the admin-approved draft assignments:
-     *   - Task lifecycle  Ã¢â€ â€™ SCHEDULED
-     *   - Settlement exec Ã¢â€ â€™ ASSIGNED  (idempotent guard against duplicates)
+     *   - Task lifecycle SCHEDULED
+     *   - Settlement exec ASSIGNED  (idempotent guard against duplicates)
      *
      * Uses Bulk-fetching pattern to eliminate N+1 queries.
      * Accumulates all validation errors and fails the entire batch if any issue is found.
@@ -228,7 +228,7 @@ public class SchedulingService {
                 tasksToSave.size(), settlementsToSave.size());
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ Private Helper Methods for saveApprovedSchedule Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // Private Helper Methods for saveApprovedSchedule
 
     private List<String> validateAssignmentBasic(SaveScheduleRequest.TaskAssignmentDto assignment,
                                                  Task task,
@@ -255,7 +255,7 @@ public class SchedulingService {
         if (!entityVersion.equals(requestVersion))
             errors.add("Concurrency Error: Task ID [" + task.getId() + "] was modified by another user. Please refresh.");
 
-        if (task.getRequiredSkill() != null && !user.getSkills().contains(task.getRequiredSkill()))
+        if (task.getRequiredSkills() != null && !task.getRequiredSkills().isEmpty() && !user.getSkills().containsAll(task.getRequiredSkills()))
             errors.add("User ID " + userId + " lacks required skills for Task ID " + taskId + ".");
 
         LocalDateTime proposedStart = assignment.getScheduledStart();
@@ -367,16 +367,16 @@ public class SchedulingService {
                     .build());
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ Build request Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // Build request
 
     /**
      * Builds the anonymous algorithm request, scoping users and tasks based on
      * the caller's Spring Security roles:
      *
      * <ul>
-     *   <li>{@code MANAGER} Ã¢â‚¬â€ ALWAYS scoped to the manager's own department (parameter ignored).</li>
-     *   <li>{@code ADMIN}   Ã¢â‚¬â€ scoped to {@code departmentId} when non-null; global when null.</li>
-     *   <li>anything else   Ã¢â‚¬â€ not permitted to trigger scheduling.</li>
+     *   <li>{@code MANAGER} ALWAYS scoped to the manager's own department (parameter ignored).</li>
+     *   <li>{@code ADMIN}   scoped to {@code departmentId} when non-null; global when null.</li>
+     *   <li>anything else   not permitted to trigger scheduling.</li>
      * </ul>
      *
      * @param departmentId optional ADMIN-only scope override; always ignored for MANAGER
@@ -398,21 +398,21 @@ public class SchedulingService {
         List<AlgoTaskRequest> tasks;
 
         if (isManager) {
-            // MANAGER Ã¢â‚¬â€ ALWAYS scope to their own department, parameter is irrelevant
+            // MANAGER ALWAYS scope to their own department, parameter is irrelevant
             Department dept = currentUser.getDepartment();
             if (dept == null)
                 throw new IllegalStateException(
                         "MANAGER user [id=" + currentUser.getId() + "] has no department assigned");
 
-            log.info("Scheduling scope: MANAGER Ã¢â‚¬â€ department '{}' (id={})", dept.getName(), dept.getId());
+            log.info("Scheduling scope: MANAGER department '{}' (id={})", dept.getName(), dept.getId());
             users = buildUserRequests(dept.getId());
             tasks = buildTaskRequests(dept.getId());
         } else {
-            // ADMIN Ã¢â‚¬â€ scope to departmentId if provided, otherwise global
+            // ADMIN scope to departmentId if provided, otherwise global
             if (departmentId != null)
-                log.info("Scheduling scope: ADMIN Ã¢â‚¬â€ department-scoped to id={}", departmentId);
+                log.info("Scheduling scope: ADMIN department-scoped to id={}", departmentId);
             else
-                log.info("Scheduling scope: ADMIN Ã¢â‚¬â€ global (all departments)");
+                log.info("Scheduling scope: ADMIN global (all departments)");
 
             users = buildUserRequests(departmentId);
             tasks = buildTaskRequests(departmentId);
@@ -431,15 +431,34 @@ public class SchedulingService {
     /**
      * Loads workers with their roles eagerly.
      *
-     * @param departmentId {@code null} Ã¢â€ â€™ all users (ADMIN); non-null Ã¢â€ â€™ department-scoped (MANAGER)
+     * @param departmentId {@code null} all users (ADMIN); non-null department-scoped (MANAGER)
      */
     private List<AlgoUserRequest> buildUserRequests(Long departmentId) {
         List<User> users = (departmentId == null)
                 ? userRepository.findAllWithSkills()
                 : userRepository.findAllWithSkillsByDepartment(departmentId);
 
+        if (users.isEmpty()) return Collections.emptyList();
+
+        List<String> activeStatuses = List.of(
+                SettlementStatusLevel.ASSIGNED.name(),
+                SettlementStatusLevel.IN_PROGRESS.name()
+        );
+
+        List<Long> workerIds = users.stream().map(User::getId).collect(Collectors.toList());
+        List<Object[]> counts = settlementRepository.countActiveSettlementsByWorkerIds(workerIds, activeStatuses);
+        Map<Long, Long> activeCountMap = counts.stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+
         return users.stream()
-                .map(userMapper::toAlgoRequest)
+                .map(user -> {
+                    long activeCount = activeCountMap.getOrDefault(user.getId(), 0L);
+                    int effectiveMaxTasks = Math.max(0, user.getMaxTasks() - (int) activeCount);
+                    return userMapper.toAlgoRequest(user, effectiveMaxTasks);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -447,7 +466,7 @@ public class SchedulingService {
      * Loads OPEN tasks with roles and constraints eagerly merged in-memory to avoid
      * a Cartesian product (HHH90003004).
      *
-     * @param departmentId {@code null} Ã¢â€ â€™ all OPEN tasks (ADMIN); non-null Ã¢â€ â€™ department-scoped (MANAGER)
+     * @param departmentId {@code null} all OPEN tasks (ADMIN); non-null department-scoped (MANAGER)
      */
     private List<AlgoTaskRequest> buildTaskRequests(Long departmentId) {
         List<Task> tasksWithRoles;
@@ -483,7 +502,7 @@ public class SchedulingService {
                 .collect(Collectors.toList());
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ Enrich for preview (read-only) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // Enrich for preview (read-only)
 
     /**
      * Injects human-readable names ({@code taskTitle}, {@code assignedUserFullName})
@@ -519,7 +538,7 @@ public class SchedulingService {
         Map<Long, User> userCache = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬ Enrich assigned tasks (names only Ã¢â‚¬â€ no persistence) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // Enrich assigned tasks (names only - no persistence)
         for (AlgoTaskAssignmentResponse assignment : response.getAssignments()) {
             Task task = taskCache.get(assignment.getTaskId());
             if (task != null)
@@ -536,7 +555,7 @@ public class SchedulingService {
             }
         }
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬ Enrich unscheduled tasks with human-readable names Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // Enrich unscheduled tasks with human-readable names
         if (response.getUnscheduledTasks() != null) {
             for (AlgoUnscheduledTaskResponse unscheduled : response.getUnscheduledTasks()) {
                 Task task = taskCache.get(unscheduled.getTaskId());
@@ -551,5 +570,18 @@ public class SchedulingService {
 
         log.info("enrichForPreview: enriched {} assignments for draft view (no DB writes)",
                 response.getAssignedTasks());
+    }
+
+    private boolean checkFallbackEligibility(Task task, User user) {
+        // Must match scheduling window logic
+        if (task.getDeadline() != null && task.getDeadline().isBefore(LocalDateTime.now().plusDays(1)))
+            return false;
+
+        // Skip if user doesn't have ALL of the task's required skills
+        if (task.getRequiredSkills() != null && !task.getRequiredSkills().isEmpty())
+            if (!user.getSkills().containsAll(task.getRequiredSkills()))
+                return false;
+
+        return true;
     }
 }

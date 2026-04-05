@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 /**
  * DTO for an ADMIN updating the status of a vacation request.
@@ -11,6 +13,8 @@ import lombok.Data;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class VacationStatusUpdateRequest {
 
     @NotBlank(message = "Status is required")
@@ -20,4 +24,3 @@ public class VacationStatusUpdateRequest {
     )
     private String status;
 }
-

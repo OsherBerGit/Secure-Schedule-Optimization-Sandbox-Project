@@ -26,4 +26,3 @@ public record VacationDto(
         LocalDate endDate
 
 ) {}
-

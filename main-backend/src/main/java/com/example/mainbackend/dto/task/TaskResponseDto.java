@@ -1,12 +1,18 @@
 package com.example.mainbackend.dto.task;
 
+import com.example.mainbackend.dto.skill.SkillDto;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TaskResponseDto {
     private Long id;
     private String title;
@@ -36,6 +42,6 @@ public class TaskResponseDto {
     /**
      * Skill required for the task.
      */
-    private Long requiredSkillId;
-    private String requiredSkillName;
+    private Set<Long> requiredSkillIds;
+    private Set<SkillDto> requiredSkills;
 }

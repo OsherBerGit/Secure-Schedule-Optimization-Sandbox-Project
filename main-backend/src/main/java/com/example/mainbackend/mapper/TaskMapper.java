@@ -33,14 +33,22 @@ public class TaskMapper {
                 .taskStatusColorCode(task.getStatus() != null ? task.getStatus().getColorCode() : null)
                 .departmentName(task.getDepartment() != null ? task.getDepartment().getName() : null)
                 .version(task.getVersion())
-                .requiredSkillId(task.getRequiredSkill() != null ? task.getRequiredSkill().getId() : null)
-                .requiredSkillName(task.getRequiredSkill() != null ? task.getRequiredSkill().getName() : null)
+                .requiredSkillIds(task.getRequiredSkills() != null ? 
+                        task.getRequiredSkills().stream().map(com.example.mainbackend.entity.Skill::getId).collect(Collectors.toSet()) : null)
+                .requiredSkills(task.getRequiredSkills() != null ? 
+                        task.getRequiredSkills().stream().map(s -> 
+                            com.example.mainbackend.dto.skill.SkillDto.builder()
+                                .id(s.getId())
+                                .name(s.getName())
+                                .description(s.getDescription())
+                                .build()
+                        ).collect(Collectors.toSet()) : null)
                 .build();
     }
 
     /**
      * Maps a Task entity to an anonymous AlgoTaskRequest.
-     * Zero-Trust: only scheduling-relevant fields are included — no titles, descriptions, or PII.
+     * Zero-Trust: only scheduling-relevant fields are included - no titles, descriptions, or PII.
      *
      * @param task the Task entity
      * @return anonymous AlgoTaskRequest for the algorithm engine
@@ -75,7 +83,8 @@ public class TaskMapper {
                 .durationHours(task.getDurationHours())
                 .deadline(task.getDeadline())
                 .priorityLevel(task.getPriority() != null ? task.getPriority().getValue() : null)
-                .requiredSkillId(task.getRequiredSkill() != null ? task.getRequiredSkill().getId() : null)
+                .requiredSkillIds(task.getRequiredSkills() != null ? 
+                        task.getRequiredSkills().stream().map(com.example.mainbackend.entity.Skill::getId).collect(Collectors.toSet()) : null)
                 .constraints(mapConstraints(task.getIncomingConstraints(), openTaskIds))
                 .build();
     }

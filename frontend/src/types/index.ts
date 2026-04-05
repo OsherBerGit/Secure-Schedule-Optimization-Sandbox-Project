@@ -77,7 +77,7 @@ export interface Task {
   
   /** Optimistic locking version from backend. */
   version: number;
-  requiredSkill?: Skill;
+  requiredSkills?: Skill[];
 }
 
 export interface SchedulingConfiguration {
@@ -102,7 +102,7 @@ export interface CreateTaskRequest {
   durationHours?: number;
   priorityId: number;
   departmentId?: number;
-  requiredSkill?: number | null;
+  requiredSkillIds?: number[];
 }
 
 export interface UpdateTaskRequest {
@@ -112,7 +112,7 @@ export interface UpdateTaskRequest {
   durationHours?: number;
   priorityId: number;
   departmentId?: number;
-  requiredSkill?: number | null;
+  requiredSkillIds?: number[];
   statusId?: number;
   taskStatusId?: number;
 }

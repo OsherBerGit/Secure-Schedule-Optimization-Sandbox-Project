@@ -50,6 +50,7 @@
     border-bottom: 1px solid #f0f0f0;
     color: #333;
     font-size: 0.95rem;
+    vertical-align: middle;
 }
 
 .settlements-table tr:last-child td { border-bottom: none; }
@@ -245,4 +246,3 @@
 
 .btn-cancel:hover { background: #e0e0e0; }
 .btn-save:hover   { opacity: 0.9; }
-

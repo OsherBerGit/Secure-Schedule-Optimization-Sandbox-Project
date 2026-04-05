@@ -319,15 +319,7 @@
     font-size: 0.95rem;
 }
 
-.priority-dot {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    margin-right: 0.4rem;
-    vertical-align: middle;
-}
-
+/* Status styling */
 .status-badge {
     padding: 0.2rem 0.6rem;
     border-radius: 12px;

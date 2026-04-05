@@ -3,9 +3,13 @@ package com.example.mainbackend.dto.taskconstraint;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TaskConstraintCreateRequest {
     @NotNull(message = "Predecessor task ID is required")
     private Long predecessorTaskId;

@@ -78,6 +78,18 @@ public class DataLoader implements CommandLineRunner {
             skillRepository.save(Skill.builder().name("DevOps Engineer").build());
             log.info("Seeded skill: DevOps Engineer");
         }
+        if (skillRepository.findByName("Java").isEmpty()) {
+            skillRepository.save(Skill.builder().name("Java").build());
+            log.info("Seeded skill: Java");
+        }
+        if (skillRepository.findByName("React").isEmpty()) {
+            skillRepository.save(Skill.builder().name("React").build());
+            log.info("Seeded skill: React");
+        }
+        if (skillRepository.findByName("DevOps").isEmpty()) {
+            skillRepository.save(Skill.builder().name("DevOps").build());
+            log.info("Seeded skill: DevOps");
+        }
     }
 
     @Transactional
@@ -188,6 +200,9 @@ public class DataLoader implements CommandLineRunner {
         Skill softwareEngineer = skillRepository.findByName("Software Engineer").orElseThrow();
         Skill qaEngineer = skillRepository.findByName("QA Engineer").orElseThrow();
         Skill devopsEngineer = skillRepository.findByName("DevOps Engineer").orElseThrow();
+        Skill java = skillRepository.findByName("Java").orElseThrow();
+        Skill react = skillRepository.findByName("React").orElseThrow();
+        Skill devOps = skillRepository.findByName("DevOps").orElseThrow();
 
         // - Generic Users ---
         upsertUser("admin", "admin", "admin", "admin@company.com", 15,
@@ -369,8 +384,37 @@ public class DataLoader implements CommandLineRunner {
                     shift(DayOfWeek.FRIDAY,    "07:00", "11:00")
                 ), generalDepartment, Set.of(qaEngineer));
 
+        // The Specialist (Super User with all 3 skills)
+        upsertUser("super1", "Clark", "Kent", "specialist@company.com", 5,
+                workerRole,
+                shifts(
+                    shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
+                    shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
+                    shift(DayOfWeek.WEDNESDAY, "09:00", "17:00"),
+                    shift(DayOfWeek.THURSDAY,  "09:00", "17:00"),
+                    shift(DayOfWeek.FRIDAY,    "09:00", "17:00")
+                ), generalDepartment, Set.of(java, react, devOps));
+
+        // The Juniors (Only 1 or 2 skills)
+        upsertUser("junior1", "Jimmy", "Olsen", "jimmy@company.com", 5,
+                workerRole,
+                shifts(
+                    shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
+                    shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
+                    shift(DayOfWeek.WEDNESDAY, "09:00", "17:00")
+                ), generalDepartment, Set.of(java));
+
+        upsertUser("junior2", "Lois", "Lane", "lois@company.com", 5,
+                workerRole,
+                shifts(
+                    shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
+                    shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
+                    shift(DayOfWeek.WEDNESDAY, "09:00", "17:00")
+                ), generalDepartment, Set.of(react, devOps));
+
         log.info("Seeded {} users", userRepository.count());
     }
+
     // ---
     // 30 OPEN tasks with varied priorities, durations, and rich descriptions
     // ---
@@ -390,163 +434,182 @@ public class DataLoader implements CommandLineRunner {
         Skill softwareEngineer = skillRepository.findByName("Software Engineer").orElseThrow();
         Skill qaEngineer = skillRepository.findByName("QA Engineer").orElseThrow();
         Skill devopsEngineer = skillRepository.findByName("DevOps Engineer").orElseThrow();
+        Skill java = skillRepository.findByName("Java").orElseThrow();
+        Skill react = skillRepository.findByName("React").orElseThrow();
+        Skill devOps = skillRepository.findByName("DevOps").orElseThrow();
         LocalDateTime now = LocalDateTime.now();
 
         // - Infrastructure & DevOps ---
         Task t01 = save(Task.builder().title("Design Database Schema")
                 .description("Design the full relational DB schema including all entities, relationships, and indexes.")
                 .durationHours(4).deadline(now.plusDays(3)).priority(high).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t02 = save(Task.builder().title("Setup CI/CD Pipeline")
                 .description("Configure GitHub Actions workflows for build, test, and deploy stages.")
                 .durationHours(6).deadline(now.plusDays(5)).priority(medium).status(open)
-                .requiredSkill(devopsEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(devopsEngineer)).department(generalDepartment).build());
 
         Task t03 = save(Task.builder().title("Provision Production Server")
                 .description("Provision and harden the AWS EC2 production server with security groups and IAM roles.")
                 .durationHours(5).deadline(now.plusDays(6)).priority(high).status(open)
-                .requiredSkill(devopsEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(devopsEngineer)).department(generalDepartment).build());
 
         Task t04 = save(Task.builder().title("Configure NGINX Reverse Proxy")
                 .description("Set up NGINX as a reverse proxy in front of the Spring Boot app with SSL termination.")
                 .durationHours(3).deadline(now.plusDays(7)).priority(medium).status(open)
-                .requiredSkill(devopsEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(devopsEngineer)).department(generalDepartment).build());
 
         Task t05 = save(Task.builder().title("Setup Docker Compose Environment")
                 .description("Create docker-compose.yml for local dev with MySQL, Redis, and backend services.")
                 .durationHours(4).deadline(now.plusDays(4)).priority(medium).status(open)
-                .requiredSkill(devopsEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(devopsEngineer)).department(generalDepartment).build());
 
         // - Backend - Auth & Security ---
         Task t06 = save(Task.builder().title("Implement JWT Authentication")
                 .description("Build JWT-based login with access/refresh tokens, blacklisting, and role guards.")
                 .durationHours(8).deadline(now.plusDays(4)).priority(critical).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer, devopsEngineer)).department(generalDepartment).build());
 
         Task t07 = save(Task.builder().title("Add Role-Based Access Control")
                 .description("Wire Spring Security method-level @PreAuthorize annotations for ADMIN/WORKER separation.")
                 .durationHours(4).deadline(now.plusDays(5)).priority(high).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t08 = save(Task.builder().title("Implement Password Reset Flow")
                 .description("Email-based OTP password reset with expiry and rate limiting.")
                 .durationHours(5).deadline(now.plusDays(8)).priority(medium).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         // - Backend - Core APIs ---
         Task t09 = save(Task.builder().title("Build Tasks REST API")
                 .description("CRUD endpoints for task management with pagination, filtering, and status transitions.")
                 .durationHours(6).deadline(now.plusDays(5)).priority(high).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t10 = save(Task.builder().title("Build Users REST API")
                 .description("CRUD endpoints for user management including role assignment and availability windows.")
                 .durationHours(5).deadline(now.plusDays(5)).priority(high).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t11 = save(Task.builder().title("Build Settlements REST API")
                 .description("Endpoints for creating, listing, and completing worker-task settlements.")
                 .durationHours(5).deadline(now.plusDays(6)).priority(high).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
-        save(Task.builder().title("Build Vacations REST API")
+        Task t12 = save(Task.builder().title("Build Vacations REST API")
                 .description("Endpoints for vacation request, approval/rejection workflow, and date-range queries.")
                 .durationHours(4).deadline(now.plusDays(6)).priority(medium).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t13 = save(Task.builder().title("Build Schedule Run Endpoint")
                 .description("POST /api/schedule/run - calls the algorithm service and returns the draft preview.")
                 .durationHours(6).deadline(now.plusDays(7)).priority(critical).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t14 = save(Task.builder().title("Build Schedule Save Endpoint")
                 .description("POST /api/schedule/save - persists approved assignments to the DB (SCHEDULED + ASSIGNED).")
                 .durationHours(4).deadline(now.plusDays(7)).priority(critical).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
-        save(Task.builder().title("Integrate Priorities & Statuses Lookup APIs")
+        Task t15 = save(Task.builder().title("Integrate Priorities & Statuses Lookup APIs")
                 .description("Seed endpoints for priorities and task/settlement status lookup tables.")
                 .durationHours(3).deadline(now.plusDays(4)).priority(low).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         // - Algorithm Service ---
         Task t16 = save(Task.builder().title("Implement Greedy Scheduling Strategy")
                 .description("Assign tasks in priority order to the first available worker respecting role and availability.")
                 .durationHours(8).deadline(now.plusDays(6)).priority(critical).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer, qaEngineer))
+                .department(generalDepartment).build());
 
         Task t17 = save(Task.builder().title("Implement Round-Robin Scheduling Strategy")
                 .description("Distribute tasks evenly across eligible workers in a round-robin fashion.")
                 .durationHours(6).deadline(now.plusDays(7)).priority(high).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t18 = save(Task.builder().title("Implement Memetic Algorithm Strategy")
                 .description("Genetic + local-search hybrid for near-optimal scheduling across large task sets.")
                 .durationHours(16).deadline(now.plusDays(12)).priority(high).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer, qaEngineer, devopsEngineer)).department(generalDepartment).build());
 
         Task t19 = save(Task.builder().title("Add Constraint Validation to Algorithm")
                 .description("Enforce Finish-to-Start / Start-to-Start lag constraints during candidate generation.")
                 .durationHours(6).deadline(now.plusDays(8)).priority(high).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t20 = save(Task.builder().title("Add Vacation Blocking to Algorithm")
                 .description("Exclude workers who are on approved vacation from candidate assignment windows.")
                 .durationHours(4).deadline(now.plusDays(7)).priority(high).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         // - Frontend ---
         Task t21 = save(Task.builder().title("Frontend - Login & Auth Pages")
                 .description("React login form with JWT storage, auto-refresh, and redirect logic.")
                 .durationHours(5).deadline(now.plusDays(6)).priority(high).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t22 = save(Task.builder().title("Frontend - Dashboard Page")
                 .description("Summary cards for tasks, workers, open settlements, and scheduling stats.")
                 .durationHours(5).deadline(now.plusDays(8)).priority(medium).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t23 = save(Task.builder().title("Frontend - Tasks Management Page")
                 .description("Table with create/edit/delete modals, status badges, and priority filters.")
                 .durationHours(6).deadline(now.plusDays(8)).priority(medium).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t24 = save(Task.builder().title("Frontend - Schedule Page with Gantt Chart")
                 .description("Gantt-style schedule view with draft/approve flow and Approve & Save button.")
                 .durationHours(8).deadline(now.plusDays(10)).priority(high).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t25 = save(Task.builder().title("Frontend - Settlements Page")
                 .description("List worker-task assignments with status tracking and completion action.")
                 .durationHours(4).deadline(now.plusDays(9)).priority(medium).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t26 = save(Task.builder().title("Frontend - Vacations Page")
                 .description("Vacation request form for workers and approve/reject UI for admins.")
                 .durationHours(4).deadline(now.plusDays(9)).priority(low).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         Task t27 = save(Task.builder().title("Frontend - Users Management Page")
                 .description("Admin-only table to view, create, edit, and delete users with role badges.")
                 .durationHours(4).deadline(now.plusDays(7)).priority(medium).status(open)
-                .requiredSkill(softwareEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(softwareEngineer)).department(generalDepartment).build());
 
         // - QA & Delivery ---
         Task t28 = save(Task.builder().title("Write Integration Tests - Backend")
                 .description("Spring Boot @SpringBootTest coverage for all REST endpoints.")
                 .durationHours(8).deadline(now.plusDays(11)).priority(medium).status(open)
-                .requiredSkill(qaEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(qaEngineer)).department(generalDepartment).build());
 
         Task t29 = save(Task.builder().title("Deploy to Staging & Smoke Test")
                 .description("Deploy the full stack to staging and run a smoke test checklist.")
                 .durationHours(4).deadline(now.plusDays(12)).priority(high).status(open)
-                .requiredSkill(qaEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(qaEngineer)).department(generalDepartment).build());
 
         Task t30 = save(Task.builder().title("Production Go-Live & Monitoring Setup")
                 .description("Deploy to production, configure Grafana/Prometheus dashboards, set up alerting.")
                 .durationHours(6).deadline(now.plusDays(14)).priority(critical).status(open)
-                .requiredSkill(devopsEngineer).department(generalDepartment).build());
+                .requiredSkills(Set.of(devopsEngineer, qaEngineer, softwareEngineer)).department(generalDepartment).build());
+
+        // The Super Task (Needs all 3 skills, Critical priority)
+        Task superTask = save(Task.builder().title("Build Microservice Platform")
+                .description("STRESS TEST: High-priority task requiring full-stack and devops expertise.")
+                .durationHours(8).deadline(now.plusDays(2)).priority(critical).status(open)
+                .requiredSkills(Set.of(java, react, devOps))
+                .department(generalDepartment).build());
+
+        // The Trap (Simple task, Low priority, same deadline. Solver should assign to Jimmy, keeping Clark free for the Super Task)
+        Task trapTask = save(Task.builder().title("Simple Java Bugfix")
+                .description("STRESS TEST: Low-priority bugfix. Needs Java.")
+                .durationHours(4).deadline(now.plusDays(2)).priority(low).status(open)
+                .requiredSkills(Set.of(java))
+                .department(generalDepartment).build());
+
         log.info("Seeded {} tasks", taskRepository.count());
 
         // - Finish-to-Start Constraints ---
@@ -620,8 +683,8 @@ public class DataLoader implements CommandLineRunner {
         if (vacationRepository.count() > 0) {
             log.info("Vacations already seeded - skipping");
             return;
-
         }
+
         VacationStatus approved = vacationStatusRepository.findByName(VacationStatusLevel.APPROVED.name()).orElseThrow();
         VacationStatus pending  = vacationStatusRepository.findByName(VacationStatusLevel.PENDING.name()).orElseThrow();
 
@@ -659,8 +722,8 @@ public class DataLoader implements CommandLineRunner {
         if (settlementRepository.count() > 0) {
             log.info("Settlements already seeded - skipping");
             return;
-
         }
+
         SettlementStatus pending   = settlementStatusRepository.findByName(SettlementStatusLevel.PENDING.name()).orElseThrow();
         SettlementStatus completed = settlementStatusRepository.findByName(SettlementStatusLevel.COMPLETED.name()).orElseThrow();
         TaskStatus locked = taskStatusRepository.findByName(TaskStatusLevel.LOCKED.name()).orElseThrow();

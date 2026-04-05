@@ -4,7 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * Side-Backend — Sandbox Gatekeeper
+ * Side-Backend - Sandbox Gatekeeper
  *
  * <p>This server acts as a security boundary between the main-backend and the
  * algorithm core. It is intentionally stateless: no database, no JPA, no

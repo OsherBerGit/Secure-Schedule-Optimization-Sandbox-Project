@@ -3,6 +3,7 @@ package com.example.mainbackend.algorithm.dto;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 /** Task data sent to the algorithm service. */
 @Data
@@ -16,7 +17,7 @@ public class AlgoTaskRequest {
     private Integer priorityLevel;
     
     /** Functional skill required (Skill ID). Replaces requiredRoles. */
-    private Long requiredSkillId;
-    
+    private Set<Long> requiredSkillIds;
+
     private List<AlgoConstraintRequest> constraints;
 }
