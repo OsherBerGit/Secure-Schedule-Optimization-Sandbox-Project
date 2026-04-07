@@ -4,15 +4,15 @@ import { scheduleApi } from '../api'
 
 export const useScheduleAlgorithm = () => {
     const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null)
+    const [fitnessData, setFitnessData] = useState<any[]>([])
     const [isGenerating, setIsGenerating] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [validationErrors, setValidationErrors] = useState<string[]>([])
     const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
-    // Run the algorithm
     const runAlgorithm = async (
-        strategy: ScheduleStrategy, 
+        strategy: ScheduleStrategy,
         departmentId: number | null,
         configId: number | null
     ) => {
@@ -20,7 +20,8 @@ export const useScheduleAlgorithm = () => {
         setError(null)
         setSuccessMsg(null)
         setScheduleResult(null)
-        
+        setFitnessData([])
+
         try {
             let res;
             if (strategy === 'MEMETIC' && configId) {
@@ -28,12 +29,17 @@ export const useScheduleAlgorithm = () => {
             } else {
                 res = await scheduleApi.run(strategy, departmentId)
             }
-            
+
+            if (res.data.fitnessHistory) {
+                setFitnessData(res.data.fitnessHistory)
+            }
+
             setScheduleResult(res.data)
             const assigned = res.data.assignedTasks
             const unassigned = res.data.unassignedTasks
+
             setSuccessMsg(
-                `✅ Draft generated using ${res.data.strategyUsed} - ` +
+                `Draft generated using ${res.data.strategyUsed} - ` +
                 `${assigned} assigned, ${unassigned} unassigned. ` +
                 `Review below and click "Approve & Save" to persist.`
             )
@@ -47,7 +53,6 @@ export const useScheduleAlgorithm = () => {
         }
     }
 
-    // Save the approved draft
     const saveSchedule = async (tasks: Task[]) => {
         if (!scheduleResult) return
 
@@ -60,7 +65,7 @@ export const useScheduleAlgorithm = () => {
             const assignments: SaveTaskAssignment[] = scheduleResult.assignments.map(a => {
                 const originalTask = tasks.find(t => t.id === a.taskId)
                 if (!originalTask) {
-                    throw new Error(`Task ID ${a.taskId} not found in local state via ID.`)
+                    throw new Error(`Task ID ${a.taskId} not found in local state.`)
                 }
 
                 return {
@@ -68,19 +73,19 @@ export const useScheduleAlgorithm = () => {
                     assignedUserId: a.assignedUserId ?? null,
                     scheduledStart: a.scheduledStart ?? null,
                     scheduledEnd: a.scheduledEnd ?? null,
-                    version: originalTask.version // Send version for optimistic locking
+                    version: originalTask.version
                 }
             })
 
             await scheduleApi.save({ assignments })
-            
-            const msg = `✅ Schedule approved and saved - ${scheduleResult.assignedTasks} task(s) scheduled.`
+
+            const msg = `Schedule approved and saved - ${scheduleResult.assignedTasks} task(s) scheduled.`
             setSuccessMsg(msg)
-            setScheduleResult(null) // Clear draft state
+            setScheduleResult(null)
+            setFitnessData([])
             return msg
         } catch (err: unknown) {
-            // Handle Structured Batch Validation Errors (422)
-            // @ts-expect-error err is unknown but we check fields safely
+            // @ts-expect-error safely checked
             if (err?.response?.status === 422 && Array.isArray(err?.response?.data?.details)) {
                 // @ts-expect-error checked above
                 setValidationErrors(err.response.data.details)
@@ -104,15 +109,15 @@ export const useScheduleAlgorithm = () => {
 
     return {
         scheduleResult,
+        fitnessData,
         isGenerating,
         isSaving,
         error,
         validationErrors,
         successMsg,
-        setValidationErrors, // Exposed for closing the summary component
+        setValidationErrors,
         runAlgorithm,
         saveSchedule,
         clearMessages
     }
 }
-

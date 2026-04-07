@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Department } from '../types'
 import { departmentApi } from '../api'
-import './LookupTable.css'
+import { Building2, Plus, Pencil, Trash2, X, Check, Search } from 'lucide-react'
+import './Departments.css'
 
 const Departments = () => {
     const [departments, setDepartments] = useState<Department[]>([])
@@ -11,6 +12,7 @@ const Departments = () => {
     const [editId, setEditId] = useState<number | null>(null)
     const [editName, setEditName] = useState('')
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
 
     const fetchDepartments = useCallback(async () => {
         setIsLoading(true)
@@ -27,25 +29,20 @@ const Departments = () => {
     useEffect(() => { void fetchDepartments() }, [fetchDepartments])
 
     async function handleAddDepartment(e: React.FormEvent) {
-        e.preventDefault();
-        console.log("1. Button Clicked. Current input value:", newName);
-
+        e.preventDefault()
         if (!newName.trim()) {
-            setError("Input is empty!");
-            return;
+            setError("Input is empty!")
+            return
         }
 
         try {
-            console.log("2. Sending API request...");
-            const response = await departmentApi.create(newName.trim());
-            console.log("3. API Success:", response);
-            setNewName('');
-            setIsModalOpen(false);
-            setError(null);
-            await fetchDepartments();
+            await departmentApi.create(newName.trim())
+            setNewName('')
+            setIsModalOpen(false)
+            setError(null)
+            await fetchDepartments()
         } catch (err: any) {
-            console.error("4. API Error:", err);
-            setError("Failed to add: " + (err.response?.data?.message || err.message));
+            setError("Failed to add: " + (err.response?.data?.message || err.message))
         }
     }
 
@@ -62,7 +59,7 @@ const Departments = () => {
     }
 
     async function handleDelete(id: number) {
-        if (!window.confirm('Delete this department?')) return
+        if (!window.confirm('Are you sure you want to delete this department?')) return
         try {
             await departmentApi.delete(id)
             await fetchDepartments()
@@ -71,84 +68,129 @@ const Departments = () => {
         }
     }
 
+    const filteredDepartments = useMemo(() => {
+        if (!searchQuery.trim()) return departments
+        return departments.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    }, [departments, searchQuery])
+
     return (
-        <div className="lookup-container">
-            <div className="lookup-header">
-                <h1>🏢 Departments</h1>
-                <button className="btn-add" onClick={() => setIsModalOpen(true)}>+ Add Department</button>
+        <div className="departments-page">
+            <div className="page-header">
+                <div className="page-header-title">
+                    <Building2 className="text-primary" size={28} color="var(--primary-color)" />
+                    <h1>Departments Management</h1>
+                </div>
+                <button className="btn-add-primary" onClick={() => setIsModalOpen(true)}>
+                    <Plus size={18} /> Add Department
+                </button>
+            </div>
+
+            <div className="filters-container">
+                <div className="search-wrapper">
+                    <Search className="search-icon" size={18} />
+                    <input
+                        type="text"
+                        className="modern-input search-input"
+                        placeholder="Search departments..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
             </div>
 
             {error && <div className="error-message">{error}</div>}
 
-            {isLoading ? (
-                <div className="loading">Loading...</div>
-            ) : departments.length === 0 ? (
-                <p className="lookup-empty">No departments yet. Add one above.</p>
-            ) : (
-                <table className="lookup-table">
-                    <thead>
+            <div className="table-container">
+                {isLoading ? (
+                    <div className="loading-state">Loading departments...</div>
+                ) : filteredDepartments.length === 0 ? (
+                    <div className="empty-state">No departments found.</div>
+                ) : (
+                    <table className="modern-table departments-table">
+                        <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Actions</th>
+                            <th className="th-id">ID</th>
+                            <th className="th-name">Department Name</th>
+                            <th className="th-actions">Actions</th>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {departments.map(d => (
+                        </thead>
+                        <tbody>
+                        {filteredDepartments.map(d => (
                             <tr key={d.id}>
-                                <td>{d.id}</td>
-                                <td>
+                                <td className="id-cell">{d.id}</td>
+                                <td className="name-cell">
                                     {editId === d.id ? (
                                         <input
-                                            className="lookup-input-inline"
+                                            className="inline-edit-input"
                                             value={editName}
                                             onChange={e => setEditName(e.target.value)}
+                                            autoFocus
                                         />
                                     ) : (
-                                        <span className="lookup-badge">{d.name}</span>
+                                        <span className="static-name">{d.name}</span>
                                     )}
                                 </td>
-                                <td>
-                                    {editId === d.id ? (
-                                        <>
-                                            <button className="btn-save" onClick={() => handleUpdate(d.id)}>Save</button>
-                                            <button className="btn-cancel" onClick={() => setEditId(null)}>Cancel</button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button className="btn-edit" onClick={() => { setEditId(d.id); setEditName(d.name) }}>Edit</button>
-                                            <button className="btn-delete" onClick={() => handleDelete(d.id)}>Delete</button>
-                                        </>
-                                    )}
+                                <td className="actions-cell">
+                                    <div className="actions-container">
+                                        {editId === d.id ? (
+                                            <>
+                                                <button className="btn-icon approve-btn" onClick={() => handleUpdate(d.id)}>
+                                                    <Check size={18} />
+                                                </button>
+                                                <button className="btn-icon delete-btn" onClick={() => setEditId(null)}>
+                                                    <X size={18} />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button className="btn-icon edit-btn" onClick={() => { setEditId(d.id); setEditName(d.name) }}>
+                                                    <Pencil size={16} />
+                                                </button>
+                                                <button className="btn-icon delete-btn" onClick={() => handleDelete(d.id)}>
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
-                    </tbody>
-                </table>
-            )}
+                        </tbody>
+                    </table>
+                )}
+            </div>
 
             {isModalOpen && (
-                <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
+                <div className="modal-overlay">
+                    <div className="modern-modal-card" style={{ maxWidth: '450px', width: '90%' }}>
                         <div className="modal-header">
-                            <h2>Add New Department</h2>
-                            <button className="btn-close" onClick={() => setIsModalOpen(false)}>×</button>
+                            <h2><Building2 size={22} className="text-primary" /> Add New Department</h2>
+                            <button type="button" className="modern-close-btn" onClick={() => setIsModalOpen(false)}>
+                                <X size={24} />
+                            </button>
                         </div>
-                        {error && <div className="error-message">{error}</div>}
-                        <form className="modal-form" onSubmit={handleAddDepartment}>
-                            <div className="form-group">
-                                <label>New department name *</label>
-                                <input
-                                    type="text"
-                                    placeholder="Enter the department name..."
-                                    value={newName}
-                                    onChange={e => setNewName(e.target.value)}
-                                    required
-                                />
+                        <form onSubmit={handleAddDepartment} className="modern-modal-form">
+                            <div className="modal-body" style={{ padding: '2rem' }}>
+                                <div className="modern-form-group">
+                                    <label>Department Name *</label>
+                                    <input
+                                        type="text"
+                                        className="modern-input"
+                                        placeholder="e.g. Engineering"
+                                        value={newName}
+                                        onChange={e => setNewName(e.target.value)}
+                                        required
+                                        autoFocus
+                                    />
+                                </div>
                             </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                                <button type="submit" className="btn-save">Save</button>
+                            <div className="modal-actions">
+                                <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-submit">
+                                    Save Department
+                                </button>
                             </div>
                         </form>
                     </div>

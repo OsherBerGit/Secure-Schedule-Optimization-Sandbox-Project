@@ -1,22 +1,20 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Skill } from '../types'
 import { skillApi } from '../api'
-import './LookupTable.css'
+import { Lightbulb, Plus, Pencil, Trash2, X, Check, Search } from 'lucide-react'
+import './Skills.css'
 
 const Skills = () => {
     const [items, setItems] = useState<Skill[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-
-    // Create form state
     const [newName, setNewName] = useState('')
     const [newDesc, setNewDesc] = useState('')
-
-    // Inline edit state
     const [editId, setEditId] = useState<number | null>(null)
     const [editName, setEditName] = useState('')
     const [editDesc, setEditDesc] = useState('')
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
 
     const fetchAll = useCallback(async () => {
         setIsLoading(true)
@@ -25,7 +23,6 @@ const Skills = () => {
             const res = await skillApi.getAll()
             setItems(res.data)
         } catch (err: any) {
-            console.error("Failed to load skills:", err)
             setError(err?.response?.data?.message || err.message || 'Failed to load skills')
         } finally {
             setIsLoading(false)
@@ -35,149 +32,196 @@ const Skills = () => {
     useEffect(() => { void fetchAll() }, [fetchAll])
 
     async function handleCreate(e: React.FormEvent) {
-        e.preventDefault();
-        console.log("1. Button Clicked. Current input value:", newName);
-        
+        e.preventDefault()
         if (!newName.trim()) {
-            setError("Input is empty!");
-            return;
+            setError("Name is required!")
+            return
         }
-        
         try {
-            console.log("2. Sending API request...");
-            const response = await skillApi.create(newName.trim(), newDesc.trim() || undefined);
-            console.log("3. API Success:", response);
-            setNewName('');
-            setNewDesc('');
-            setIsModalOpen(false);
-            setError(null);
-            await fetchAll();
+            await skillApi.create(newName.trim(), newDesc.trim() || undefined)
+            setNewName('')
+            setNewDesc('')
+            setIsModalOpen(false)
+            setError(null)
+            await fetchAll()
         } catch (err: any) {
-            console.error("4. API Error:", err);
-            setError("Failed to add: " + (err.response?.data?.message || err.message));
+            setError("Failed to add: " + (err.response?.data?.message || err.message))
         }
     }
 
     async function handleUpdate(id: number) {
         if (!editName.trim()) return
-        setError(null)
         try {
             await skillApi.update(id, editName.trim(), editDesc.trim() || undefined)
             setEditId(null)
             await fetchAll()
         } catch (err: any) {
-            console.error("Failed to update skill:", err)
             setError(err?.response?.data?.message || err.message || 'Failed to update skill')
         }
     }
 
     async function handleDelete(id: number) {
-        if (!window.confirm('Delete this skill?')) return
-        setError(null)
+        if (!window.confirm('Are you sure you want to delete this skill?')) return
         try {
             await skillApi.delete(id)
             await fetchAll()
         } catch (err: any) {
-            console.error("Failed to delete skill:", err)
             setError(err?.response?.data?.message || err.message || 'Failed to delete skill')
         }
     }
 
+    const filteredItems = useMemo(() => {
+        if (!searchQuery.trim()) return items
+        return items.filter(s =>
+            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+    }, [items, searchQuery])
+
     return (
-        <div className="lookup-container">
-            <div className="lookup-header">
-                <h1>💡 Skills</h1>
-                <button className="btn-add" onClick={() => setIsModalOpen(true)}>+ Add Skill</button>
+        <div className="skills-page">
+            <div className="page-header">
+                <div className="page-header-title">
+                    <Lightbulb className="text-primary" size={28} color="var(--primary-color)" />
+                    <h1>Skills Management</h1>
+                </div>
+                <button className="btn-add-primary" onClick={() => setIsModalOpen(true)}>
+                    <Plus size={18} /> Add Skill
+                </button>
+            </div>
+
+            <div className="filters-container">
+                <div className="search-wrapper">
+                    <Search className="search-icon" size={18} />
+                    <input
+                        type="text"
+                        className="modern-input search-input"
+                        placeholder="Search skills or descriptions..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
             </div>
 
             {error && <div className="error-message">{error}</div>}
 
-            {isLoading ? (
-                <div className="loading">Loading...</div>
-            ) : (
-                <table className="lookup-table">
-                    <thead>
+            <div className="table-container">
+                {isLoading ? (
+                    <div className="loading-state">Loading skills...</div>
+                ) : filteredItems.length === 0 ? (
+                    <div className="empty-state">No skills found.</div>
+                ) : (
+                    <table className="modern-table skills-table">
+                        <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Description</th>
-                            <th>Actions</th>
+                            <th className="th-id">ID</th>
+                            <th className="th-name">Skill Name</th>
+                            <th className="th-desc">Description</th>
+                            <th className="th-actions">Actions</th>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {items.map(item => (
+                        </thead>
+                        <tbody>
+                        {filteredItems.map(item => (
                             <tr key={item.id}>
-                                <td>{item.id}</td>
-                                <td>
+                                <td className="id-cell">{item.id}</td>
+                                <td className="name-cell">
                                     {editId === item.id ? (
-                                        <input className="lookup-input-inline" value={editName}
-                                            onChange={e => setEditName(e.target.value)} />
+                                        <input
+                                            className="inline-edit-input"
+                                            value={editName}
+                                            onChange={e => setEditName(e.target.value)}
+                                            autoFocus
+                                        />
                                     ) : (
-                                        <span className="lookup-badge">{item.name}</span>
+                                        <span className="static-name">{item.name}</span>
                                     )}
                                 </td>
-                                <td>
+                                <td className="desc-cell">
                                     {editId === item.id ? (
-                                        <input className="lookup-input-inline" value={editDesc}
-                                            onChange={e => setEditDesc(e.target.value)} />
+                                        <input
+                                            className="inline-edit-input"
+                                            value={editDesc}
+                                            onChange={e => setEditDesc(e.target.value)}
+                                        />
                                     ) : (
-                                        item.description ?? '-'
+                                        <span className="static-desc">{item.description ?? '-'}</span>
                                     )}
                                 </td>
-                                <td>
-                                    {editId === item.id ? (
-                                        <>
-                                            <button className="btn-save" onClick={() => handleUpdate(item.id)}>Save</button>
-                                            <button className="btn-cancel" onClick={() => setEditId(null)}>Cancel</button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button className="btn-edit" onClick={() => {
-                                                setEditId(item.id)
-                                                setEditName(item.name)
-                                                setEditDesc(item.description ?? '')
-                                            }}>Edit</button>
-                                            <button className="btn-delete" onClick={() => handleDelete(item.id)}>Delete</button>
-                                        </>
-                                    )}
+                                <td className="actions-cell">
+                                    <div className="actions-container">
+                                        {editId === item.id ? (
+                                            <>
+                                                <button className="btn-icon approve-btn" onClick={() => handleUpdate(item.id)}>
+                                                    <Check size={18} />
+                                                </button>
+                                                <button className="btn-icon delete-btn" onClick={() => setEditId(null)}>
+                                                    <X size={18} />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button className="btn-icon edit-btn" onClick={() => {
+                                                    setEditId(item.id)
+                                                    setEditName(item.name)
+                                                    setEditDesc(item.description ?? '')
+                                                }}>
+                                                    <Pencil size={16} />
+                                                </button>
+                                                <button className="btn-icon delete-btn" onClick={() => handleDelete(item.id)}>
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
-                    </tbody>
-                </table>
-            )}
+                        </tbody>
+                    </table>
+                )}
+            </div>
 
             {isModalOpen && (
-                <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
+                <div className="modal-overlay">
+                    <div className="modern-modal-card" style={{ maxWidth: '450px', width: '90%' }}>
                         <div className="modal-header">
-                            <h2>Add New Skill</h2>
-                            <button className="btn-close" onClick={() => setIsModalOpen(false)}>×</button>
+                            <h2><Lightbulb size={22} className="text-primary" /> Add New Skill</h2>
+                            <button type="button" className="modern-close-btn" onClick={() => setIsModalOpen(false)}>
+                                <X size={24} />
+                            </button>
                         </div>
-                        {error && <div className="error-message">{error}</div>}
-                        <form className="modal-form" onSubmit={handleCreate}>
-                            <div className="form-group">
-                                <label>Name *</label>
-                                <input
-                                    type="text"
-                                    placeholder="Enter the skill name..."
-                                    value={newName}
-                                    onChange={e => setNewName(e.target.value)}
-                                    required
-                                />
+                        <form onSubmit={handleCreate} className="modern-modal-form">
+                            <div className="modal-body" style={{ padding: '2rem' }}>
+                                <div className="modern-form-group">
+                                    <label>Skill Name *</label>
+                                    <input
+                                        type="text"
+                                        className="modern-input"
+                                        placeholder="e.g. Electrical Repair"
+                                        value={newName}
+                                        onChange={e => setNewName(e.target.value)}
+                                        required
+                                        autoFocus
+                                    />
+                                </div>
+                                <div className="modern-form-group" style={{ marginTop: '1.5rem' }}>
+                                    <label>Description</label>
+                                    <input
+                                        type="text"
+                                        className="modern-input"
+                                        placeholder="Short description of the skill"
+                                        value={newDesc}
+                                        onChange={e => setNewDesc(e.target.value)}
+                                    />
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label>Description</label>
-                                <input
-                                    type="text"
-                                    placeholder="Enter a short description..."
-                                    value={newDesc}
-                                    onChange={e => setNewDesc(e.target.value)}
-                                />
-                            </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                                <button type="submit" className="btn-save">Save</button>
+                            <div className="modal-actions">
+                                <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-submit">
+                                    Save Skill
+                                </button>
                             </div>
                         </form>
                     </div>

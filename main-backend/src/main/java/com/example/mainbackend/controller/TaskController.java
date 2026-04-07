@@ -89,6 +89,12 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getTasksByWorkerId(workerId));
     }
 
+    @GetMapping("/{id}/valid-prerequisites")
+    @PreAuthorize("@securityHelper.canManageTask(#id)")
+    public ResponseEntity<List<TaskResponseDto>> getValidPrerequisites(@PathVariable Long id) {
+        return ResponseEntity.ok(taskService.getValidPrerequisites(id));
+    }
+
     /**
      * Retrieves all tasks with a specific status.
      * RESTRICTED TO ADMIN ONLY (Global search).

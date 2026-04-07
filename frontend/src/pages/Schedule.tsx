@@ -1,357 +1,243 @@
-import { useState, useEffect } from 'react'
-import type { ScheduleStrategy } from '../types'
-import { useAuth } from '../context/useAuth'
-import { useScheduleData } from '../hooks/useScheduleData'
-import { useScheduleAlgorithm } from '../hooks/useScheduleAlgorithm'
-import { useSchedulingConfig } from '../hooks/useSchedulingConfig'
-import FitnessChart from '../components/FitnessChart'
-import BatchErrorSummary from '../components/BatchErrorSummary'
-import SchedulingConfigurationModal from '../components/SchedulingConfigurationModal'
-import ScheduleGantt from '../components/schedule/ScheduleGantt'
-import ScheduleTable from '../components/schedule/ScheduleTable'
-import ScheduleExplainability from '../components/schedule/ScheduleExplainability'
-import type { Task } from '../types'
-import './Schedule.css'
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  Play,
+  Square,
+  Settings,
+  Database,
+  Calendar,
+  List,
+  LayoutGrid,
+  LayoutDashboard,
+  CheckCircle2,
+  Sparkles,
+  Loader2,
+  Info
+} from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
-const Schedule = () => {
+import { useAuth } from '../context/useAuth';
+import { useScheduleData } from '../hooks/useScheduleData';
+import { useScheduleAlgorithm } from '../hooks/useScheduleAlgorithm';
+import { useSchedulingConfig } from '../hooks/useSchedulingConfig';
+import FitnessChart from '../components/FitnessChart';
+import SchedulingConfigurationModal from '../components/SchedulingConfigurationModal';
+import ScheduleGantt from '../components/schedule/ScheduleGantt';
+import ScheduleTable from '../components/schedule/ScheduleTable';
+import ScheduleExplainability from '../components/schedule/ScheduleExplainability';
+import type { Task, ScheduleStrategy } from '../types';
+
+import './Schedule.css';
+
+const STRATEGY_DESCRIPTIONS: Record<ScheduleStrategy, string> = {
+    GREEDY: "A fast, straightforward approach that makes the optimal choice at each step, prioritizing immediate constraints without looking ahead.",
+    ROUND_ROBIN: "Assigns tasks to resources in a circular order, ensuring an equal distribution of workload without complex constraint evaluation.",
+    CONSTRAINT_PROGRAMMING: "A rigorous mathematical approach that explores the solution space to find a mathematically valid schedule satisfying all hard requirements.",
+    MEMETIC: "A powerful hybrid approach combining global evolutionary search with local optimization. It iteratively improves assignments to maximize resource utilization and meet strict deadlines."
+}
+
+const Schedule: React.FC = () => {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const checkDarkMode = () => setIsDarkMode(document.documentElement.classList.contains('dark'));
+    checkDarkMode();
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
     const { user: currentUser } = useAuth()
+    const isAdmin = currentUser?.role === 'ADMIN'
+    const isManager = currentUser?.role === 'MANAGER'
+    const isWorker = currentUser?.role === 'WORKER'
+    const canManage = isAdmin || isManager
 
-    // 1. Data Hook
-    const {
-        tasks, workers, departments, settlements, isLoading: isDataLoading, refreshData, error: dataError
-    } = useScheduleData()
+    const { tasks, workers, departments, settlements, isLoading: isDataLoading, refreshData, error: dataError } = useScheduleData()
+    const { scheduleResult, fitnessData, isGenerating, isSaving, error: algoError, successMsg, runAlgorithm, saveSchedule } = useScheduleAlgorithm()
+    const { configs, isConfigModalOpen, selectedConfigId, isLoading: isConfigLoading, error: configError, openConfigModal, closeConfigModal, selectConfig, createConfig, fetchConfigs } = useSchedulingConfig()
 
-    // 2. Algorithm Hook
-    const {
-        scheduleResult, isGenerating, isSaving,
-        error: algoError, validationErrors, successMsg,
-        runAlgorithm, saveSchedule, setValidationErrors, clearMessages
-    } = useScheduleAlgorithm()
+    const [searchParams, setSearchParams] = useSearchParams()
+    const queryWorkerId = searchParams.get('workerId')
 
-    // 3. Configuration Hook
-    const {
-        configs, isConfigModalOpen, selectedConfigId, isLoading: isConfigLoading, error: configError,
-        openConfigModal, closeConfigModal, selectConfig, createConfig, fetchConfigs
-    } = useSchedulingConfig()
-
-    // Local UI State
     const [viewMode, setViewMode] = useState<'gantt' | 'table'>('gantt')
     const [strategy, setStrategy] = useState<ScheduleStrategy>('GREEDY')
     const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null)
     const [selectedGanttTask, setSelectedGanttTask] = useState<Task | null>(null)
 
-    // Fetch configs when modal opens
-    useEffect(() => {
-        if (isConfigModalOpen) fetchConfigs()
-    }, [isConfigModalOpen, fetchConfigs])
+    useEffect(() => { if (isConfigModalOpen) fetchConfigs() }, [isConfigModalOpen, fetchConfigs])
 
-    // Derived State
-    const mergedTasks = tasks.map(t => {
+    const mergedTasks = useMemo(() => tasks.map(t => {
         const draft = scheduleResult?.assignments.find(a => a.taskId === t.id)
-        if (draft) {
-            return {
-                ...t,
-                startTime: draft.scheduledStart ?? t.startTime,
-            }
-        }
-        return t
-    })
+        return draft ? { ...t, startTime: draft.scheduledStart ?? t.startTime } : t
+    }), [tasks, scheduleResult])
 
-    // assignmentMap combines saved database assignments (settlements) and overrides with new draft assignments
-    const assignmentMap = new Map<number, number | null>()
+    const assignmentMap = useMemo(() => {
+        const map = new Map<number, number | null>()
+        settlements?.forEach(s => { if (s.taskId) map.set(s.taskId, s.workerId) })
+        scheduleResult?.assignments.forEach(a => { map.set(a.taskId, a.assignedUserId) })
+        return map
+    }, [settlements, scheduleResult])
 
-    // First apply saved DB state
-    settlements?.forEach(s => {
-        if (s.taskId) assignmentMap.set(s.taskId, s.workerId)
-    })
+    const displayTasks = useMemo(() => {
+        const deptName = selectedDepartmentId ? departments.find(d => d.id === selectedDepartmentId)?.name : null
+        return deptName ? mergedTasks.filter(t => t.departmentName === deptName) : mergedTasks
+    }, [mergedTasks, selectedDepartmentId, departments])
 
-    // Then override with algorithm draft if running
-    if (scheduleResult?.assignments) {
-        scheduleResult.assignments.forEach(a => {
-            assignmentMap.set(a.taskId, a.assignedUserId)
-        })
-    }
-
-    // Filter tasks by selected department
-    const selectedDepartmentName = selectedDepartmentId 
-        ? departments.find(d => d.id === selectedDepartmentId)?.name 
-        : null;
-
-    const displayTasks = selectedDepartmentName
-        ? mergedTasks.filter(t => t.departmentName === selectedDepartmentName)
-        : mergedTasks
-
-    const displayWorkers = selectedDepartmentName
-        ? workers.filter(w => w.departmentName === selectedDepartmentName)
-        : workers
-
-    const scheduledTasks = displayTasks.filter(t => t.startTime)
-    // const unassignedTasks = displayTasks.filter(t => assignmentMap.get(t.id) == null)
-
-    // Handlers
-    const handleGenerate = async () => {
-        clearMessages()
-        await runAlgorithm(strategy, selectedDepartmentId, selectedConfigId)
-        await refreshData()
-    }
-
-    const handleApprove = async () => {
-        await saveSchedule(mergedTasks)
-        await refreshData()
-    }
-
-    const handleCreateConfig = async (newConfig: Omit<import('../types').SchedulingConfiguration, 'id' | 'isActive'>) => {
-        // We set isActive=false by default for new custom configs
-        const configToCreate = { ...newConfig, isActive: false, createdByUserId: currentUser?.id ? Number(currentUser.id) : undefined };
-        const created = await createConfig(configToCreate)
-        if (created && created.id) {
-            selectConfig(created.id)
-            closeConfigModal()
-            // successMsg sets by hook? No, only algorithm hook. We could set a local toast if needed.
-        }
-    }
-
-    const error = dataError || algoError || configError
-
-    const isWorker = currentUser?.role === 'WORKER'
+    const scheduledTasks = useMemo(() => displayTasks.filter(t => t.startTime || t.taskStatusName === 'SCHEDULED'), [displayTasks])
 
     return (
-        <div className="schedule-container">
-
-            {/* Header */}
-            {!isWorker && (
-                <div className="schedule-header">
-                    <div className="schedule-title">
-                        <h1>📅 Schedule</h1>
-                        <p className="schedule-subtitle">
-                            {scheduledTasks.length} of {tasks.length} tasks scheduled
-                        </p>
+        <div className="schedule-page">
+            <div
+              className="schedule-header"
+              style={isDarkMode ? { background: 'transparent', backgroundColor: 'transparent', boxShadow: 'none' } : {}}
+            >
+                <div
+                  className="header-left"
+                  style={isDarkMode ? { background: 'transparent', backgroundColor: 'transparent' } : {}}
+                >
+                    <div className="header-icon-wrapper">
+                        <Calendar className="text-primary" size={32} />
                     </div>
-                    <div className="schedule-actions">
-                        <div className="view-toggle">
-                            <button
-                                className={viewMode === 'gantt' ? 'active' : ''}
-                                onClick={() => setViewMode('gantt')}
-                            >
-                                Gantt
-                            </button>
-                            <button
-                                className={viewMode === 'table' ? 'active' : ''}
-                                onClick={() => setViewMode('table')}
-                            >
-                                Table
-                            </button>
-                        </div>
-                        {(currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER') && (
-                            <div className="schedule-generate-group">
-                                <select
-                                    className="department-select"
-                                    value={selectedDepartmentId ?? ''}
-                                    onChange={e => {
-                                        const val = e.target.value
-                                        setSelectedDepartmentId(val ? Number(val) : null)
-                                    }}
-                                    disabled={isGenerating}
-                                >
-                                    <option value="">Global (All Departments)</option>
-                                    {departments.map(d => (
-                                        <option key={d.id} value={d.id}>{d.name}</option>
-                                    ))}
-                                </select>
-
-                                <select
-                                    className="strategy-select"
-                                    value={strategy}
-                                    onChange={e => setStrategy(e.target.value as ScheduleStrategy)}
-                                    disabled={isGenerating}
-                                >
-                                    <option value="GREEDY">Greedy (Fastest)</option>
-                                    <option value="ROUND_ROBIN">Round Robin (Fairness)</option>
-                                    <option value="CONSTRAINT_PROGRAMMING">Constraint Programming (Exact)</option>
-                                    <option value="MEMETIC">Memetic (Genetic + Local Search)</option>
-                                </select>
-
-                                <button
-                                    className={`btn-secondary ${strategy !== 'MEMETIC' ? 'btn-ghost' : ''}`}
-                                    disabled={strategy !== 'MEMETIC'}
-                                    title={strategy !== 'MEMETIC' ? "Available only for Memetic Algorithm" : "Configure Algorithm Parameters"}
-                                    onClick={openConfigModal}
-                                    style={strategy !== 'MEMETIC' ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
-                                >
-                                   ⚙️ Algorithm Configuration
-                                </button>
-
-                                <button
-                                    className="generate-btn"
-                                    onClick={handleGenerate}
-                                    disabled={isGenerating || tasks.length === 0}
-                                >
-                                    {isGenerating ? 'Optimizing...' : 'Generate Schedule Draft'}
-                                </button>
-
-                                {scheduleResult && scheduleResult.strategyUsed === 'MEMETIC' && (
-                                    <span style={{ marginLeft: '1rem', fontStyle: 'italic', color: '#666' }}>
-                                        Used Config ID: {selectedConfigId || 'Default'}
-                                    </span>
-                                )}
-                            </div>
-                        )}
+                    <div className="header-title-wrapper">
+                        <h1>Schedule Management</h1>
+                        <p className="header-subtitle">{scheduledTasks.length} of {tasks.length} tasks scheduled</p>
                     </div>
                 </div>
-            )}
 
-            {/* Batch Validation Errors */}
-            {validationErrors.length > 0 && (
-                <BatchErrorSummary
-                    errors={validationErrors}
-                    onClose={() => setValidationErrors([])}
-                />
-            )}
-
-            {/* Success/Error Alerts */}
-            {error && !validationErrors.length && <div className="error-msg">{error}</div>}
-            {successMsg && <div className="draft-success-banner">{successMsg}</div>}
-
-            {/* Algorithm Result Panel */}
-            {scheduleResult && (
-                <div className="result-panel">
-                    <h3 className="result-title">📊 Draft Preview - {scheduleResult.strategyUsed}</h3>
-                    <div className="result-stats">
-                        <div className="result-stat">
-                            <span className="stat-value">{scheduleResult.totalTasks}</span>
-                            <span className="stat-label">Total</span>
-                        </div>
-                        <div className="result-stat result-stat--success">
-                            <span className="stat-value">{scheduleResult.assignedTasks}</span>
-                            <span className="stat-label">Assigned</span>
-                        </div>
-                        <div className="result-stat result-stat--warn">
-                            <span className="stat-value">{scheduleResult.unassignedTasks}</span>
-                            <span className="stat-label">Unassigned</span>
-                        </div>
-                    </div>
-                    {/* Only show simplified assignment list if needed, or rely on Gantt/Table */}
-                    {/* For now, keeping the list as it provides quick feedback */}
-                    <div className="scrollable-table-container">
-                        <div className="result-assignments">
-                            {scheduleResult.assignments.map(a => (
-                                <div key={a.taskId} className={`result-row ${a.assignedUserId ? 'assigned' : 'unassigned'}`}>
-                                    <span className="result-task">{a.taskTitle}</span>
-                                    <span className="result-arrow">→</span>
-                                    <span className="result-user">
-                                        {a.assignedUserFullName ?? '⚠️ Unassigned'}
-                                    </span>
-                                    {a.scheduledStart && (
-                                        <span className="result-dates">
-                                            {new Date(a.scheduledStart).toLocaleDateString()} –{' '}
-                                            {a.scheduledEnd ? new Date(a.scheduledEnd).toLocaleDateString() : '?'}
-                                        </span>
-                                    )}
-                                    <span className="result-reason">{a.reason}</span>
-                                </div>
-                            ))}
-                        </div>
+                <div
+                  className="header-right"
+                  style={isDarkMode ? { background: 'transparent', backgroundColor: 'transparent' } : {}}
+                >
+                    <div className="view-switcher">
+                        <button className={viewMode === 'gantt' ? 'active' : ''} onClick={() => setViewMode('gantt')}>
+                            <LayoutGrid size={16} /> Gantt
+                        </button>
+                        <button className={viewMode === 'table' ? 'active' : ''} onClick={() => setViewMode('table')}>
+                            <List size={16} /> Table
+                        </button>
                     </div>
 
-                    {/* Approve & Save */}
-                    {(currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER') && (
-                        <div className="result-approve-row">
-                            <p className="result-approve-hint">
-                                ℹ️ This is a <strong>draft preview</strong>. Nothing has been saved yet.
-                                Click the button below to commit these assignments to the database.
-                            </p>
-                            <button
-                                className="btn-approve"
-                                onClick={handleApprove}
-                                disabled={isSaving || scheduleResult.assignedTasks === 0}
-                            >
-                                {isSaving ? '💾 Saving...' : '✅ Approve & Save Schedule'}
+                    {!isWorker && canManage && (
+                        <div className="algo-controls">
+                            <select className="modern-select" value={selectedDepartmentId ?? ''} onChange={e => setSelectedDepartmentId(e.target.value ? Number(e.target.value) : null)}>
+                                <option value="">Global (All Depts)</option>
+                                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                            </select>
+                            <select className="modern-select" value={strategy} onChange={e => setStrategy(e.target.value as ScheduleStrategy)}>
+                                <option value="GREEDY">Greedy</option>
+                                <option value="ROUND_ROBIN">Round Robin</option>
+                                <option value="CONSTRAINT_PROGRAMMING">Constraint Programming</option>
+                                <option value="MEMETIC">Memetic</option>
+                            </select>
+                            <button className="icon-btn-settings" onClick={openConfigModal} disabled={strategy !== 'MEMETIC'}>
+                                <Settings size={20} />
+                            </button>
+                            <button className="btn-generate-main" onClick={() => runAlgorithm(strategy, selectedDepartmentId, selectedConfigId)} disabled={isGenerating}>
+                                {isGenerating ? <Loader2 className="spinner" size={18} /> : <Play size={18} fill="currentColor" />}
+                                <span>{isGenerating ? 'Running...' : 'Generate'}</span>
                             </button>
                         </div>
                     )}
                 </div>
-            )}
+            </div>
 
-            {/* ── Convergence Graph ── */}
-            {scheduleResult?.fitnessHistory && scheduleResult.fitnessHistory.length > 0 && (
-                <FitnessChart fitnessHistory={scheduleResult.fitnessHistory} />
-            )}
-
-            {isDataLoading ? (
-                <div className="loading">Loading schedule data...</div>
-            ) : (
-                <>
-                    {scheduledTasks.length === 0 && !scheduleResult ? (
-                        <div className="empty-state">
-                            <div className="empty-icon">📋</div>
-                            <h3>No scheduled tasks yet</h3>
-                            <p>
-                                {currentUser?.role === 'ADMIN'
-                                    ? 'Click "Generate Schedule" to run the scheduling algorithm.'
-                                    : 'The admin has not generated a schedule yet.'}
-                            </p>
-                        </div>
-                    ) : viewMode === 'gantt' ? (
-                        <ScheduleGantt tasks={scheduledTasks} workers={displayWorkers} assignmentMap={assignmentMap} onTaskClick={setSelectedGanttTask} />
-                    ) : (
-                        <div className="scrollable-table-container">
-                            <ScheduleTable tasks={scheduledTasks} workers={displayWorkers} assignments={scheduleResult?.assignments ?? []} assignmentMap={assignmentMap} />
-                        </div>
-                    )}
-
-                    {/* Explainability */}
-                    <div className="scrollable-table-container">
-                        {scheduleResult?.unscheduledTasks && (
-                            <ScheduleExplainability failures={scheduleResult.unscheduledTasks} />
-                        )}
-                    </div>
-                </>
-            )}
-
-            {/* Configuration Modal */}
-            {isConfigModalOpen && (
-                <SchedulingConfigurationModal
-                    configs={configs}
-                    isLoading={isConfigLoading}
-                    error={configError}
-                    onClose={closeConfigModal}
-                    initialConfigId={selectedConfigId}
-                    onSelectConfig={selectConfig}
-                    onCreateConfig={handleCreateConfig}
-                />
+            {successMsg && (
+                <div className="success-banner">
+                    <CheckCircle2 size={20} />
+                    <span>{successMsg.replace(/^[✅\s]+/, '')}</span>
+                </div>
             )}
 
             {isGenerating && (
-                <div className="loading-overlay">
-                    <div className="loading-spinner"></div>
-                    <h2>Optimizing Schedule...</h2>
+                <div className="generating-status-card large">
+                    <Loader2 className="spinner" size={48} />
+                    <div className="generating-info">
+                        <h3>Optimizing Schedule...</h3>
+                        <span>Running {strategy} algorithm to find the best possible plan.</span>
+                    </div>
                 </div>
             )}
 
-            {/* Read-Only Task Modal */}
-            {selectedGanttTask && (
-                <div className="modal-overlay" onClick={() => setSelectedGanttTask(null)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>Task Details</h2>
-                            <button className="btn-close" onClick={() => setSelectedGanttTask(null)}>×</button>
-                        </div>
-                        <div className="modal-content" style={{ padding: '1.5rem' }}>
-                            <p><strong>Title:</strong> {selectedGanttTask.title}</p>
-                            <p><strong>Assigned Worker:</strong> {(() => {
-                                const assignedId = assignmentMap.get(selectedGanttTask.id)
-                                const user = displayWorkers.find(w => w.id === assignedId)
-                                return user ? `${user.firstName} ${user.lastName}` : 'Unassigned'
-                            })()}</p>
-                            <p><strong>Status:</strong> {selectedGanttTask.taskStatusName}</p>
-                            <p><strong>Start Time:</strong> {selectedGanttTask.startTime ? new Date(selectedGanttTask.startTime).toLocaleString() : 'N/A'}</p>
-                            <p><strong>End Time:</strong> {selectedGanttTask.deadline ? new Date(selectedGanttTask.deadline).toLocaleString() : 'N/A'}</p>
-                        </div>
-                        <div className="modal-footer">
-                            <button type="button" className="btn-cancel" onClick={() => setSelectedGanttTask(null)}>Close</button>
+            {!isGenerating && !scheduleResult && scheduledTasks.length === 0 && (
+                <div className="empty-state-card">
+                    <div className="empty-icon-wrapper">
+                        <Sparkles size={40} />
+                    </div>
+                    <h2>No Schedule Generated</h2>
+                    <p>Select a strategy and click Generate to start the optimization process.</p>
+                    <div
+                      className="strategy-info-box"
+                      style={isDarkMode ? { backgroundColor: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.3)' } : {}}
+                    >
+                        <Info size={20} className="strategy-icon" style={isDarkMode ? { color: '#60a5fa' } : {}} />
+                        <div>
+                            <strong style={{ display: 'block', color: '#1e3a8a', marginBottom: '4px' }}>Algorithm Info</strong>
+                            <span style={{ color: '#1e40af', fontSize: '0.95rem', lineHeight: '1.4' }}>{STRATEGY_DESCRIPTIONS[strategy]}</span>
                         </div>
                     </div>
                 </div>
+            )}
+
+            {scheduleResult && (
+                <div className="result-layout-vertical">
+                    <div className="draft-preview-card">
+                        <div className="card-header">
+                            <div className="header-title-row">
+                                <LayoutDashboard size={20} />
+                                <h3>Draft Preview: {scheduleResult.strategyUsed}</h3>
+                            </div>
+                            {scheduleResult.strategyUsed === 'MEMETIC' && <span className="config-tag">Config ID: {selectedConfigId || 'Default'}</span>}
+                        </div>
+
+                        <div className="stats-grid">
+                            <div className="stat-box">
+                                <span className="stat-label">Total</span>
+                                <span className="stat-number">{scheduleResult.totalTasks}</span>
+                            </div>
+                            <div className="stat-box success">
+                                <span className="stat-label">Assigned</span>
+                                <span className="stat-number">{scheduleResult.assignedTasks}</span>
+                            </div>
+                            <div className="stat-box warning">
+                                <span className="stat-label">Unassigned</span>
+                                <span className="stat-number">{scheduleResult.unassignedTasks}</span>
+                            </div>
+                        </div>
+
+                        <div className="draft-actions">
+                            <p>Review the assignments below before saving to calendars.</p>
+                            <button className="btn-save-schedule" onClick={() => saveSchedule(mergedTasks)} disabled={isSaving}>
+                                <Database size={18} /> {isSaving ? 'Saving...' : 'Approve & Save Schedule'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {scheduleResult.strategyUsed === 'MEMETIC' && fitnessData && fitnessData.length > 0 && (
+                        <div className="fitness-section">
+                            <div className="fitness-header">
+                                <LayoutDashboard size={18} />
+                                <span>Convergence Analysis (Fitness Score)</span>
+                            </div>
+                            <FitnessChart data={fitnessData} />
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {(scheduledTasks.length > 0 || scheduleResult) && (
+                <div className="schedule-content">
+                    {viewMode === 'gantt' ? (
+                        <ScheduleGantt tasks={scheduledTasks} workers={workers} assignmentMap={assignmentMap} onTaskClick={setSelectedGanttTask} />
+                    ) : (
+                        <ScheduleTable tasks={scheduledTasks} workers={workers} assignmentMap={assignmentMap} />
+                    )}
+                </div>
+            )}
+
+            {scheduleResult?.unscheduledTasks && <ScheduleExplainability failures={scheduleResult.unscheduledTasks} />}
+
+            {isConfigModalOpen && (
+                <SchedulingConfigurationModal configs={configs} isLoading={isConfigLoading} error={configError} onClose={closeConfigModal} initialConfigId={selectedConfigId} onSelectConfig={selectConfig} onCreateConfig={createConfig} />
             )}
         </div>
     )

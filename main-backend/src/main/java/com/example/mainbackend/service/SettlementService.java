@@ -74,6 +74,12 @@ public class SettlementService {
                 .build();
 
         Settlement saved = settlementRepository.save(settlement);
+
+        TaskStatus scheduledStatus = taskStatusRepository.findByName(TaskStatusLevel.SCHEDULED.name())
+                .orElseThrow(() -> new IllegalStateException("SCHEDULED status not seeded in task_statuses"));
+        task.setStatus(scheduledStatus);
+        taskRepository.save(task);
+
         return mapper.toDto(saved);
     }
 

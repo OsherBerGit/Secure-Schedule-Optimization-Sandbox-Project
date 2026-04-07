@@ -123,6 +123,9 @@ export const taskApi = {
 
   getByWorker: (workerId: number) =>
     axiosInstance.get<Task[]>(`/tasks/worker/${workerId}`),
+
+  getValidPrerequisites: (taskId: number) =>
+    axiosInstance.get<Task[]>(`/tasks/${taskId}/valid-prerequisites`),
   // getByStatus removed - status is now on Settlement
 };
 

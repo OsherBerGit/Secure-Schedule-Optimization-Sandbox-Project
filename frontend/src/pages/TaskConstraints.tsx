@@ -3,8 +3,11 @@ import type { TaskConstraint, ConstraintType, Task, Department } from '../types'
 import { taskConstraintApi, constraintTypeApi, taskApi, departmentApi } from '../api'
 import { useAuth } from '../context/useAuth'
 import TaskConstraintModal from '../components/TaskConstraintModal'
-import './LookupTable.css'
-import './Tasks.css' // Import to use filter-row and layout styles if needed
+import TaskGraph from '../components/TaskGraph'
+import { GitMerge, Plus, Search, Trash2, List, Network } from 'lucide-react'
+import './TaskConstraints.css'
+
+type ViewMode = 'table' | 'graph'
 
 const TaskConstraints = () => {
     const { user: currentUser } = useAuth()
@@ -20,6 +23,7 @@ const TaskConstraints = () => {
     const [error, setError] = useState<string | null>(null)
 
     const [showModal, setShowModal] = useState(false)
+    const [viewMode, setViewMode] = useState<ViewMode>('table')
 
     const [search, setSearch] = useState('')
     const [filterDepartment, setFilterDepartment] = useState<string>('')
@@ -48,7 +52,10 @@ const TaskConstraints = () => {
     useEffect(() => { void fetchAll() }, [fetchAll])
 
     async function handleCreate(data: { predecessorTaskId: number, successorTaskId: number, constraintTypeId: number, lagMinutes?: number }) {
-        if (data.predecessorTaskId === data.successorTaskId) { setError('Predecessor and successor tasks cannot be the same'); return }
+        if (data.predecessorTaskId === data.successorTaskId) {
+            setError('Predecessor and successor tasks cannot be the same')
+            return
+        }
         try {
             await taskConstraintApi.create(data)
             setShowModal(false)
@@ -59,7 +66,7 @@ const TaskConstraints = () => {
     }
 
     async function handleDelete(id: number) {
-        if (!window.confirm('Delete this task constraint?')) return
+        if (!window.confirm('Are you sure you want to delete this task constraint?')) return
         try {
             await taskConstraintApi.delete(id)
             await fetchAll()
@@ -70,7 +77,6 @@ const TaskConstraints = () => {
 
     const filteredConstraints = useMemo(() => {
         return constraints.filter(c => {
-            // Task titles might act as search scope, or IDs
             const searchLower = search.toLowerCase()
             const predStr = (c.predecessorTaskTitle || '').toLowerCase()
             const succStr = (c.successorTaskTitle || '').toLowerCase()
@@ -81,8 +87,6 @@ const TaskConstraints = () => {
                 succStr.includes(searchLower) ||
                 typeStr.includes(searchLower)
 
-            // Filtering by department: We check if the predecessor or successor task belongs to the selected department.
-            // Since we need to look up the task's department, we find the task in `tasks` array.
             const matchesDept = filterDepartment === '' || (() => {
                 const predTask = tasks.find(t => t.id === c.predecessorTaskId)
                 const succTask = tasks.find(t => t.id === c.successorTaskId)
@@ -95,32 +99,71 @@ const TaskConstraints = () => {
         })
     }, [constraints, tasks, search, filterDepartment, filterConstraintType])
 
+    // For the graph, we might want to only show tasks involved in the filtered constraints
+    // to prevent the graph from being too noisy, or show all tasks. Let's show tasks relevant to the filter.
+    const tasksForGraph = useMemo(() => {
+        if (!search && !filterDepartment && !filterConstraintType) return tasks;
+
+        const relevantTaskIds = new Set<number>();
+        filteredConstraints.forEach(c => {
+            relevantTaskIds.add(c.predecessorTaskId);
+            relevantTaskIds.add(c.successorTaskId);
+        });
+
+        return tasks.filter(t => relevantTaskIds.has(t.id));
+    }, [tasks, filteredConstraints, search, filterDepartment, filterConstraintType]);
+
+
     return (
-        <div className="lookup-container" style={{ maxWidth: '1100px' }}>
-            <div className="lookup-header">
-                <h1>⚙️ Task Constraints</h1>
-                {canManage && (
-                    <button className="btn-add" onClick={() => setShowModal(true)}>
-                        + Add Constraint
-                    </button>
-                )}
+        <div className="task-constraints-page">
+            <div className="page-header">
+                <div className="page-header-title">
+                    <GitMerge className="text-primary" size={28} color="var(--primary-color)" />
+                    <h1>Task Constraints</h1>
+                </div>
+
+                <div className="header-actions">
+                    <div className="view-toggle">
+                        <button
+                            className={`toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+                            onClick={() => setViewMode('table')}
+                            title="Table View"
+                        >
+                            <List size={16} /> Table
+                        </button>
+                        <button
+                            className={`toggle-btn ${viewMode === 'graph' ? 'active' : ''}`}
+                            onClick={() => setViewMode('graph')}
+                            title="Graph View"
+                        >
+                            <Network size={16} /> Graph
+                        </button>
+                    </div>
+
+                    {canManage && (
+                        <button className="btn-add-primary" onClick={() => setShowModal(true)}>
+                            <Plus size={18} /> Add Constraint
+                        </button>
+                    )}
+                </div>
             </div>
 
-            {error && <div className="error-message">{error}</div>}
-
-            <div className="filter-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                <input
-                    type="text"
-                    className="modern-input"
-                    placeholder="🔍 Search tasks or type..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    style={{ minWidth: '250px' }}
-                />
+            <div className="filters-container">
+                <div className="search-wrapper" style={{ flex: 1 }}>
+                    <Search className="search-icon" size={18} />
+                    <input
+                        type="text"
+                        className="modern-input search-input"
+                        placeholder="Search tasks or type..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
+                </div>
 
                 {canManage && (
                     <select
-                        className="modern-select"
+                        className="modern-input"
+                        style={{ flex: '0 0 180px' }}
                         value={filterDepartment}
                         onChange={e => setFilterDepartment(e.target.value)}
                     >
@@ -132,51 +175,73 @@ const TaskConstraints = () => {
                 )}
 
                 <select
-                    className="modern-select"
+                    className="modern-input"
+                    style={{ flex: '0 0 180px' }}
                     value={filterConstraintType}
                     onChange={e => setFilterConstraintType(e.target.value)}
                 >
-                    <option value="">All Constraint Types</option>
+                    <option value="">All Types</option>
                     {constraintTypes.map(ct => (
                         <option key={ct.id} value={ct.name}>{ct.name}</option>
                     ))}
                 </select>
             </div>
 
-            {isLoading ? (
-                <div className="loading">Loading...</div>
-            ) : (
-                <table className="lookup-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Predecessor Task</th>
-                            <th>Successor Task</th>
-                            <th>Constraint Type</th>
-                            <th>Lag (min)</th>
-                            {canManage && <th>Actions</th>}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredConstraints.map(c => (
-                            <tr key={c.id}>
-                                <td>{c.id}</td>
-                                <td>{c.predecessorTaskTitle ?? `#${c.predecessorTaskId}`}</td>
-                                <td>{c.successorTaskTitle ?? `#${c.successorTaskId}`}</td>
-                                <td><span className="lookup-badge">{c.constraintTypeName ?? `#${c.constraintTypeId}`}</span></td>
-                                <td>{c.lagMinutes ?? 0}</td>
-                                {canManage && (
-                                    <td>
-                                        <button className="btn-delete" onClick={() => handleDelete(c.id)}>Delete</button>
-                                    </td>
-                                )}
+            {error && <div className="error-message">{error}</div>}
+
+            {viewMode === 'table' ? (
+                <div className="table-container">
+                    {isLoading ? (
+                        <div className="loading-state">Loading constraints...</div>
+                    ) : filteredConstraints.length === 0 ? (
+                        <div className="empty-state">No constraints found matching the criteria.</div>
+                    ) : (
+                        <table className="modern-table constraints-table">
+                            <thead>
+                            <tr>
+                                <th className="th-id">ID</th>
+                                <th>Predecessor Task</th>
+                                <th>Successor Task</th>
+                                <th>Type</th>
+                                <th>Lag (min)</th>
+                                {canManage && <th className="th-actions">Actions</th>}
                             </tr>
-                        ))}
-                        {filteredConstraints.length === 0 && (
-                            <tr><td colSpan={canManage ? 6 : 5} style={{ textAlign: 'center', color: '#aaa' }}>No constraints found</td></tr>
-                        )}
-                    </tbody>
-                </table>
+                            </thead>
+                            <tbody>
+                            {filteredConstraints.map(c => (
+                                <tr key={c.id}>
+                                    <td className="id-cell">{c.id}</td>
+                                    <td className="task-title-cell">{c.predecessorTaskTitle ?? `#${c.predecessorTaskId}`}</td>
+                                    <td className="task-title-cell">{c.successorTaskTitle ?? `#${c.successorTaskId}`}</td>
+                                    <td>
+                                            <span className="constraint-badge">
+                                                {c.constraintTypeName ?? `#${c.constraintTypeId}`}
+                                            </span>
+                                    </td>
+                                    <td>
+                                        {c.lagMinutes ? (
+                                            <span className="lag-badge">{c.lagMinutes}m</span>
+                                        ) : (
+                                            <span className="lag-empty">-</span>
+                                        )}
+                                    </td>
+                                    {canManage && (
+                                        <td className="actions-cell">
+                                            <div className="actions-container">
+                                                <button className="btn-icon delete-btn" onClick={() => handleDelete(c.id)} title="Delete">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    )}
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            ) : (
+                <TaskGraph tasks={tasksForGraph} constraints={filteredConstraints} />
             )}
 
             {showModal && canManage && (

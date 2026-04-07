@@ -4,6 +4,7 @@ import com.example.mainbackend.constants.TaskStatusLevel;
 import com.example.mainbackend.dto.task.TaskCreateRequest;
 import com.example.mainbackend.dto.task.TaskResponseDto;
 import com.example.mainbackend.entity.*;
+import com.example.mainbackend.exception.CustomValidationException;
 import com.example.mainbackend.mapper.TaskMapper;
 import com.example.mainbackend.repository.*;
 import com.example.mainbackend.security.SecurityHelper;
@@ -12,7 +13,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -193,6 +198,65 @@ public class TaskService {
     public List<TaskResponseDto> getTasksByStatusId(Long statusId) {
         return taskRepository.findByStatusId(statusId).stream()
                 .map(taskMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public void validateNoCircularDependency(Long predecessorId, Long successorId) {
+        Map<Long, List<Long>> graph = new HashMap<>();
+        List<TaskConstraint> allConstraints = taskConstraintRepository.findAll();
+
+        for (TaskConstraint constraint : allConstraints) {
+            Long pred = constraint.getPredecessorTask().getId();
+            Long succ = constraint.getSuccessorTask().getId();
+            graph.computeIfAbsent(pred, k -> new ArrayList<>()).add(succ);
+        }
+
+        graph.computeIfAbsent(predecessorId, k -> new ArrayList<>()).add(successorId);
+
+        Set<Long> visited = new HashSet<>();
+        Set<Long> recursionStack = new HashSet<>();
+
+        for (Long node : graph.keySet())
+            if (hasCycle(node, graph, visited, recursionStack))
+                throw new CustomValidationException("Adding this constraint would create a circular dependency in the task graph");
+    }
+
+    private boolean hasCycle(Long node, Map<Long, List<Long>> graph,
+                             Set<Long> visited, Set<Long> recursionStack) {
+        if (recursionStack.contains(node))
+            return true;
+
+        if (visited.contains(node))
+            return false;
+
+        visited.add(node);
+        recursionStack.add(node);
+
+        List<Long> neighbors = graph.get(node);
+        if (neighbors != null) {
+            for (Long neighbor : neighbors) {
+                if (hasCycle(neighbor, graph, visited, recursionStack)) {
+                    return true;
+                }
+            }
+        }
+
+        recursionStack.remove(node);
+        return false;
+    }
+
+    @Transactional(readOnly = true)
+    public List<TaskResponseDto> getValidPrerequisites(Long successorId) {
+        return getAllTasks().stream()
+                .filter(possiblePred -> !possiblePred.getId().equals(successorId))
+                .filter(possiblePred -> {
+                    try {
+                        validateNoCircularDependency(possiblePred.getId(), successorId);
+                        return true;
+                    } catch (CustomValidationException e) {
+                        return false;
+                    }
+                })
                 .collect(Collectors.toList());
     }
 

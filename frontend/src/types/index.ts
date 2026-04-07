@@ -102,7 +102,7 @@ export interface CreateTaskRequest {
   durationHours?: number;
   priorityId: number;
   departmentId?: number;
-  requiredSkillIds?: number[];
+  requiredSkills?: number[];
 }
 
 export interface UpdateTaskRequest {
@@ -112,9 +112,10 @@ export interface UpdateTaskRequest {
   durationHours?: number;
   priorityId: number;
   departmentId?: number;
-  requiredSkillIds?: number[];
+  requiredSkills?: number[];
   statusId?: number;
   taskStatusId?: number;
+  prerequisiteTaskId?: number;
 }
 
 export interface Status {

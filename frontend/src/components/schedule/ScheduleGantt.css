@@ -1,0 +1,149 @@
+.gn-container {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.gn-toolbar {
+    padding: 0.75rem 1.25rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.gn-legend { display: flex; gap: 1.5rem; }
+.gn-legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 11px; font-weight: 800; color: #64748b; }
+.gn-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+.gn-scroll-area {
+    overflow: auto;
+    height: 450px;
+}
+
+.gn-worker-label-header {
+    width: 180px;
+    min-width: 180px;
+    background: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+    padding: 0.75rem 1.25rem;
+    font-weight: 900;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #64748b;
+    position: sticky;
+    left: 0;
+    z-index: 20;
+}
+
+.gn-tick-cell {
+    flex: 1;
+    min-width: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0;
+    border-right: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+
+.gn-worker-side-info {
+    width: 180px;
+    min-width: 180px;
+    padding: 0.75rem 1.25rem;
+    border-right: 1px solid #e2e8f0;
+    background: white;
+    position: sticky;
+    left: 0;
+    z-index: 20;
+}
+
+.gn-task-bar {
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.gn-bar-label {
+    font-size: 11px;
+    font-weight: 900;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- Dark Mode Overrides --- */
+.dark .gn-container {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+.dark .gn-toolbar {
+    background: var(--bg-main);
+    border-color: var(--border-color);
+}
+
+.dark .gn-worker-side-info {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.dark .gn-worker-label-header,
+.dark .gn-tick-cell,
+.dark .gn-header-row {
+    background-color: var(--bg-main) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.dark .gn-tick-day,
+.dark .gn-tick-date,
+.dark .gantt-time-header,
+.dark .gantt-day,
+.dark .time-axis {
+    color: var(--text-primary) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    fill: var(--text-primary) !important;
+}
+
+.dark .gn-worker-task-count,
+.dark .gn-legend-item {
+    color: var(--text-secondary) !important;
+}
+
+.dark .gn-worker-name-main {
+    color: var(--text-primary) !important;
+}
+
+.dark .gn-row {
+    border-bottom-color: var(--border-color) !important;
+}
+
+.dark .gn-grid-line {
+    border-right-color: var(--border-color) !important;
+}
+
+.dark .gn-timeline-header {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.dark .gn-tick-day,
+.dark .gn-tick-date {
+    color: var(--text-primary) !important;
+    background-color: transparent !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}

@@ -11,16 +11,21 @@ export const useSchedulingConfig = () => {
 
     const fetchConfigs = useCallback(async () => {
         setIsLoading(true)
+        setError(null)
         try {
             const res = await schedulingConfigApi.getAll()
             setConfigs(res.data)
+
+            if (res.data.length > 0 && !selectedConfigId) {
+                setSelectedConfigId(res.data[0].id)
+            }
         } catch (err: unknown) {
-             const msg = err instanceof Error ? err.message : 'Failed to load configurations';
-             setError(msg)
+            const msg = err instanceof Error ? err.message : 'Failed to load configurations'
+            setError(msg)
         } finally {
             setIsLoading(false)
         }
-    }, [])
+    }, [selectedConfigId])
 
     const createConfig = useCallback(async (newConfig: Omit<SchedulingConfiguration, 'id'>) => {
         setIsLoading(true)
@@ -28,18 +33,18 @@ export const useSchedulingConfig = () => {
         try {
             const res = await schedulingConfigApi.create(newConfig)
             setConfigs(prev => [...prev, res.data])
+            setSelectedConfigId(res.data.id)
             return res.data
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Failed to create configuration';
+            const msg = err instanceof Error ? err.message : 'Failed to create configuration'
             setError(msg)
             throw new Error(msg)
         } finally {
             setIsLoading(false)
         }
     }, [])
-    
-    // Auto-fetch on mount? Maybe not necessary if modal does it. But if we hoist it here, we should fetch when needed or on mount.
-    // The modal currently fetches on mount. If we use this hook at page level, we can fetch once.
+
+    const clearError = useCallback(() => setError(null), [])
 
     return {
         configs,
@@ -51,6 +56,7 @@ export const useSchedulingConfig = () => {
         closeConfigModal: () => setIsConfigModalOpen(false),
         selectConfig: setSelectedConfigId,
         fetchConfigs,
-        createConfig
+        createConfig,
+        clearError
     }
 }

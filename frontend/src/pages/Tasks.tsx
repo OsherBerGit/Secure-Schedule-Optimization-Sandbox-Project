@@ -1,253 +1,256 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { Task, CreateTaskRequest, UpdateTaskRequest, Department, Status, Priority, Skill } from '../types'
-import { taskApi, statusApi, priorityApi, departmentApi, skillApi } from '../api'
-import { useAuth } from '../context/useAuth'
-import TaskModal from '../components/TaskModal'
-import './Tasks.css'
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { taskApi, departmentApi, skillApi, statusApi, priorityApi } from '../api';
+import type { Task, Department, Skill, Status, Priority } from '../types';
+import TaskModal from '../components/TaskModal';
+import { useNavigate } from 'react-router-dom';
+import { Search, Plus, Pencil, Trash2, ShieldAlert, ClipboardList } from 'lucide-react';
+import { useAuth } from '../context/useAuth';
+import './Tasks.css';
 
-/** Map any status name string → a stable CSS modifier for color-coding. */
-function statusClass(name: string | null): string {
-    if (!name) return ''
-    const n = name.toLowerCase().replace(/[\s_]+/g, '-')
-    if (n.includes('complet') || n.includes('done') || n.includes('closed'))  return 'status-completed'
-    if (n.includes('progress') || n.includes('active') || n.includes('open')) return 'status-in-progress'
-    if (n.includes('cancel') || n.includes('reject') || n.includes('fail'))   return 'status-cancelled'
-    if (n.includes('hold') || n.includes('block') || n.includes('wait'))      return 'status-on-hold'
-    if (n.includes('pend') || n.includes('new') || n.includes('todo'))        return 'status-pending'
-    return `status-${n}`
-}
+const Tasks: React.FC = () => {
+    const { user: currentUser } = useAuth();
+    const isAdmin = currentUser?.role === 'ADMIN';
+    const isManager = currentUser?.role === 'MANAGER';
+    const canManage = isAdmin || isManager;
 
-const Tasks = () => {
-    const { user: currentUser } = useAuth()
-    const isAdmin = currentUser?.role === 'ADMIN'
-    const isManager = currentUser?.role === 'MANAGER'
-    const canManage = isAdmin || isManager
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [skills, setSkills] = useState<Skill[]>([]);
+    const [statuses, setStatuses] = useState<Status[]>([]);
+    const [priorities, setPriorities] = useState<Priority[]>([]);
 
-    const [tasks, setTasks] = useState<Task[]>([])
-    const [departments, setDepartments] = useState<Department[]>([])
-    const [statuses, setStatuses] = useState<Status[]>([])
-    const [priorities, setPriorities] = useState<Priority[]>([])
-    const [skills, setSkills] = useState<Skill[]>([])
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    // Filters
-    const [filterDepartment, setFilterDepartment] = useState<string>('')
-    const [filterStatus, setFilterStatus] = useState<string>('')
-    const [filterPriority, setFilterPriority] = useState<string>('')
-    const [filterSkill, setFilterSkill] = useState<string>('')
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const [priorityFilter, setPriorityFilter] = useState('');
+    const [skillFilter, setSkillFilter] = useState('');
 
-    const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [showModal, setShowModal] = useState(false)
-    const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+    const navigate = useNavigate();
 
     const fetchTasks = useCallback(async () => {
-        setIsLoading(true)
+        setIsLoading(true);
         try {
-            const res = await taskApi.getAll()
-            setTasks(res.data)
-        } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to load tasks')
+            const res = await taskApi.getAll();
+            setTasks(res.data);
+        } catch (err: any) {
+            setError(err.message || 'Failed to fetch tasks');
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }, [])
+    }, []);
 
     useEffect(() => {
-        void fetchTasks()
-        statusApi.getAll().then(res => setStatuses(res.data)).catch(() => {
-            // fallback statusses
+        fetchTasks();
+
+        statusApi.getAll().then(res => {
+            setStatuses(res.data);
+        }).catch(() => {
             setStatuses([
                 { id: 1, name: 'OPEN' },
                 { id: 2, name: 'LOCKED' },
                 { id: 3, name: 'SCHEDULED' },
                 { id: 4, name: 'CLOSED' }
-            ] as Status[])
-        })
-        priorityApi.getAll().then(res => setPriorities(res.data)).catch(() => {})
-        departmentApi.getAll().then(res => setDepartments(res.data)).catch(() => {})
-        skillApi.getAll().then(res => setSkills(res.data)).catch(() => {})
-    }, [fetchTasks])
+            ] as Status[]);
+        });
+
+        priorityApi.getAll().then(res => setPriorities(res.data)).catch(() => {
+            setPriorities([
+                { id: 1, name: 'LOW' },
+                { id: 2, name: 'NORMAL' },
+                { id: 3, name: 'HIGH' },
+                { id: 4, name: 'URGENT' }
+            ] as Priority[]);
+        });
+
+        departmentApi.getAll().then(res => setDepartments(res.data)).catch(() => {});
+        skillApi.getAll().then(res => setSkills(res.data)).catch(() => {});
+    }, [fetchTasks]);
+
+    const handleOpenModal = (task?: Task) => {
+        setSelectedTask(task || null);
+        setIsModalOpen(true);
+    };
+
+    const handleDelete = async (id: number) => {
+        if (window.confirm('Are you sure you want to delete this task?')) {
+            try {
+                await taskApi.delete(id);
+                fetchTasks();
+            } catch (err: any) {
+                setError(err.message || 'Failed to delete task');
+            }
+        }
+    };
+
+    const handleModalClose = () => {
+        setIsModalOpen(false);
+        setSelectedTask(null);
+    };
+
+    const handleTaskSubmit = async (taskData: import('../types').CreateTaskRequest | import('../types').UpdateTaskRequest) => {
+        try {
+            if (selectedTask?.id) {
+                await taskApi.update(selectedTask.id, taskData as import('../types').UpdateTaskRequest);
+            } else {
+                await taskApi.create(taskData as import('../types').CreateTaskRequest);
+            }
+            fetchTasks();
+            handleModalClose();
+        } catch (err: any) {
+            setError(err?.response?.data?.message || err.message || 'Failed to submit task');
+            throw err;
+        }
+    };
 
     const filteredTasks = useMemo(() => {
         return tasks.filter(t => {
-            // Department Filter
-            if (filterDepartment && t.departmentName !== filterDepartment) return false
-            // Status Filter
-            if (filterStatus && (t.taskStatusName || '') !== filterStatus) return false
-            // Priority Filter
-            if (filterPriority && (t.priorityName || '') !== filterPriority) return false
-            // Skill Filter
-            if (filterSkill && !t.requiredSkills?.some(s => s.name === filterSkill)) return false
-            return true
-        })
-    }, [tasks, filterDepartment, filterStatus, filterPriority, filterSkill])
-
-    function handleEdit(task: Task) {
-        setSelectedTask(task)
-        setShowModal(true)
-    }
-
-    function handleDelete(id: number) {
-        taskApi.delete(id)
-            .then(() => fetchTasks())
-            .catch(err => setError(err.message))
-    }
-
-    function handleSubmit(formData: CreateTaskRequest | UpdateTaskRequest) {
-        if (selectedTask) {
-            return taskApi.update(selectedTask.id, formData as UpdateTaskRequest)
-                .then(() => { setShowModal(false); setSelectedTask(null); fetchTasks() })
-        } else {
-            return taskApi.create(formData as CreateTaskRequest)
-                .then(() => { setShowModal(false); fetchTasks() })
-        }
-    }
+            const matchesSearch = !searchQuery || t.title.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesStatus = !statusFilter || (t.taskStatusName || '') === statusFilter;
+            const matchesPriority = !priorityFilter || (t.priorityName || '') === priorityFilter;
+            const matchesSkill = !skillFilter || t.requiredSkills?.some(s => s.name === skillFilter);
+            return matchesSearch && matchesStatus && matchesPriority && matchesSkill;
+        });
+    }, [tasks, searchQuery, statusFilter, priorityFilter, skillFilter]);
 
     return (
-        <div className="tasks-container">
-            <div className="tasks-header">
-                <h1>📋 Tasks</h1>
+        <div className="tasks-page">
+            <div className="page-header">
+                <div className="page-header-title">
+                    <ClipboardList className="text-primary" size={28} color="var(--primary-color)" />
+                    <h1>Tasks Management</h1>
+                </div>
                 {canManage && (
-                    <button className="btn-add" onClick={() => { setSelectedTask(null); setShowModal(true) }}>
-                        + Add Task
+                    <button className="btn-add-primary" onClick={() => handleOpenModal()}>
+                        <Plus size={18} /> Add New Task
                     </button>
                 )}
             </div>
 
-            {error && <div className="error-message">{error}</div>}
-
-            <div className="filter-row">
-                {canManage && (
-                    <select
-                        className="modern-select"
-                        value={filterDepartment}
-                        onChange={e => setFilterDepartment(e.target.value)}
-                    >
-                        <option value="">All Departments</option>
-                        {departments.map(d => (
-                            <option key={d.id} value={d.name}>{d.name}</option>
-                        ))}
-                    </select>
-                )}
-
-                <select
-                    className="modern-select"
-                    value={filterStatus}
-                    onChange={e => setFilterStatus(e.target.value)}
-                >
+            <div className="filters-container">
+                <div className="search-wrapper" style={{ flex: 1 }}>
+                    <Search className="search-icon" size={18} />
+                    <input
+                        type="text"
+                        className="modern-input search-input"
+                        placeholder="Search by title..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <select className="modern-input" style={{ flex: '0 0 150px' }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
                     <option value="">All Statuses</option>
-                    {statuses.map(s => (
-                        <option key={s.id} value={s.name}>{s.name}</option>
-                    ))}
+                    {statuses.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                 </select>
-
-                <select
-                    className="modern-select"
-                    value={filterPriority}
-                    onChange={e => setFilterPriority(e.target.value)}
-                >
+                <select className="modern-input" style={{ flex: '0 0 150px' }} value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}>
                     <option value="">All Priorities</option>
-                    {priorities.map(p => (
-                        <option key={p.id} value={p.name}>{p.name}</option>
-                    ))}
+                    {priorities.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                 </select>
-
-                <select
-                    className="modern-select"
-                    value={filterSkill}
-                    onChange={e => setFilterSkill(e.target.value)}
-                >
+                <select className="modern-input" style={{ flex: '0 0 150px' }} value={skillFilter} onChange={e => setSkillFilter(e.target.value)}>
                     <option value="">All Skills</option>
-                    {skills.map(s => (
-                        <option key={s.id} value={s.name}>{s.name}</option>
-                    ))}
+                    {skills.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                 </select>
             </div>
 
-            {isLoading ? (
-                <div className="loading">Loading...</div>
-            ) : filteredTasks.length === 0 ? (
-                <div className="empty-state" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No records found matching the selected filters.</div>
-            ) : (
-                <table className="tasks-table">
-                    <thead>
+            {error && <div className="error-message">{error}</div>}
+
+            <div className="table-container">
+                {isLoading ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading tasks...</div>
+                ) : filteredTasks.length === 0 ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No tasks found matching the filters.</div>
+                ) : (
+                    <table className="modern-table tasks-table">
+                        <thead>
                         <tr>
+                            <th>ID</th>
                             <th>Title</th>
-                            <th>Status</th>
                             <th>Priority</th>
                             <th>Department</th>
-                            <th>Required Skill</th>
-                            <th>Deadline</th>
-                            <th>Duration</th>
-                            <th>Start Time</th>
+                            <th>Skills</th>
+                            <th>Status</th>
                             {canManage && <th>Actions</th>}
                         </tr>
-                    </thead>
-                    <tbody>
-                        {filteredTasks.map(task => (
-                            <tr key={task.id}>
-                                <td className="task-title">{task.title}</td>
-                                <td>
-                                    <span className={`status-badge ${statusClass(task.taskStatusName)}`}
-                                          style={
-                                              // Fall back to the API-supplied colour code if present
-                                              task.taskStatusColorCode
-                                                  ? { background: task.taskStatusColorCode + '22', color: task.taskStatusColorCode, border: `1px solid ${task.taskStatusColorCode}55` }
-                                                  : undefined
-                                          }
-                                    >
-                                        {task.taskStatusName ?? '-'}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span className={`priority-badge priority-${task.priorityName?.toLowerCase()}`}>
-                                        {task.priorityName ?? '-'}
-                                    </span>
-                                </td>
-                                <td>
-                                    {task.departmentName
-                                        ? <span className="dept-badge">{task.departmentName}</span>
-                                        : <span className="dept-general">General / All</span>}
-                                </td>
-                                <td>
-                                    {task.requiredSkills && task.requiredSkills.length > 0 ? (
-                                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                            {task.requiredSkills.map(s => (
-                                                <span key={s.id} className="role-badge role-worker" style={{ fontSize: '0.75rem', backgroundColor: '#e2e8f0', color: '#4a5568', padding: '0.2rem 0.5rem', borderRadius: '12px' }}>{s.name}</span>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <span style={{ color: '#888', fontStyle: 'italic', fontSize: '0.85rem' }}>No skills</span>
-                                    )}
-                                </td>
-                                <td>{task.deadline ? new Date(task.deadline).toLocaleDateString() : '-'}</td>
-                                <td>{task.durationHours != null ? `${task.durationHours}h` : '-'}</td>
-                                <td>{task.startTime ? new Date(task.startTime).toLocaleString() : <span className="unassigned">Not scheduled</span>}</td>
-                                {canManage && (
+                        </thead>
+                        <tbody>
+                        {filteredTasks.map(t => {
+                            const statusName = t.taskStatusName || 'OPEN';
+                            const priorityName = t.priorityName || 'NORMAL';
+                            const canEditTask = statusName === 'OPEN' || statusName === 'LOCKED';
+
+                            return (
+                                <tr key={t.id}>
+                                    <td>{t.id}</td>
+                                    <td style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{t.title}</td>
                                     <td>
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <button className="btn-edit" onClick={() => handleEdit(task)}>Edit</button>
-                                            <button className="btn-delete" onClick={() => handleDelete(task.id)}>Delete</button>
+                                        <span className={`priority-badge priority-${priorityName.toLowerCase()}`}>
+                                            {priorityName}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className="department-badge">
+                                            {t.departmentName || 'General'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div className="skills-container-table">
+                                            {t.requiredSkills && t.requiredSkills.length > 0 ? (
+                                                t.requiredSkills.map(s => (
+                                                    <span key={s.id} className="skill-badge">{s.name}</span>
+                                                ))
+                                            ) : (
+                                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontStyle: 'italic' }}>None</span>
+                                            )}
                                         </div>
                                     </td>
-                                )}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
+                                    <td>
+                                        <span className={`status-badge status-${statusName.toLowerCase()}`}>
+                                            {statusName}
+                                        </span>
+                                    </td>
+                                    {canManage && (
+                                        <td className="actions-cell">
+                                            <button
+                                                className={`btn-icon edit-btn ${!canEditTask ? 'disabled-btn' : ''}`}
+                                                onClick={() => canEditTask && handleOpenModal(t)}
+                                                title={canEditTask ? "Edit Task" : "Cannot edit a scheduled or closed task"}
+                                                disabled={!canEditTask}
+                                                style={{ opacity: canEditTask ? 1 : 0.4, cursor: canEditTask ? 'pointer' : 'not-allowed' }}
+                                            >
+                                                <Pencil size={16} />
+                                            </button>
+                                            <button className="btn-icon constraint-btn" onClick={() => navigate(`/task-constraints?taskId=${t.id}`)} title="Task Constraints">
+                                                <ShieldAlert size={16} />
+                                            </button>
+                                            <button className="btn-icon delete-btn" onClick={() => handleDelete(t.id!)} title="Delete Task">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </td>
+                                    )}
+                                </tr>
+                            );
+                        })}
+                        </tbody>
+                    </table>
+                )}
+            </div>
 
-            {showModal && (
+            {isModalOpen && (
                 <TaskModal
                     task={selectedTask}
+                    departments={departments}
+                    skills={skills}
                     statuses={statuses}
                     priorities={priorities}
-                    onSubmit={handleSubmit}
-                    onClose={() => { setShowModal(false); setSelectedTask(null) }}
+                    onSubmit={handleTaskSubmit}
+                    onClose={handleModalClose}
                 />
             )}
         </div>
-    )
-}
+    );
+};
 
-export default Tasks
+export default Tasks;

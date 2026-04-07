@@ -1,106 +1,113 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
-import type { Vacation, CreateVacationRequest, UpdateVacationRequest, VacationRequestDto, User } from '../types'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import { format } from 'date-fns'
+import { X, Plane } from 'lucide-react'
+import type { Vacation, User } from '../types'
+import './VacationModal.css'
 
 interface VacationModalProps {
     vacation: Vacation | null
-    isAdmin?: boolean
-    workers?: User[]
-    onSubmit: (data: CreateVacationRequest | UpdateVacationRequest | VacationRequestDto) => void
+    isAdmin: boolean
+    workers: User[]
+    onSubmit: (data: any) => void
     onClose: () => void
 }
 
-const VacationModal = ({ vacation, isAdmin, workers = [], onSubmit, onClose }: VacationModalProps) => {
-    const [workerId, setWorkerId] = useState<number | ''>(vacation?.workerId ?? '')
-    const [startDate, setStartDate] = useState(vacation?.startDate ?? '')
-    const [endDate, setEndDate] = useState(vacation?.endDate ?? '')
-    const [error, setError] = useState<string | null>(null)
+const VacationModal = ({ vacation, isAdmin, workers, onSubmit, onClose }: VacationModalProps) => {
+    const [workerId, setWorkerId] = useState<number | ''>(vacation?.workerId || '')
+    const [startDate, setStartDate] = useState<Date | null>(vacation ? new Date(vacation.startDate) : null)
+    const [endDate, setEndDate] = useState<Date | null>(vacation ? new Date(vacation.endDate) : null)
 
-    function handleSubmit(e: FormEvent) {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
+        if (!startDate || !endDate || (isAdmin && !workerId)) return
 
-        if (new Date(endDate) < new Date(startDate)) {
-            setError('End date cannot be earlier than start date')
-            return
-        }
-        setError(null)
-
-        if (vacation) {
-            // Edit mode (ADMIN only)
-            const data: UpdateVacationRequest = { startDate, endDate }
-            onSubmit(data)
-        } else if (isAdmin) {
-            if (!workerId) return
-            // ADMIN creates directly
-            const data: CreateVacationRequest = { workerId: Number(workerId), startDate, endDate }
-            onSubmit(data)
-        } else {
-            // WORKER submits a request - no workerId needed
-            const data: VacationRequestDto = { startDate, endDate }
-            onSubmit(data)
-        }
+        onSubmit({
+            workerId: Number(workerId),
+            startDate: format(startDate, 'yyyy-MM-dd'),
+            endDate: format(endDate, 'yyyy-MM-dd'),
+            status: vacation?.statusName || 'PENDING'
+        })
     }
 
-    const title = vacation ? 'Edit Vacation' : isAdmin ? 'Add Vacation' : 'Request Vacation'
-
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxHeight: '80vh', overflow: 'visible' }}>
-
+        <div className="modal-overlay">
+            <div className="modern-modal-card">
                 <div className="modal-header">
-                    <h2>{title}</h2>
-                    <button className="btn-close" onClick={onClose}>✕</button>
+                    <h2><Plane size={22} className="text-primary" /> {vacation ? 'Edit Vacation' : 'New Vacation Request'}</h2>
+                    <button type="button" className="modern-close-btn" onClick={onClose}>
+                        <X size={24} />
+                    </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="modal-form">
+                <form onSubmit={handleSubmit} className="modern-modal-form">
+                    <div className="modal-body">
+                        {isAdmin && (
+                            <div className="modern-form-group">
+                                <label>Select Employee *</label>
+                                <select
+                                    className="modern-input"
+                                    value={workerId}
+                                    onChange={e => setWorkerId(Number(e.target.value))}
+                                    required
+                                >
+                                    <option value="">-- Select Worker --</option>
+                                    {workers.map(w => (
+                                        <option key={w.id} value={w.id}>{w.firstName} {w.lastName}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
-                    {/* Show workerId only when ADMIN is creating (not editing) */}
-                    {isAdmin && !vacation && (
-                        <div className="form-group">
-                            <label>Worker *</label>
-                            <select
-                                value={workerId}
-                                onChange={e => setWorkerId(Number(e.target.value) || '')}
-                                required
-                            >
-                                <option value="">-- Select Worker --</option>
-                                {workers.map(w => (
-                                    <option key={w.id} value={w.id}>{w.firstName} {w.lastName}</option>
-                                ))}
-                            </select>
+                        <div className="dates-grid">
+                            <div className="modern-form-group">
+                                <label>Start Date *</label>
+                                <DatePicker
+                                    className="modern-input"
+                                    selected={startDate}
+                                    onChange={(date: Date | null) => {
+                                        setStartDate(date)
+                                        if (date && endDate && date > endDate) {
+                                            setEndDate(null)
+                                        }
+                                    }}
+                                    dateFormat="yyyy-MM-dd"
+                                    portalId="root-portal"
+                                    popperPlacement="bottom-start"
+                                    calendarClassName="vacation-calendar"
+                                    minDate={new Date()}
+                                    showIcon
+                                    placeholderText="Pick start date"
+                                    required
+                                />
+                            </div>
+
+                            <div className="modern-form-group">
+                                <label>End Date *</label>
+                                <DatePicker
+                                    className="modern-input"
+                                    selected={endDate}
+                                    onChange={(date: Date | null) => setEndDate(date)}
+                                    minDate={startDate || new Date()}
+                                    dateFormat="yyyy-MM-dd"
+                                    portalId="root-portal"
+                                    popperPlacement="bottom-start"
+                                    calendarClassName="vacation-calendar"
+                                    showIcon
+                                    placeholderText="Pick end date"
+                                    required
+                                />
+                            </div>
                         </div>
-                    )}
-
-                    <div className="form-group">
-                        <label>Start Date</label>
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={e => setStartDate(e.target.value)}
-                            required
-                        />
                     </div>
 
-                    <div className="form-group">
-                        <label>End Date</label>
-                        <input
-                            type="date"
-                            value={endDate}
-                            min={startDate}
-                            onChange={e => setEndDate(e.target.value)}
-                            required
-                        />
-                    </div>
-
-                    {error && <div className="error-message" style={{ marginBottom: '1rem', padding: '0.5rem', background: '#ffebee', color: '#cc0000', borderRadius: '4px', fontSize: '0.875rem' }}>{error}</div>}
-
-                    <div className="modal-footer">
+                    <div className="modal-actions">
                         <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="btn-save">
-                            {vacation ? 'Save' : isAdmin ? 'Create' : 'Submit Request'}
+                        <button type="submit" className="btn-submit" disabled={!startDate || !endDate}>
+                            {vacation ? 'Update' : 'Submit Request'}
                         </button>
                     </div>
-
                 </form>
             </div>
         </div>

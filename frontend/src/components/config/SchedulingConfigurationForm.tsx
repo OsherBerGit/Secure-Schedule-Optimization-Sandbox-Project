@@ -20,12 +20,12 @@ const DEFAULT_CONFIG: Omit<SchedulingConfiguration, 'id' | 'isActive'> = {
     localSearchFrequency: 0.2
 }
 
-const SchedulingConfigurationForm: React.FC<SchedulingConfigurationFormProps> = ({ 
-    initialConfig = DEFAULT_CONFIG, 
-    onSubmit, 
-    onCancel, 
-    isLoading 
-}) => {
+const SchedulingConfigurationForm: React.FC<SchedulingConfigurationFormProps> = ({
+                                                                                     initialConfig = DEFAULT_CONFIG,
+                                                                                     onSubmit,
+                                                                                     onCancel,
+                                                                                     isLoading
+                                                                                 }) => {
     const [config, setConfig] = useState(initialConfig)
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -34,117 +34,125 @@ const SchedulingConfigurationForm: React.FC<SchedulingConfigurationFormProps> = 
     }
 
     return (
-        <form onSubmit={handleSubmit}>
-            <div className="config-section">
-                <h3>General Settings</h3>
-                <div className="form-group">
-                    <label>Configuration Name</label>
-                    <input 
-                        type="text" 
-                        required 
-                        value={config.configName}
-                        onChange={e => setConfig({...config, configName: e.target.value})}
-                    />
+        <form onSubmit={handleSubmit} className="config-form-container">
+            <div className="config-body">
+                <div className="config-form-section">
+                    <div className="modern-form-group full-width">
+                        <label className="modern-label">Configuration Name</label>
+                        <input
+                            type="text"
+                            className="modern-input"
+                            required
+                            value={config.configName}
+                            onChange={e => setConfig({ ...config, configName: e.target.value })}
+                        />
+                    </div>
+                </div>
+
+                <div className="config-section-wrapper">
+                    <h3>Evolutionary Parameters</h3>
+                    <div className="config-form-section">
+                        <div className="modern-form-group">
+                            <label className="modern-label">Population Size</label>
+                            <input
+                                type="number"
+                                className="modern-input"
+                                min="10"
+                                required
+                                value={config.populationSize}
+                                onChange={e => setConfig({ ...config, populationSize: parseInt(e.target.value) || 0 })}
+                            />
+                        </div>
+                        <div className="modern-form-group">
+                            <label className="modern-label">Max Generations</label>
+                            <input
+                                type="number"
+                                className="modern-input"
+                                min="1"
+                                required
+                                value={config.maxGenerations}
+                                onChange={e => setConfig({ ...config, maxGenerations: parseInt(e.target.value) || 0 })}
+                            />
+                        </div>
+                        <div className="modern-form-group">
+                            <label className="modern-label">Mutation Rate (0-1)</label>
+                            <input
+                                type="number"
+                                className="modern-input"
+                                step="0.01" min="0" max="1"
+                                required
+                                value={config.mutationRate}
+                                onChange={e => setConfig({ ...config, mutationRate: parseFloat(e.target.value) || 0 })}
+                            />
+                        </div>
+                        <div className="modern-form-group">
+                            <label className="modern-label">Crossover Rate (0-1)</label>
+                            <input
+                                type="number"
+                                className="modern-input"
+                                step="0.01" min="0" max="1"
+                                required
+                                value={config.crossoverRate}
+                                onChange={e => setConfig({ ...config, crossoverRate: parseFloat(e.target.value) || 0 })}
+                            />
+                        </div>
+                        <div className="modern-form-group">
+                            <label className="modern-label">Local Search Frequency (0-1)</label>
+                            <input
+                                type="number"
+                                className="modern-input"
+                                step="0.01" min="0" max="1"
+                                required
+                                value={config.localSearchFrequency}
+                                onChange={e => setConfig({ ...config, localSearchFrequency: parseFloat(e.target.value) || 0 })}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="config-section-wrapper">
+                    <h3>Fitness Weights</h3>
+                    <div className="config-form-section">
+                        <div className="modern-form-group">
+                            <label className="modern-label">Priority Weight</label>
+                            <input
+                                type="number"
+                                className="modern-input"
+                                step="0.1" min="0" max="1"
+                                required
+                                value={config.weightPriority}
+                                onChange={e => setConfig({ ...config, weightPriority: parseFloat(e.target.value) || 0 })}
+                            />
+                        </div>
+                        <div className="modern-form-group">
+                            <label className="modern-label">Deadline Weight</label>
+                            <input
+                                type="number"
+                                className="modern-input"
+                                step="0.1" min="0" max="1"
+                                required
+                                value={config.weightDeadline}
+                                onChange={e => setConfig({ ...config, weightDeadline: parseFloat(e.target.value) || 0 })}
+                            />
+                        </div>
+                        <div className="modern-form-group">
+                            <label className="modern-label">Fairness Weight</label>
+                            <input
+                                type="number"
+                                className="modern-input"
+                                step="0.1" min="0" max="1"
+                                required
+                                value={config.weightFairness}
+                                onChange={e => setConfig({ ...config, weightFairness: parseFloat(e.target.value) || 0 })}
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div className="config-section">
-                <h3>Evolutionary Parameters</h3>
-                <div className="form-row">
-                    <div className="form-group">
-                        <label>Population Size (min 10)</label>
-                        <input 
-                            type="number" 
-                            min="10"
-                            required
-                            value={config.populationSize}
-                            onChange={e => setConfig({...config, populationSize: parseInt(e.target.value)})}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Max Generations (min 1)</label>
-                        <input 
-                            type="number" 
-                            min="1" 
-                            required
-                            value={config.maxGenerations}
-                            onChange={e => setConfig({...config, maxGenerations: parseInt(e.target.value)})}
-                        />
-                    </div>
-                </div>
-                <div className="form-row">
-                    <div className="form-group">
-                        <label>Mutation Rate (0.0 - 1.0)</label>
-                        <input 
-                            type="number" 
-                            step="0.01" min="0" max="1"
-                            required
-                            value={config.mutationRate}
-                            onChange={e => setConfig({...config, mutationRate: parseFloat(e.target.value)})}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Crossover Rate (0.0 - 1.0)</label>
-                        <input 
-                            type="number" 
-                            step="0.01" min="0" max="1"
-                            required
-                            value={config.crossoverRate}
-                            onChange={e => setConfig({...config, crossoverRate: parseFloat(e.target.value)})}
-                        />
-                    </div>
-                </div>
-                <div className="form-group">
-                    <label>Local Search Frequency (0.0 - 1.0)</label>
-                    <input 
-                        type="number" 
-                        step="0.01" min="0" max="1"
-                        required
-                        value={config.localSearchFrequency}
-                        onChange={e => setConfig({...config, localSearchFrequency: parseFloat(e.target.value)})}
-                    />
-                </div>
-            </div>
-
-            <div className="config-section">
-                <h3>Fitness Weights (0.0 - 1.0)</h3>
-                <div className="form-row">
-                    <div className="form-group">
-                        <label>Priority Weight</label>
-                        <input 
-                            type="number" 
-                            step="0.1" min="0" max="1"
-                            required
-                            value={config.weightPriority}
-                            onChange={e => setConfig({...config, weightPriority: parseFloat(e.target.value)})}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Deadline Weight</label>
-                        <input 
-                            type="number" 
-                            step="0.1" min="0" max="1"
-                            required
-                            value={config.weightDeadline}
-                            onChange={e => setConfig({...config, weightDeadline: parseFloat(e.target.value)})}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Fairness Weight</label>
-                        <input 
-                            type="number" 
-                            step="0.1" min="0" max="1"
-                            required
-                            value={config.weightFairness}
-                            onChange={e => setConfig({...config, weightFairness: parseFloat(e.target.value)})}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="modal-actions">
+            <div className="form-actions">
                 <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={isLoading}>
+                <button type="submit" className="btn-primary-modern" disabled={isLoading}>
                     {isLoading ? 'Saving...' : 'Save & Select'}
                 </button>
             </div>
@@ -153,4 +161,3 @@ const SchedulingConfigurationForm: React.FC<SchedulingConfigurationFormProps> = 
 }
 
 export default SchedulingConfigurationForm
-

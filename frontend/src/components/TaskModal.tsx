@@ -1,231 +1,227 @@
-import { useState, useEffect } from 'react'
-import type { FormEvent } from 'react'
-import type { Task, CreateTaskRequest, UpdateTaskRequest, Status, Priority, Department, Skill } from '../types'
-import { departmentApi, skillApi } from '../api'
-import { useAuth } from '../context/useAuth'
-
+import { useState, useEffect, type FormEvent } from 'react';
+import type { Task, Department, Skill, Status, Priority, CreateTaskRequest, UpdateTaskRequest } from '../types';
+import { taskApi } from '../api';
+import { X, FileText } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import './TaskModal.css';
 interface TaskModalProps {
-    task: Task | null
-    statuses: Status[]
-    priorities: Priority[]
-    onSubmit: (data: CreateTaskRequest | UpdateTaskRequest) => Promise<any> | void
-    onClose: () => void
+    task: Task | null;
+    departments: Department[];
+    skills: Skill[];
+    statuses?: Status[];
+    priorities?: Priority[];
+    onSubmit: (data: CreateTaskRequest | UpdateTaskRequest) => Promise<void> | void;
+    onClose: () => void;
 }
-
-const TaskModal = ({ task, statuses, priorities, onSubmit, onClose }: TaskModalProps) => {
-    const { user } = useAuth()
-    const [title, setTitle] = useState(task?.title ?? '')
-    const [description, setDescription] = useState(task?.description ?? '')
-    const [deadline, setDeadline] = useState(task?.deadline ? task.deadline.substring(0, 16) : '')
-    const [durationHours, setDurationHours] = useState<number | ''>(task?.durationHours ?? 1)
-    const [priorityId, setPriorityId] = useState<number>(task?.priorityId ?? (priorities[0]?.id ?? 0))
-    const [statusId, setStatusId] = useState<number>(task?.taskStatusId ?? (statuses[0]?.id ?? 0))
-    const [departments, setDepartments] = useState<Department[]>([])
-    const [skills, setSkills] = useState<Skill[]>([])
-    const [departmentId, setDepartmentId] = useState<number | ''>('')
-    const [requiredSkillIds, setRequiredSkillIds] = useState<number[]>(
-        task?.requiredSkills?.map(s => s.id) ?? []
-    )
-    const [isLoading, setIsLoading] = useState(true)
-
-    const isAdmin = user?.role === 'ADMIN'
-    const isManager = user?.role === 'MANAGER'
-
-    const [errorMsg, setErrorMsg] = useState<string | null>(null)
-    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+const TaskModal = ({ task, departments, skills, statuses = [], priorities = [], onSubmit, onClose }: TaskModalProps) => {
+    const [title, setTitle] = useState(task?.title ?? '');
+    const [description, setDescription] = useState(task?.description ?? '');
+    const [deadline, setDeadline] = useState<Date | null>(task?.deadline ? new Date(task.deadline) : null);
+    const [durationHours, setDurationHours] = useState<number | ''>(task?.durationHours ?? 1);
+    const [priorityId, setPriorityId] = useState<number | string>(task?.priorityId ?? '');
+    const [statusId, setStatusId] = useState<number | string>(task?.taskStatusId ?? '');
+    const [departmentId, setDepartmentId] = useState<number | string>(
+        task?.departmentName ? departments.find(d => d.name === task.departmentName)?.id ?? '' : ''
+    );
+    const [requiredSkills, setRequiredSkills] = useState<number[]>([]);
 
     useEffect(() => {
-        Promise.all([
-            skillApi.getAll(),
-            (isAdmin || isManager) ? departmentApi.getAll() : Promise.resolve({ data: [] })
-        ]).then(([skillRes, deptRes]) => {
-            setSkills(skillRes.data)
-            setDepartments(deptRes.data)
-
-            if (task?.departmentName) {
-                const match = deptRes.data.find(d => d.name === task.departmentName)
-                if (match) setDepartmentId(match.id)
-            } else if (isManager && user?.departmentName) {
-                const match = deptRes.data.find(d => d.name === user.departmentName)
-                if (match) setDepartmentId(match.id)
+        if (task?.requiredSkills) {
+            setRequiredSkills(task.requiredSkills.map(s => s.id));
+        } else {
+            setRequiredSkills([]);
+        }
+    }, [task]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    useEffect(() => {
+        if (!task) {
+            if (priorities.length > 0 && priorityId === '') setPriorityId(priorities[0].id);
+            if (statuses.length > 0 && statusId === '') {
+                const open = statuses.find(s => s.name === 'OPEN');
+                if (open) setStatusId(open.id);
             }
-        }).catch(console.error).finally(() => setIsLoading(false))
-    }, [isAdmin, isManager, task, user])
-
+        }
+    }, [priorities, statuses, task, priorityId, statusId]);
     function handleSkillChange(id: number) {
-        setRequiredSkillIds(prev =>
-            prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
-        )
+        setRequiredSkills(prev => {
+            if (prev.includes(id)) {
+                return prev.filter(s => s !== id);
+            } else {
+                return [...prev, id];
+            }
+        });
     }
-
     async function handleSubmit(e: FormEvent) {
-        e.preventDefault()
-        setErrorMsg(null)
-        setFieldErrors({})
-
-        // If creating, logic expects OPEN status which is ID 1 or find by name. But we just omit it if your API defaults to it, or we rely on the init state.
+        e.preventDefault();
+        setErrorMsg(null);
+        setIsSubmitting(true);
+        const formatLocal = (d: Date) => {
+            const pad = (n: number) => n.toString().padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        };
         const data: CreateTaskRequest | UpdateTaskRequest = {
             title,
             description: description || undefined,
-            deadline: deadline || undefined,
-            durationHours: durationHours !== '' ? durationHours : undefined,
-            priorityId,
-            departmentId: departmentId !== '' ? departmentId : undefined,
-            requiredSkillIds: requiredSkillIds
-        }
-
+            deadline: deadline ? formatLocal(deadline) : undefined,
+            durationHours: durationHours !== '' ? Number(durationHours) : undefined,
+            priorityId: Number(priorityId),
+            departmentId: departmentId !== '' ? Number(departmentId) : undefined,
+            requiredSkills: [...requiredSkills]
+        };
         if (task) {
-            (data as UpdateTaskRequest).statusId = statusId;
+            (data as UpdateTaskRequest).statusId = Number(statusId);
         }
-
         try {
-            const res = onSubmit(data)
-            if (res instanceof Promise) await res
+            const res = onSubmit(data);
+            if (res instanceof Promise) await res;
         } catch (err: any) {
-            if (err.response && err.response.status === 400 && err.response.data && typeof err.response.data === 'object') {
-                const mapData = err.response.data
-                const newFieldErrors: Record<string, string> = {}
-                for (const [field, message] of Object.entries(mapData)) {
-                    if (typeof message === 'string') {
-                        newFieldErrors[field] = message
-                    }
-                }
-                if (Object.keys(newFieldErrors).length > 0) {
-                    setFieldErrors(newFieldErrors)
-                    return
-                } else if (mapData.message) {
-                    setErrorMsg(mapData.message)
-                    return
-                }
-            }
-            setErrorMsg(err?.response?.data?.message || err.message || 'Request failed.')
+            setErrorMsg(err?.response?.data?.message || err.message || 'Request failed.');
+        } finally {
+            setIsSubmitting(false);
         }
     }
-
-    const isClosed = task?.taskStatusName === 'CLOSED'
-
+    const allowedStatuses = statuses.filter(s => ['OPEN', 'LOCKED'].includes(s.name));
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal modal-wide" onClick={e => e.stopPropagation()}>
-
+        <div className="modal-overlay">
+            <div className="task-modal-card">
                 <div className="modal-header">
-                    <h2>{task ? 'Edit Task' : 'Add Task'}</h2>
-                    <button className="btn-close" onClick={onClose}>✕</button>
+                    <h2><FileText size={22} className="text-primary" /> {task ? 'Edit Task' : 'Add New Task'}</h2>
+                    <button type="button" className="modern-close-btn" onClick={onClose}><X size={24} /></button>
                 </div>
-
-                <form onSubmit={handleSubmit} className="modal-form">
-                    <fieldset disabled={isClosed} style={{ border: 'none', padding: 0, margin: 0 }}>
-                        <div className="form-group">
-                            <label>Title *</label>
-                            <input value={title} onChange={e => setTitle(e.target.value)} required />
-                            {fieldErrors.title && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.title}</small>}
-                        </div>
-
-                        <div className="form-group">
-                            <label>Description</label>
-                            <textarea value={description ?? ''} onChange={e => setDescription(e.target.value)} rows={3} />
-                            {fieldErrors.description && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.description}</small>}
-                        </div>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Priority *</label>
-                                <select value={priorityId} onChange={e => setPriorityId(Number(e.target.value))} required>
-                                    {priorities.map(p => (
-                                        <option key={p.id} value={p.id}>{p.name}</option>
-                                    ))}
-                                </select>
-                                {fieldErrors.priorityId && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.priorityId}</small>}
+                <form onSubmit={handleSubmit} className="task-modal-form">
+                    <div className="task-modal-body">
+                        {errorMsg && <div className="error-message" style={{ marginBottom: '1.5rem' }}>{errorMsg}</div>}
+                        <div className="form-grid">
+                            <div className="modern-form-group full-width">
+                                <label>Title</label>
+                                <input
+                                    type="text"
+                                    className="modern-input"
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}
+                                    placeholder="Task title"
+                                    required
+                                />
                             </div>
-
-                            {isAdmin && (
-                                <div className="form-group">
-                                    <label>Department</label>
-                                    <select
-                                        value={departmentId}
-                                        onChange={e => setDepartmentId(e.target.value === '' ? '' : Number(e.target.value))}
-                                    >
-                                        <option value="">- Unassigned -</option>
-                                        {departments.map(d => (
-                                            <option key={d.id} value={d.id}>{d.name}</option>
-                                        ))}
-                                    </select>
-                                    {fieldErrors.departmentId && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.departmentId}</small>}
-                                </div>
-                            )}
-
+                            <div className="modern-form-group full-width">
+                                <label>Description</label>
+                                <textarea
+                                    className="modern-input"
+                                    value={description}
+                                    onChange={e => setDescription(e.target.value)}
+                                    placeholder="Task details..."
+                                    rows={4}
+                                    style={{
+                                        resize: 'none',
+                                        overflowY: 'auto',
+                                        minHeight: '120px',
+                                        paddingTop: '12px',
+                                        paddingBottom: '12px',
+                                        lineHeight: '1.5'
+                                    }}
+                                />
+                            </div>
+                            <div className="modern-form-group">
+                                <label>Deadline</label>
+                                <DatePicker
+                                    selected={deadline}
+                                    onChange={(date: Date | null) => setDeadline(date)}
+                                    showTimeSelect
+                                    timeIntervals={15}
+                                    dateFormat="Pp"
+                                    portalId="root-portal"
+                                    popperPlacement="bottom-start"
+                                    className="modern-input"
+                                    calendarClassName="task-calendar"
+                                    showIcon={true}
+                                    placeholderText="Select Deadline..."
+                                    shouldCloseOnSelect={false}
+                                />
+                            </div>
+                            <div className="modern-form-group">
+                                <label>Duration (Hours)</label>
+                                <input
+                                    type="number"
+                                    className="modern-input"
+                                    value={durationHours}
+                                    onChange={e => setDurationHours(e.target.value === '' ? '' : Number(e.target.value))}
+                                    step={0.5}
+                                />
+                            </div>
+                            <div className="modern-form-group">
+                                <label>Department</label>
+                                <select
+                                    className="modern-input"
+                                    value={departmentId}
+                                    onChange={e => setDepartmentId(e.target.value)}
+                                >
+                                    <option value="">- Unassigned -</option>
+                                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="modern-form-group">
+                                <label>Priority</label>
+                                <select
+                                    className="modern-input"
+                                    value={priorityId}
+                                    onChange={e => setPriorityId(e.target.value)}
+                                    required
+                                >
+                                    {priorities.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                            </div>
                             {task && (
-                                <div className="form-group">
-                                    <label>Status *</label>
+                                <div className="modern-form-group full-width">
+                                    <label>Status</label>
                                     <select
-                                      value={statusId}
-                                      onChange={(e) => setStatusId(Number(e.target.value))}
-                                      required
+                                        className="modern-input"
+                                        value={statusId}
+                                        onChange={e => setStatusId(e.target.value)}
+                                        required
                                     >
-                                      {task.taskStatusName === 'OPEN' || task.taskStatusName === 'LOCKED' ? (
-                                        <>
-                                          <option value={statuses.find(s => s.name === 'OPEN')?.id}>OPEN</option>
-                                          <option value={statuses.find(s => s.name === 'LOCKED')?.id}>LOCKED</option>
-                                        </>
-                                      ) : (
-                                        <option value={task.taskStatusId ?? ''}>{task.taskStatusName}</option>
-                                      )}
+                                        {allowedStatuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        {!allowedStatuses.find(s => s.id === Number(statusId)) && (
+                                            <option value={task.taskStatusId ?? ''}>{task.taskStatusName}</option>
+                                        )}
                                     </select>
-                                    {fieldErrors.statusId && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.statusId}</small>}
                                 </div>
                             )}
-                        </div>
 
-                        <div className="form-group">
-                            <label>Required Skills</label>
-                            {isLoading ? <p>Loading skills...</p> : (
-                                <div className="skills-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc' }}>
-                                    {skills.map(skill => (
-                                        <div key={skill.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div className="modern-form-group full-width" style={{ marginTop: '0.5rem' }}>
+                                <label style={{ marginBottom: '0.5rem', display: 'block' }}>Required Skills</label>
+                                <div className="skills-grid" style={{
+                                    background: '#f8fafc',
+                                    padding: '1.25rem',
+                                    borderRadius: '0.75rem',
+                                    border: '1px solid #e2e8f0'
+                                }}>
+                                    {skills.map(s => (
+                                        <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                             <input
                                                 type="checkbox"
-                                                id={`skill-${skill.id}`}
-                                                checked={requiredSkillIds.includes(skill.id)}
-                                                onChange={() => handleSkillChange(skill.id)}
-                                                style={{ margin: 0, width: '16px', height: '16px', cursor: 'pointer' }}
+                                                id={`s-${s.id}`}
+                                                checked={requiredSkills.includes(s.id)}
+                                                onChange={() => handleSkillChange(s.id)}
+                                                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                                             />
-                                            <label htmlFor={`skill-${skill.id}`} style={{ fontSize: '0.85rem', color: '#4a5568', margin: 0, cursor: 'pointer' }}>{skill.name}</label>
+                                            <label htmlFor={`s-${s.id}`} style={{ fontSize: '0.95rem', cursor: 'pointer', color: '#334155' }}>{s.name}</label>
                                         </div>
                                     ))}
                                 </div>
-                            )}
-                            {fieldErrors.requiredSkillIds && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.requiredSkillIds}</small>}
-                        </div>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Deadline</label>
-                                <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} />
-                                {fieldErrors.deadline && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.deadline}</small>}
-                            </div>
-
-                            <div className="form-group">
-                                <label>Duration (hours)</label>
-                                <input
-                                    type="number"
-                                    value={durationHours}
-                                    onChange={e => setDurationHours(e.target.value === '' ? '' : Number(e.target.value))}
-                                    min={1}
-                                    required
-                                />
-                                {fieldErrors.durationHours && <small style={{ color: 'red', marginTop: '0.25rem' }}>{fieldErrors.durationHours}</small>}
                             </div>
                         </div>
-
-                        <div className="modal-footer">
-                            <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
-                            {!isClosed && <button type="submit" className="btn-save">Save</button>}
-                        </div>
-                    </fieldset>
+                    </div>
+                    <div className="modal-actions">
+                        <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
+                        <button type="submit" className="btn-submit" disabled={isSubmitting}>
+                            {isSubmitting ? 'Saving...' : 'Save Task'}
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
-    )
-}
-
-export default TaskModal
+    );
+};
+export default TaskModal;

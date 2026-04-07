@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import { ShieldCheck, Loader2 } from 'lucide-react';
 import './Login.css';
 
 const Login: React.FC = () => {
@@ -28,46 +29,60 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h1>Secure Schedule</h1>
-        <h2>Login</h2>
-
-        <form onSubmit={handleLogin} className="login-form">
-          <div className="form-group">
-            <label htmlFor="nationalId">National ID</label>
-            <input
-              type="text"
-              id="nationalId"
-              value={nationalId}
-              onChange={(e) => setNationalId(e.target.value)}
-              required
-              autoComplete="username"
-              placeholder="Enter your National ID"
-            />
+      <div className="login-container">
+        <div className="login-card">
+          <div className="login-header">
+            <div className="login-icon-wrapper">
+              <ShieldCheck size={40} color="var(--primary-color)" />
+            </div>
+            <h1>Login</h1>
+            <p className="login-subtitle">Enter your national Id below to login to your account</p>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              placeholder="Enter your password"
-            />
-          </div>
+          <form onSubmit={handleLogin} className="login-form">
+            <div className="form-group">
+              <label htmlFor="nationalId">National ID</label>
+              <input
+                  type="text"
+                  id="nationalId"
+                  className="modern-input"
+                  value={nationalId}
+                  onChange={(e) => setNationalId(e.target.value)}
+                  required
+                  autoComplete="username"
+                  placeholder="Enter your National ID"
+              />
+            </div>
 
-          {error && <div className="error-message">{error}</div>}
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input
+                  type="password"
+                  id="password"
+                  className="modern-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+              />
+            </div>
 
-          <button type="submit" disabled={isLoading} className="login-button">
-            {isLoading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
+            {error && <div className="error-message">{error}</div>}
+
+            <button type="submit" disabled={isLoading} className="login-button">
+              {isLoading ? (
+                  <span className="button-content">
+                <Loader2 className="spinner" size={18} />
+                Logging in...
+              </span>
+              ) : (
+                  'Login'
+              )}
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
   );
 };
 

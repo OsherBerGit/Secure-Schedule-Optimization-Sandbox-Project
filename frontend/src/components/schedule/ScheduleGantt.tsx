@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react'
 import type { Task, User } from '../../types'
 import { getPriorityColor } from '../../utils/scheduleUtils'
-import { useAuth } from '../../context/useAuth'
+import { Users } from 'lucide-react'
+import './ScheduleGantt.css'
 
 interface ScheduleGanttProps {
     tasks: Task[]
@@ -11,105 +12,111 @@ interface ScheduleGanttProps {
 }
 
 const ScheduleGantt: React.FC<ScheduleGanttProps> = ({ tasks, workers, assignmentMap, onTaskClick }) => {
-    const { user: currentUser } = useAuth()
-
-    // Memoize calculations to prevent re-renders
-    const { minDate, maxDate, totalMs, workerSchedules } = useMemo(() => {
+    const { minDate, maxDate, totalMs, workerSchedules, timelineTicks } = useMemo(() => {
         const scheduledTasks = tasks.filter(t => t.startTime)
-        
+        if (scheduledTasks.length === 0) return { minDate: new Date(), maxDate: new Date(), totalMs: 1, workerSchedules: [], timelineTicks: [] }
+
         const allDates = scheduledTasks.flatMap(t => [
-            t.startTime ? new Date(t.startTime) : null,
-            t.deadline  ? new Date(t.deadline)  : null,
-        ]).filter(Boolean) as Date[]
-    
-        const minDate = allDates.length > 0
-            ? new Date(Math.min(...allDates.map(d => d.getTime())))
-            : new Date()
-    
-        const maxDate = allDates.length > 0
-            ? new Date(Math.max(...allDates.map(d => d.getTime())))
-            : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    
-        const totalMs = maxDate.getTime() - minDate.getTime() || 1
+            new Date(t.startTime!),
+            t.deadline ? new Date(t.deadline) : new Date(new Date(t.startTime!).getTime() + (t.durationHours || 1) * 3600000)
+        ])
 
-        const workerSchedules = workers.map(w => ({
+        const min = new Date(Math.min(...allDates.map(d => d.getTime())))
+        min.setHours(0, 0, 0, 0)
+        const max = new Date(Math.max(...allDates.map(d => d.getTime())))
+        max.setHours(23, 59, 59, 999)
+
+        const ticks = []
+        const curr = new Date(min)
+        while (curr <= max) {
+            ticks.push(new Date(curr));
+            curr.setDate(curr.getDate() + 1);
+        }
+
+        const schedules = workers.map(w => ({
             worker: w,
-            tasks: scheduledTasks.filter(t => assignmentMap.get(t.id) === w.id),
-        }))
+            workerTasks: scheduledTasks.filter(t => assignmentMap.get(t.id) === w.id)
+        })).filter(ws => ws.workerTasks.length > 0)
 
-        return { minDate, maxDate, totalMs, workerSchedules }
+        return { minDate: min, maxDate: max, totalMs: max.getTime() - min.getTime() || 1, workerSchedules: schedules, timelineTicks: ticks }
     }, [tasks, workers, assignmentMap])
 
-    function getBarStyle(task: Task) {
-        if (!task.startTime) return {}
-        const start = new Date(task.startTime).getTime()
-        const end = task.deadline
-            ? new Date(task.deadline).getTime()
-            : start + (task.durationHours ?? 8) * 3600 * 1000
-
-        const left  = ((start - minDate.getTime()) / totalMs) * 100
-        const width = Math.max(((end - start) / totalMs) * 100, 2)
-        return { left: `${left}%`, width: `${width}%` }
-    }
+    if (workerSchedules.length === 0) return null
 
     return (
-        <div className="gantt-view-section">
-            <div className="gantt-wrapper">
-                <div className="gantt-legend">
-                    <span>🔴 High</span>
-                    <span>🟡 Medium</span>
-                    <span>🟢 Low</span>
+        <div className="gn-container">
+            <div className="gn-toolbar">
+                <div className="gn-legend">
+                    <div className="gn-legend-item"><span className="gn-dot" style={{backgroundColor: '#ef4444'}}></span> High</div>
+                    <div className="gn-legend-item"><span className="gn-dot" style={{backgroundColor: '#f59e0b'}}></span> Medium</div>
+                    <div className="gn-legend-item"><span className="gn-dot" style={{backgroundColor: '#10b981'}}></span> Low</div>
                 </div>
+            </div>
 
-                {/* Date axis */}
-                <div className="gantt-axis">
-                    <div className="gantt-label-col" />
-                    <div className="gantt-bar-col">
-                        <div className="date-start">{minDate.toLocaleDateString()}</div>
-                        <div className="date-end">{maxDate.toLocaleDateString()}</div>
-                    </div>
-                </div>
+            <div className="gn-scroll-area">
+                <div className="gn-canvas" style={{ minWidth: Math.max(timelineTicks.length * 120, 1000), position: 'relative' }}>
 
-                {/* Rows per worker */}
-                {workerSchedules.filter(ws => ws.tasks.length > 0).map(ws => {
-                    const isMyRow = currentUser?.id === ws.worker.id
-                    const isWorkerRole = currentUser?.role === 'WORKER'
-
-                    return (
-                    <div key={ws.worker.id} className={`gantt-row ${isWorkerRole && isMyRow ? 'highlighted-row' : ''}`}>
-                        <div className="gantt-label-col" style={isWorkerRole && isMyRow ? { fontWeight: 'bold', background: '#f0f5ff' } : {}}>
-                            <div className="worker-name">
-                                {ws.worker.firstName} {ws.worker.lastName}
-                                {isMyRow && " (Me)"}
-                            </div>
-                            <div className="worker-task-count">
-                                {ws.tasks.length} task{ws.tasks.length !== 1 ? 's' : ''}
-                            </div>
+                    <div className="gn-header-row" style={{ display: 'flex', position: 'sticky', top: 0, zIndex: 30 }}>
+                        <div className="gn-worker-label-header">
+                            <Users size={14} /> Workers
                         </div>
-                        <div className="gantt-bar-col" style={isWorkerRole && !isMyRow ? { opacity: 0.4 } : {}}>
-                            {ws.tasks.map(task => (
-                                <div
-                                    key={task.id}
-                                    className="gantt-bar"
-                                    onClick={() => onTaskClick?.(task)}
-                                    style={{
-                                        ...getBarStyle(task),
-                                        background: getPriorityColor(task.priorityName),
-                                        opacity: isWorkerRole && !isMyRow ? 0.6 : 1,
-                                        cursor: onTaskClick ? 'pointer' : 'default',
-                                    }}
-                                    title={`${task.title}\nStatus: ${task.taskStatusName}\nPriority: ${task.priorityName}\nDuration: ${task.durationHours}h`}
-                                >
-                                    <span className="bar-label">{task.title}</span>
+                        <div className="gn-timeline-header" style={{ display: 'flex', flex: 1 }}>
+                            {timelineTicks.map((date, i) => (
+                                <div key={i} className="gn-tick-cell">
+                                    <div className="gn-tick-day">{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                                    <div className="gn-tick-date">{date.getDate()}/{date.getMonth() + 1}</div>
                                 </div>
                             ))}
                         </div>
                     </div>
-                )})}
+
+                    <div className="gn-body">
+                        {workerSchedules.map(ws => (
+                            <div key={ws.worker.id} className="gn-row" style={{ display: 'flex', position: 'relative', borderBottom: '1px solid #f1f5f9', minHeight: '60px' }}>
+                                <div className="gn-worker-side-info">
+                                    <div className="gn-worker-name-main">{ws.worker.firstName} {ws.worker.lastName}</div>
+                                    <div className="gn-worker-task-count">{ws.workerTasks.length} tasks</div>
+                                </div>
+
+                                <div className="gn-bars-container" style={{ position: 'relative', flex: 1, display: 'flex' }}>
+                                    {timelineTicks.map((_, i) => (
+                                        <div key={i} className="gn-grid-line" style={{ flex: 1, borderRight: '1px solid #f8fafc' }} />
+                                    ))}
+
+                                    {ws.workerTasks.map(task => {
+                                        const startTs = new Date(task.startTime!).getTime()
+                                        const endTs = task.deadline ? new Date(task.deadline).getTime() : startTs + (task.durationHours || 1) * 3600000
+                                        const leftPercent = ((startTs - minDate.getTime()) / totalMs) * 100
+                                        const widthPercent = Math.max(((endTs - startTs) / totalMs) * 100, 2)
+
+                                        return (
+                                            <div
+                                                key={task.id}
+                                                className="gn-task-bar"
+                                                style={{
+                                                    position: 'absolute',
+                                                    left: `${leftPercent}%`,
+                                                    width: `${widthPercent}%`,
+                                                    backgroundColor: getPriorityColor(task.priorityName),
+                                                    top: '50%',
+                                                    transform: 'translateY(-50%)',
+                                                    zIndex: 10,
+                                                    height: '32px'
+                                                }}
+                                                onClick={() => onTaskClick?.(task)}
+                                            >
+                                                <span className="gn-bar-label">{task.title}</span>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     )
 }
 
 export default ScheduleGantt
-

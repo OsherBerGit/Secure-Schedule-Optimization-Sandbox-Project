@@ -1,274 +1,236 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { User, CreateUserRequest, UpdateUserRequest, Department, Skill } from '../types'
-import { userApi, departmentApi, skillApi } from '../api'
-import { useAuth } from '../context/useAuth'
-import UserModal from '../components/UserModal'
-import './Users.css'
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { userApi, departmentApi, skillApi } from '../api';
+import type { User, Department, Skill } from '../types';
+import UserModal from '../components/UserModal';
+import { Search, Pencil, Trash2, Plus, Users as UsersIcon, Plane, CalendarDays } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import './Users.css';
 
-const Users = () => {
-    const { user: currentUser } = useAuth()
+const Users: React.FC = () => {
+  const navigate = useNavigate();
+  const [users, setUsers] = useState<User[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-    const isManager = currentUser?.role === 'MANAGER'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [skillFilter, setSkillFilter] = useState('');
 
-    const [users, setUsers] = useState<User[]>([])
-    const [departments, setDepartments] = useState<Department[]>([])
-    const [allSkills, setAllSkills] = useState<Skill[]>([])
-
-    // Filters
-    const [search, setSearch] = useState('')
-    const [filterDepartment, setFilterDepartment] = useState<string>('')
-    const [filterRole, setFilterRole] = useState<string>('')
-    const [filterSkill, setFilterSkill] = useState<string>('')
-
-    // Sorting
-    const [sortField, setSortField] = useState<'id' | 'name' | 'nationalId'>('name')
-    const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-
-    const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [showModal, setShowModal] = useState(false)
-    const [selectedUser, setSelectedUser] = useState<User | null>(null)
-
-    const fetchUsers = useCallback(async () => {
-        setIsLoading(true)
-        try {
-            // Managers should only fetch their department users, unless departmentId is null
-            // In a better real world scenario, the backend secures this but here we respect user's scope
-            const usersPromise = isManager && currentUser?.departmentId
-                ? userApi.getByDepartment(currentUser.departmentId)
-                : userApi.getAll()
-
-            const [usersRes, deptsRes] = await Promise.all([
-                usersPromise,
-                departmentApi.getAll()
-            ])
-            setUsers(usersRes.data)
-            setDepartments(deptsRes.data)
-
-            const skillsRes = await skillApi.getAll()
-            setAllSkills(skillsRes.data)
-        } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to load users')
-        } finally {
-            setIsLoading(false)
-        }
-    }, [])
-
-    useEffect(() => { void fetchUsers() }, [fetchUsers])
-
-    // Filter & Sort Logic
-    const filteredUsers = useMemo(() => {
-        return users.filter(u => {
-            // Text Search
-            const searchLower = search.toLowerCase()
-            const matchesSearch = 
-                (u.firstName?.toLowerCase() + ' ' + u.lastName?.toLowerCase()).includes(searchLower) ||
-                u.nationalId.includes(searchLower) ||
-                u.email?.toLowerCase().includes(searchLower) ||
-                (u.departmentName?.toLowerCase() || '').includes(searchLower) ||
-                (u.role && u.role.toLowerCase().includes(searchLower))
-
-            // Department Filter
-            const matchesDept = filterDepartment ? u.departmentName === filterDepartment : true
-
-            // Role Filter
-            const matchesRole = filterRole ? u.role === filterRole : true
-
-            // Skill Filter
-            const matchesSkill = filterSkill ? u.skills?.some(s => s.name === filterSkill) : true
-
-            return matchesSearch && matchesDept && matchesRole && matchesSkill
-        }).sort((a, b) => {
-            let valA = ''
-            let valB = ''
-
-            if (sortField === 'name') {
-                valA = (a.firstName + ' ' + a.lastName).toLowerCase()
-                valB = (b.firstName + ' ' + b.lastName).toLowerCase()
-            } else if (sortField === 'nationalId') {
-                valA = a.nationalId
-                valB = b.nationalId
-            } else {
-                return 0
-            } // Default sort is effectively by id via DB order usually, but here we sort explicitly if field set.
-
-            if (valA < valB) return sortDir === 'asc' ? -1 : 1
-            if (valA > valB) return sortDir === 'asc' ? 1 : -1
-            return 0
-        })
-    }, [users, search, filterDepartment, filterRole, filterSkill, sortField, sortDir])
-
-    function toggleSort(field: 'name' | 'nationalId') {
-        if (sortField === field) {
-            setSortDir(prev => prev === 'asc' ? 'desc' : 'asc')
-        } else {
-            setSortField(field)
-            setSortDir('asc')
-        }
+  const fetchUsers = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await userApi.getAll();
+      setUsers(response.data);
+    } catch {
+      setError('Failed to fetch users');
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
 
-    function handleEdit(user: User) {
-        setSelectedUser(user)
-        setShowModal(true)
+  const fetchDepartments = async () => {
+    try {
+      const response = await departmentApi.getAll();
+      setDepartments(response.data);
+    } catch {
+      setError('Failed to fetch departments');
     }
+  };
 
-    function handleDelete(id: number) {
-        userApi.delete(id)
-            .then(() => {
-                fetchUsers()
-            })
-            .catch(error => {
-                setError(error.message)
-            })
+  const fetchSkills = async () => {
+    try {
+      const response = await skillApi.getAll();
+      setSkills(response.data);
+    } catch {
+      setError('Failed to fetch skills');
     }
+  };
 
-    function handleSubmit(formData: CreateUserRequest | UpdateUserRequest) {
-        if (selectedUser) {
-            return userApi.update(selectedUser.id, formData as UpdateUserRequest)
-                .then(() => {
-                    setShowModal(false)
-                    setSelectedUser(null)
-                    fetchUsers()
-                })
-        } else {
-            return userApi.create(formData as CreateUserRequest)
-                .then(() => {
-                    setShowModal(false)
-                    fetchUsers()
-                })
-        }
+  useEffect(() => {
+    fetchUsers();
+    fetchDepartments();
+    fetchSkills();
+  }, [fetchUsers]);
+
+  const handleOpenModal = (user?: User) => {
+    setSelectedUser(user || null);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedUser(null);
+  };
+
+  const handleDelete = async (nationalId: string) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        const u = users.find(u => u.nationalId === nationalId);
+        if (u) await userApi.delete(u.id);
+        fetchUsers();
+      } catch {
+        setError('Failed to delete user');
+      }
     }
+  };
 
-    function handleAddUser() {
-        setSelectedUser(null)
-        setShowModal(true)
+  const handleSubmit = async (userData: any) => {
+    try {
+      if (selectedUser) {
+        await userApi.update(selectedUser.id, userData);
+      } else {
+        await userApi.create(userData);
+      }
+      fetchUsers();
+      handleCloseModal();
+    } catch {
+      setError('Failed to save user');
+      throw new Error('Submit failed');
     }
+  };
 
-    return (
-        <div className="users-container">
-            <div className="users-header">
-                <h1>Users Management</h1>
-                {currentUser?.role === 'ADMIN' && (
-                    <button className="btn-add" onClick={handleAddUser}>+ Add User</button>
-                )}
-            </div>
+  const filteredUsers = useMemo(() => {
+    return users.filter(u => {
+      const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
+      const matchesSearch = !searchQuery ||
+          fullName.includes(searchQuery.toLowerCase()) ||
+          u.nationalId.includes(searchQuery);
+      const matchesRole = !roleFilter || u.role === roleFilter;
+      const matchesDept = !departmentFilter || u.departmentName === departmentFilter;
+      const matchesSkill = !skillFilter || u.skills?.some(s => s.name === skillFilter);
+      return matchesSearch && matchesRole && matchesDept && matchesSkill;
+    });
+  }, [users, searchQuery, roleFilter, departmentFilter, skillFilter]);
 
-            {error && <div className="error-message">{error}</div>}
-
-            <div className="filter-row">
-                <input
-                    type="text"
-                    className="modern-input"
-                    placeholder="🔍 Search name, role, etc..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    style={{ minWidth: '300px' }}
-                />
-                
-                {(currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER') && (
-                    <select
-                        className="modern-select"
-                        value={filterDepartment}
-                        onChange={e => setFilterDepartment(e.target.value)}
-                    >
-                        <option value="">All Departments</option>
-                        {departments.map(d => (
-                            <option key={d.id} value={d.name}>{d.name}</option>
-                        ))}
-                    </select>
-                )}
-
-                <select 
-                    className="modern-select"
-                    value={filterRole}
-                    onChange={e => setFilterRole(e.target.value)}
-                >
-                    <option value="">All Roles</option>
-                    <option value="ADMIN">Admin</option>
-                    <option value="MANAGER">Manager</option>
-                    <option value="WORKER">Worker</option>
-                </select>
-
-                <select
-                    className="modern-select"
-                    value={filterSkill}
-                    onChange={e => setFilterSkill(e.target.value)}
-                >
-                    <option value="">All Skills</option>
-                    {allSkills.map(s => (
-                        <option key={s.id} value={s.name}>{s.name}</option>
-                    ))}
-                </select>
-            </div>
-
-            {isLoading ? (
-                <div className="loading">Loading...</div>
-            ) : filteredUsers.length === 0 ? (
-                <div className="empty-state" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No records found matching the selected filters.</div>
-            ) : (
-                <table className="users-table">
-                    <thead>
-                        <tr>
-                            <th onClick={() => toggleSort('nationalId')}>National ID</th>
-                            <th onClick={() => toggleSort('name')}>First Name</th>
-                            <th>Last Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Role</th>
-                            <th>Department</th>
-                            <th>Skills</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredUsers.map(user => {
-                            const role = user.role ?? 'WORKER'
-                            return (
-                                <tr key={user.id}>
-                                    <td>{user.nationalId}</td>
-                                    <td>{user.firstName ?? '-'}</td>
-                                    <td>{user.lastName ?? '-'}</td>
-                                    <td>{user.email ?? '-'}</td>
-                                    <td>{user.phoneNumber ?? '-'}</td>
-                                    <td><span className={`role-badge role-${role.toLowerCase()}`}>{role}</span></td>
-                                    <td>
-                                        {user.departmentName
-                                            ? <span className="dept-badge">{user.departmentName}</span>
-                                            : <span className="dept-unassigned">-</span>}
-                                    </td>
-                                    <td>
-                                        {user.skills && user.skills.length > 0 ? (
-                                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                                {user.skills.map(s => (
-                                                    <span key={s.id} className="role-badge role-worker" style={{ fontSize: '0.75rem', backgroundColor: '#e2e8f0', color: '#4a5568', padding: '0.2rem 0.5rem', borderRadius: '12px' }}>{s.name}</span>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <span style={{ color: '#888', fontStyle: 'italic', fontSize: '0.85rem' }}>No skills</span>
-                                        )}
-                                    </td>
-                                    <td>
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <button className="btn-edit" onClick={() => handleEdit(user)}>Edit</button>
-                                            <button className="btn-delete" onClick={() => handleDelete(user.id)}>Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )
-                        })}
-                    </tbody>
-                </table>
-            )}
-
-            {showModal && (
-                <UserModal
-                    user={selectedUser}
-                    onSubmit={handleSubmit}
-                    onClose={() => { setShowModal(false); setSelectedUser(null) }}
-                />
-            )}
+  return (
+      <div className="users-page">
+        <div className="page-header">
+          <div className="page-header-title">
+            <UsersIcon className="text-primary" size={28} color="var(--primary-color)" />
+            <h1>Users Management</h1>
+          </div>
+          <button className="btn-add-primary" onClick={() => handleOpenModal()}>
+            <Plus size={18} /> Add New User
+          </button>
         </div>
-    )
-}
 
-export default Users
+        <div className="filters-container">
+          <div className="search-wrapper" style={{ flex: 1 }}>
+            <Search className="search-icon" size={18} />
+            <input
+                type="text"
+                className="modern-input search-input"
+                placeholder="Search by name or ID..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <select className="modern-input" style={{ flex: '0 0 150px' }} value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
+            <option value="">All Roles</option>
+            <option value="ADMIN">Admin</option>
+            <option value="MANAGER">Manager</option>
+            <option value="WORKER">Worker</option>
+          </select>
+          <select className="modern-input" style={{ flex: '0 0 150px' }} value={departmentFilter} onChange={e => setDepartmentFilter(e.target.value)}>
+            <option value="">All Departments</option>
+            {departments.map(d => (
+                <option key={d.id} value={d.name}>{d.name}</option>
+            ))}
+          </select>
+          <select className="modern-input" style={{ flex: '0 0 150px' }} value={skillFilter} onChange={e => setSkillFilter(e.target.value)}>
+            <option value="">All Skills</option>
+            {skills.map(s => (
+                <option key={s.id} value={s.name}>{s.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {error && <div className="error-message">{error}</div>}
+
+        <div className="table-container">
+          {isLoading ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading users...</div>
+          ) : filteredUsers.length === 0 ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No users found matching the filters.</div>
+          ) : (
+              <table className="modern-table users-table">
+                <thead>
+                <tr>
+                  <th>National ID</th>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Role</th>
+                  <th>Department</th>
+                  <th>Skills</th>
+                  <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {filteredUsers.map(u => (
+                    <tr key={u.nationalId}>
+                      <td>{u.nationalId}</td>
+                      <td style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{u.firstName} {u.lastName}</td>
+                      <td>{u.email}</td>
+                      <td>{u.phoneNumber}</td>
+                      <td>
+                      <span className={`role-badge role-${u.role.toLowerCase()}`}>
+                        {u.role}
+                      </span>
+                      </td>
+                      <td>
+                      <span className="department-badge">
+                        {u.departmentName || 'General'}
+                      </span>
+                      </td>
+                      <td>
+                        <div className="skills-container-table">
+                          {u.skills && u.skills.length > 0 ? (
+                              u.skills.map(s => (
+                                  <span key={s.id} className="skill-badge">{s.name}</span>
+                              ))
+                          ) : (
+                              <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontStyle: 'italic' }}>None</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="actions-cell">
+                        <button className="btn-icon edit-btn" onClick={() => handleOpenModal(u)} title="Edit User">
+                          <Pencil size={16} />
+                        </button>
+                        <button className="btn-icon vacation-btn" onClick={() => navigate(`/vacations?workerId=${u.id}`, { state: { filterWorkerName: `${u.firstName} ${u.lastName}` } })} title="Manage Vacations">
+                          <Plane size={16} />
+                        </button>
+                        <button className="btn-icon settlement-btn" onClick={() => navigate(`/settlements?workerId=${u.id}`, { state: { filterWorkerName: `${u.firstName} ${u.lastName}` } })} title="View Schedule">
+                          <CalendarDays size={16} />
+                        </button>
+                        <button className="btn-icon delete-btn" onClick={() => handleDelete(u.nationalId)} title="Delete User">
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                ))}
+                </tbody>
+              </table>
+          )}
+        </div>
+
+        {isModalOpen && (
+            <UserModal
+                onClose={handleCloseModal}
+                onSubmit={handleSubmit}
+                user={selectedUser}
+                departments={departments}
+                skills={skills}
+            />
+        )}
+      </div>
+  );
+};
+
+export default Users;

@@ -14,14 +14,33 @@ import Schedule from './pages/Schedule';
 import TaskConstraints from './pages/TaskConstraints';
 import Departments from './pages/Departments';
 import Skills from './pages/Skills';
+import { useState, useEffect } from 'react';
 
 import './App.css';
 
 function App() {
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      return savedTheme === 'dark';
+    }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
+
   return (
     <AuthProvider>
       <Router>
-        <Layout>
+        <Layout isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}>
           <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
