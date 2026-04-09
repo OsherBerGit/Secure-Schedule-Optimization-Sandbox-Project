@@ -38,8 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         // retrieve the Authorization header from the request
-        String header = request.getHeader(JwtProperties.HEADER_STRING);
-        String token;
+        String token, header = request.getHeader(JwtProperties.HEADER_STRING);
 
         // extract the token from the header if it's present
         // this is when sending the token in the Authorization header

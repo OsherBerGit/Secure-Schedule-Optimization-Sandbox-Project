@@ -15,9 +15,9 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('accessToken');
-    if (token) {
+    if (token)
       config.headers.Authorization = `Bearer ${token}`;
-    }
+
     return config;
   },
   (error: AxiosError) => {
@@ -32,6 +32,12 @@ axiosInstance.interceptors.response.use(
   },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    // Handle 429 Too Many Requests (Rate Limiting)
+    if (error.response?.status === 429) {
+      alert("Too many requests. Please wait a minute and try again.");
+      return Promise.reject(new Error('Rate limit exceeded'));
+    }
 
     // Handle 409 Conflict (Optimistic Locking)
     if (error.response?.status === 409) {
@@ -52,9 +58,8 @@ axiosInstance.interceptors.response.use(
 
       try {
         const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
+        if (!refreshToken)
           throw new Error('No refresh token available');
-        }
 
         // Try to refresh the token
         const response = await axios.post(`${BASE_URL}/auth/refresh-token`, {

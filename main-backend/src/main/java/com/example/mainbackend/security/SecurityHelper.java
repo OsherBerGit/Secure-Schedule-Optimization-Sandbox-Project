@@ -161,11 +161,11 @@ public class SecurityHelper {
         if (vacationId == null) return false;
         if (isAdmin()) return true;
 
-        if (isManager()) {
+        if (isManager())
             return vacationRepository.findById(vacationId)
                     .map(vacation -> vacation.getWorker().getDepartment().getId().equals(getCurrentUserDepartmentId()))
                     .orElse(false);
-        }
+
         return false;
     }
 
@@ -194,11 +194,11 @@ public class SecurityHelper {
         if (settlementId == null) return false;
         if (isAdmin()) return true;
 
-        if (isManager()) {
+        if (isManager())
             return settlementRepository.findById(settlementId)
                     .map(settlement -> settlement.getTask().getDepartment().getId().equals(getCurrentUserDepartmentId()))
                     .orElse(false);
-        }
+
         return false; // Workers cannot manage/delete settlements
     }
 
@@ -209,11 +209,11 @@ public class SecurityHelper {
     public boolean canViewSettlement(Long settlementId) {
         if (canManageSettlement(settlementId)) return true;
 
-        if (isWorker()) {
+        if (isWorker())
             return settlementRepository.findById(settlementId)
                     .map(settlement -> settlement.getWorker().getId().equals(getCurrentUser().getId()))
                     .orElse(false);
-        }
+
         return false;
     }
 
@@ -224,22 +224,22 @@ public class SecurityHelper {
     public boolean canManageConstraint(Long constraintId) {
         if (constraintId == null) return false;
         if (isAdmin()) return true;
-        if (isManager()) {
+        if (isManager())
             return taskConstraintRepository.findById(constraintId)
                     .map(constraint -> constraint.getPredecessorTask().getDepartment().getId().equals(getCurrentUserDepartmentId()))
                     .orElse(false);
-        }
+
         return false;
     }
 
     public boolean canViewConstraint(Long constraintId) {
         if (canManageConstraint(constraintId)) return true;
-        if (isWorker()) {
+        if (isWorker())
             return taskConstraintRepository.findById(constraintId)
                     .map(constraint -> canViewTask(constraint.getPredecessorTask().getId()) ||
                             canViewTask(constraint.getSuccessorTask().getId()))
                     .orElse(false);
-        }
+
         return false;
     }
 }

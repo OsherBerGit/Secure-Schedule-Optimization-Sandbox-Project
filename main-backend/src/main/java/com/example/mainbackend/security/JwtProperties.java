@@ -3,6 +3,7 @@ package com.example.mainbackend.security;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 /**
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
  * Values are loaded from application.properties or environment variables.
  */
 @Component
+@Configuration
 @ConfigurationProperties(prefix = "jwt")
 @Getter
 @Setter

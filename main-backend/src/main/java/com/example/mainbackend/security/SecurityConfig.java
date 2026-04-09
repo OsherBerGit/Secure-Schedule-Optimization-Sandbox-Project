@@ -31,6 +31,7 @@ import java.util.List;
  * - BCrypt password hashing (strength 12)
  * - SQL injection prevention via JPA prepared statements
  * - Method-level security with @PreAuthorize
+ * - Rate Limiting to prevent Brute Force and DoS attacks
  */
 @Configuration
 @EnableWebSecurity // Set debug = true only for troubleshooting
@@ -42,6 +43,7 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
     private final CustomLogoutHandler customLogoutHandler;
+    private final RateLimitProperties rateLimitProperties;
 
     /**
      * Password encoder using BCrypt with strength 12.
@@ -61,18 +63,10 @@ public class SecurityConfig {
 
         // Allow ONLY the frontend origin - no wildcards for security
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
-
-        // Allowed HTTP methods
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-
-        // Allow all headers (including Authorization)
-        configuration.setAllowedHeaders(List.of("*"));
-
-        // Allow credentials (cookies, authorization headers)
-        configuration.setAllowCredentials(true);
-
-        // Cache preflight response for 1 hour
-        configuration.setMaxAge(3600L);
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")); // Allowed HTTP methods
+        configuration.setAllowedHeaders(List.of("*")); // Allow all headers (including Authorization)
+        configuration.setAllowCredentials(true); // Allow credentials (cookies, authorization headers)
+        configuration.setMaxAge(3600L); // Cache preflight response for 1 hour
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -104,6 +98,12 @@ public class SecurityConfig {
                                 .maxAgeInSeconds(31536000))
                 )
 
+                // Add rate limiting filter before UsernamePasswordAuthenticationFilter to protect authentication endpoints
+                .addFilterBefore(
+                        new RateLimitingFilter(rateLimitProperties),
+                        UsernamePasswordAuthenticationFilter.class
+                )
+
                 // Add custom JWT authentication filter before UsernamePasswordAuthenticationFilter
                 .addFilterBefore(
                         new JwtAuthenticationFilter(jwtUtil, userDetailsService, tokenBlacklistService),
@@ -126,12 +126,7 @@ public class SecurityConfig {
 
                 // Authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        // ============================================================
-                        // PRODUCTION AUTHORIZATION RULES
-                        // ============================================================
-
                         // Public: login and token refresh — no JWT required
-                        // FIX: paths must match AuthenticationController @RequestMapping("/api/auth")
                         .requestMatchers(
                                 HttpMethod.POST, "/api/auth/login",
                                 "/api/auth/refresh-token"
@@ -140,18 +135,6 @@ public class SecurityConfig {
                         // OPTIONS preflight requests — required for CORS handshake
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // ============================================================
-                        // DECENTRALIZED AUTHORIZATION (Method Security)
-                        // ============================================================
-                        // We removed the hardcoded .hasRole("ADMIN") for /api/users and /api/schedule
-                        // because Managers now need contextual access (ABAC) to these endpoints based on Department ID.
-                        // The actual security checks are enforced via @PreAuthorize annotations in the Controllers.
-
-                        // ── Everything else under /api requires a valid JWT ──────────
-                        // Covers: /api/tasks/**, /api/vacations/**, /api/settlements/**,
-                        //         /api/priorities/**, /api/statuses/**, /api/constraint-types/**
-                        // Fine-grained ADMIN/WORKER separation is enforced by @PreAuthorize
-                        // on each controller method (defence-in-depth)
                         .anyRequest().authenticated()
                 );
 

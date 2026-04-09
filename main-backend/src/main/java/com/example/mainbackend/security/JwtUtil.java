@@ -117,9 +117,7 @@ public class JwtUtil {
     }
 
     // Check if a JWT token is expired
-    private Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date(System.currentTimeMillis()));
-    }
+    private Boolean isTokenExpired(String token) { return extractExpiration(token).before(new Date(System.currentTimeMillis()));}
 
     // Extract the expiration date from a JWT token
     public Date extractExpiration(String token) { return extractClaim(token, Claims::getExpiration); }
