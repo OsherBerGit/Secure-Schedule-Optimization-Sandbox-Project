@@ -58,64 +58,6 @@ public class UserMapper {
                 .build();
     }
 
-    /**
-     * Updates an existing User entity with data from UserDto.
-     * Used for PATCH/PUT operations to avoid manual field copying.
-     * Note: Does not update roles, vacations, or settlements - they should be handled separately.
-     *
-     * @param existingUser the User entity to update
-     * @param userDto the source DTO with new values
-     */
-    public void updateEntityFromDto(User existingUser, UserDto userDto) {
-        if (existingUser == null || userDto == null) return;
-
-        existingUser.setNationalId(userDto.getNationalId());
-        existingUser.setFirstName(userDto.getFirstName());
-        existingUser.setLastName(userDto.getLastName());
-        existingUser.setEmail(userDto.getEmail());
-        existingUser.setPhoneNumber(userDto.getPhoneNumber());
-        existingUser.setSalary(userDto.getSalary());
-        existingUser.setAddress(userDto.getAddress());
-        existingUser.setMaxTasks(userDto.getMaxTasks());
-        // Note: roles, vacations, settlements, availabilities are not updated here
-        // They should be handled separately by dedicated service methods
-    }
-
-    /**
-     * Converts UserDto to User entity.
-     * Note: This creates a basic entity without roles, vacations, or settlements.
-     * These relationships should be set by the service layer after fetching from DB.
-     *
-     * @param userDto the source DTO
-     * @return User entity with basic fields populated, or null if input is null
-     */
-    public User toEntity(UserDto userDto) {
-        if (userDto == null) return null;
-
-        return User.builder()
-                .id(userDto.getId())
-                .nationalId(userDto.getNationalId())
-                .firstName(userDto.getFirstName())
-                .lastName(userDto.getLastName())
-                .email(userDto.getEmail())
-                .phoneNumber(userDto.getPhoneNumber())
-                .salary(userDto.getSalary())
-                .address(userDto.getAddress())
-                .maxTasks(userDto.getMaxTasks())
-                // Note: roles, vacations, settlements are not set here
-                // They should be fetched from DB by service layer using the IDs/names
-                .build();
-    }
-
-    /**
-     * Creates a User entity from CreateUserRequest.
-     * Eliminates code duplication in service layer.
-     * Note: Password should be encoded by the service layer before calling this method.
-     *
-     * @param request the creation request
-     * @param encodedPassword the already-encoded password
-     * @return User entity ready to be saved
-     */
     public User fromCreateRequest(CreateUserRequest request, String encodedPassword) {
         if (request == null) return null;
 
@@ -130,22 +72,8 @@ public class UserMapper {
                 .address(request.getAddress())
                 .maxTasks(request.getMaxTasks())
                 .build();
-        // Note: availabilities from the request are not mapped here because they require
-        // back-references to the saved User entity. The service layer should save the User
-        // first, then persist the WorkerAvailability entries with the correct user_id.
     }
 
-    /**
-     * Maps a User entity to an anonymous AlgoUserRequest.
-     * Zero-Trust: only scheduling-relevant IDs and capacity data are included.
-     * No names, nationalIds, emails, or any PII are transmitted to the algorithm engine.
-     *
-     * Vacations are filtered to APPROVED status only — pending/rejected vacations
-     * are irrelevant to the scheduling engine's availability calculation.
-     *
-     * @param user the User entity (must have roles already loaded)
-     * @return anonymous AlgoUserRequest for the algorithm engine
-     */
     public AlgoUserRequest toAlgoRequest(User user, int effectiveMaxTasks) {
         if (user == null) return null;
 

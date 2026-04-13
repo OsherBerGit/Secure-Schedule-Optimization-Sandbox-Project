@@ -60,8 +60,5 @@ public class CreateUserRequest {
     @Min(value = 1, message = "Max tasks must be at least 1")
     private Integer maxTasks;
 
-    /**
-     * Optional: List of Skill IDs to assign to the user.
-     */
     private Set<Long> skillIds;
 }

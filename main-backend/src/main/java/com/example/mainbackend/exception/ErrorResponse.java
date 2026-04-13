@@ -8,9 +8,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Standardized error response structure for API errors.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -9,10 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Read-only endpoint for Settlement Statuses (PENDING, ASSIGNED, IN_PROGRESS, COMPLETED, FAILED).
- * These are seeded by DataLoader and managed by the system — no create/update/delete exposed.
- */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/settlement-statuses")

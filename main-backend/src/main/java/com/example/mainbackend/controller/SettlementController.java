@@ -15,10 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * REST controller for managing settlements (final schedule assignments).
- * Provides endpoints for CRUD operations on worker-task assignments.
- */
 @RestController
 @RequestMapping("/api/settlements")
 @RequiredArgsConstructor
@@ -26,10 +22,6 @@ public class SettlementController {
 
     private final SettlementService settlementService;
 
-    /**
-     * Creates a new settlement (Manual Scheduling).
-     * ALLOWED FOR: ADMIN, or MANAGER (only if both Task and Worker belong to their department).
-     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or (hasRole('MANAGER') and @securityHelper.canManageTask(#request.taskId) and @securityHelper.canManageUser(#request.workerId))")
     public ResponseEntity<SettlementResponseDto> createSettlement(
@@ -38,10 +30,6 @@ public class SettlementController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Retrieves a settlement by its ID.
-     * ALLOWED FOR: ADMIN, MANAGER of the department, or the ASSIGNED WORKER.
-     */
     @GetMapping("/{id}")
     @PreAuthorize("@securityHelper.canViewSettlement(#id)")
     public ResponseEntity<SettlementResponseDto> getSettlementById(@PathVariable Long id) {
@@ -49,10 +37,6 @@ public class SettlementController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Retrieves all settlements globally.
-     * ALLOWED FOR: Any authenticated user (service will filter by department if manager).
-     */
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SettlementResponseDto>> getAllSettlements() {
@@ -60,10 +44,6 @@ public class SettlementController {
         return ResponseEntity.ok(settlements);
     }
 
-    /**
-     * Retrieves all settlements for a specific worker.
-     * ALLOWED FOR: ADMIN, MANAGER of the worker, or the WORKER themselves.
-     */
     @GetMapping("/worker/{workerId}")
     @PreAuthorize("@securityHelper.canManageUser(#workerId)")
     public ResponseEntity<List<SettlementResponseDto>> getSettlementsByWorker(@PathVariable Long workerId) {
@@ -71,10 +51,6 @@ public class SettlementController {
         return ResponseEntity.ok(settlements);
     }
 
-    /**
-     * Returns all settlements for the currently authenticated user.
-     * ALLOWED FOR: ANY AUTHENTICATED USER (Worker/Manager/Admin).
-     */
     @GetMapping("/worker/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SettlementResponseDto>> getMySettlements(Authentication authentication) {
@@ -83,11 +59,6 @@ public class SettlementController {
         return ResponseEntity.ok(settlements);
     }
 
-    /**
-     * Marks a settlement as COMPLETED.
-     * ALLOWED FOR: The ASSIGNED WORKER (or Admin/Manager if you want to allow them).
-     * Note: The service layer already verifies the nationalId matches the assigned worker.
-     */
     @PatchMapping("/{id}/complete")
     @PreAuthorize("@securityHelper.canViewSettlement(#id)")
     public ResponseEntity<SettlementResponseDto> completeSettlement(
@@ -97,10 +68,6 @@ public class SettlementController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Retrieves settlements for a specific task.
-     * ALLOWED FOR: ADMIN, MANAGER of the task, or ASSIGNED WORKER.
-     */
     @GetMapping("/task/{taskId}")
     @PreAuthorize("@securityHelper.canViewTask(#taskId)")
     public ResponseEntity<List<SettlementResponseDto>> getSettlementsByTask(@PathVariable Long taskId) {
@@ -108,10 +75,6 @@ public class SettlementController {
         return ResponseEntity.ok(settlements);
     }
 
-    /**
-     * Retrieves settlements globally by date range.
-     * RESTRICTED TO ADMIN ONLY.
-     */
     @GetMapping("/date-range")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<SettlementResponseDto>> getSettlementsByDateRange(
@@ -121,10 +84,6 @@ public class SettlementController {
         return ResponseEntity.ok(settlements);
     }
 
-    /**
-     * Deletes a settlement.
-     * ALLOWED FOR: ADMIN, or MANAGER of the department.
-     */
     @DeleteMapping("/{id}")
     @PreAuthorize("@securityHelper.canManageSettlement(#id)")
     public ResponseEntity<Void> deleteSettlement(@PathVariable Long id) {

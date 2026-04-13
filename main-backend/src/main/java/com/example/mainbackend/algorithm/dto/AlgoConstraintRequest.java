@@ -9,8 +9,6 @@ import lombok.*;
 public class AlgoConstraintRequest {
     private Long predecessorId;
 
-    /** * Type of constraint: FS, SS, FF, SF.
-     * Default: FS
-     */
+    // Type of constraint: FS (Default), SS, FF, SF.
     private ConstraintType type;
 }

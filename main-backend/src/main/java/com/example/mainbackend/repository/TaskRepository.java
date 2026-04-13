@@ -18,15 +18,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     @Query("SELECT t FROM Task t WHERE t.status.name = :statusName")
     List<Task> findByStatusName(@Param("statusName") String statusName);
 
-    /**
-     * Returns all tasks scoped to a specific department (any status).
-     * Used by TaskService to display all tasks for a department.
-     */
     List<Task> findAllByDepartmentId(Long departmentId);
 
-    /**
-     * Finds all tasks by their status ID.
-     */
     List<Task> findByStatusId(Long statusId);
 
     // ADMIN scope (all departments)

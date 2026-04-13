@@ -10,11 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
-/**
- * DTO for a WORKER submitting their own vacation request.
- * The worker's identity is extracted from the JWT Security Context,
- * so no workerId is needed in the request body.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

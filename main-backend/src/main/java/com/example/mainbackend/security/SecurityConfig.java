@@ -54,9 +54,7 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder(12);
     }
 
-    /**
-     * CORS configuration - restricts access to frontend origin only.
-     */
+    // CORS configuration - restricts access to frontend origin only.
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -73,9 +71,7 @@ public class SecurityConfig {
         return source;
     }
 
-    /**
-     * Main security filter chain configuration.
-     */
+    // Main security filter chain configuration.
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http

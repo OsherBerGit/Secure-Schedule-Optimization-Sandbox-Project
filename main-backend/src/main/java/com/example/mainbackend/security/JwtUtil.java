@@ -26,7 +26,6 @@ public class JwtUtil {
 
     public JwtUtil(JwtProperties jwtProperties) {
         this.jwtProperties = jwtProperties;
-        // Use the secret from configuration - persists across restarts
         String secret = jwtProperties.getSecret();
 
         // Ensure the secret is at least 32 characters (256 bits) for HS256
@@ -39,9 +38,8 @@ public class JwtUtil {
         log.info("JwtUtil initialized with configured secret key");
     }
 
-    private SecretKey getKey() { return this.key; } // Use the stored key
+    private SecretKey getKey() { return this.key; }
 
-    // Generate a JWT token for a user, first time login
     public String generateToken(AuthenticationRequest authenticationRequest, UserDetails userDetails, Long departmentId, String jwtID) {
         Map<String, Object> claims = new HashMap<>();
         if (departmentId != null)
@@ -63,7 +61,6 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Generate a JWT token for a user, refresh token
     public String generateRefreshToken(AuthenticationRequest authenticationRequest, UserDetails userDetails, String jwtID) {
         Map<String, Object> claims = new HashMap<>();
 
@@ -80,27 +77,18 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Extract the expiration date from a JWT token and implicitly validate the token
-    // This implementation implicitly validates the signature when extracting claims:
     public boolean validateToken(String token, UserDetails userDetails) {
         try {
-            // extract the nationalId from the JWT token
             String nationalId = extractNationalId(token);
-            // If signature verification fails, extractNationalId will throw an exception.
-
-            // check if the nationalId extracted from the JWT token matches the nationalId in the UserDetails object and the token is not expired
             return (nationalId.equals(userDetails.getUsername()) && !isTokenExpired(token));
         } catch (Exception e) {
-            // Handle the invalid signature here
             throw new RuntimeException("The token signature is invalid: " + e.getMessage());
         }
         // Other exceptions related to token parsing can also be caught here if necessary
     }
 
-    // Extract the nationalId from a JWT token
     public String extractNationalId(String token) { return extractClaim(token, Claims::getSubject); }
 
-    // Extract the jwtID from a JWT token
     public String extractJWTID(String token) { return extractClaim(token, Claims::getId); }
 
     private <T> T extractClaim(String string, Function<Claims, T> claimsResolver) {
@@ -108,7 +96,6 @@ public class JwtUtil {
         return claimsResolver.apply(claims);
     }
 
-    // Extract all claims from a JWT token
     private Claims extractAllClaims(String token) {
         SecretKey secretKey = (SecretKey) getKey();
         return Jwts.parser()
@@ -116,9 +103,7 @@ public class JwtUtil {
                 .build().parseSignedClaims(token).getPayload();
     }
 
-    // Check if a JWT token is expired
     private Boolean isTokenExpired(String token) { return extractExpiration(token).before(new Date(System.currentTimeMillis()));}
 
-    // Extract the expiration date from a JWT token
     public Date extractExpiration(String token) { return extractClaim(token, Claims::getExpiration); }
 }

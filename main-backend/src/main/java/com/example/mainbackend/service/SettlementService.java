@@ -40,31 +40,24 @@ public class SettlementService {
     private final TaskStatusRepository taskStatusRepository;
     private final SettlementMapper mapper;
 
-    /**
-     * Create a new settlement (assignment of worker to task).
-     * Status defaults to ASSIGNED if not specified in request.
-     */
     @Transactional
     public SettlementResponseDto createSettlement(SettlementCreateRequest request) {
-        // Validate task exists
+        // Validate that both task and worker exist
         Task task = taskRepository.findById(request.getTaskId())
                 .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + request.getTaskId()));
 
-        // Validate worker exists
         User worker = userRepository.findById(request.getWorkerId())
                 .orElseThrow(() -> new IllegalArgumentException("Worker not found with ID: " + request.getWorkerId()));
 
         // Resolve settlement status — default to PENDING
         SettlementStatus status;
-        if (request.getStatusId() != null) {
+        if (request.getStatusId() != null)
             status = settlementStatusRepository.findById(request.getStatusId())
                     .orElseThrow(() -> new IllegalArgumentException("Settlement status not found: " + request.getStatusId()));
-        } else {
+        else
             status = settlementStatusRepository.findByName(SettlementStatusLevel.PENDING.name())
                     .orElseThrow(() -> new IllegalStateException("PENDING status not seeded in settlement_statuses"));
-        }
 
-        // Build and save settlement
         Settlement settlement = Settlement.builder()
                 .task(task)
                 .worker(worker)
@@ -83,9 +76,6 @@ public class SettlementService {
         return mapper.toDto(saved);
     }
 
-    /**
-     * Retrieve a settlement by its ID.
-     */
     @Transactional(readOnly = true)
     public SettlementResponseDto getSettlementById(Long id) {
         Settlement settlement = settlementRepository.findByIdWithDetails(id)
@@ -93,9 +83,7 @@ public class SettlementService {
         return mapper.toDto(settlement);
     }
 
-    /**
-     * Retrieve all settlements (eagerly loaded to prevent LazyInitializationException).
-     */
+    // Retrieve all settlements (eagerly loaded to prevent LazyInitializationException).
     @Transactional(readOnly = true)
     public List<SettlementResponseDto> getAllSettlements() {
         return settlementRepository.findAllWithDetails().stream()
@@ -103,9 +91,6 @@ public class SettlementService {
                 .toList();
     }
 
-    /**
-     * Retrieve all settlements for a specific worker.
-     */
     @Transactional(readOnly = true)
     public List<SettlementResponseDto> getSettlementsByWorker(Long workerId) {
         if (!userRepository.existsById(workerId))
@@ -116,9 +101,6 @@ public class SettlementService {
                 .toList();
     }
 
-    /**
-     * Returns all settlements for the currently authenticated worker (by nationalId from JWT).
-     */
     @Transactional(readOnly = true)
     public List<SettlementResponseDto> getMySettlements(String nationalId) {
         return settlementRepository.findByWorker_NationalId(nationalId).stream()
@@ -126,26 +108,17 @@ public class SettlementService {
                 .toList();
     }
 
-    /**
-     * Marks a settlement as COMPLETED.
-     * <ul>
-     *   <li>WORKER — must own the settlement (no IDOR traversal).</li>
-     *   <li>ADMIN  — may complete any settlement (management override).</li>
-     * </ul>
-     */
     @Transactional
     public SettlementResponseDto completeSettlement(Long id, String nationalId) {
         Settlement settlement = settlementRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new IllegalArgumentException("Settlement not found with ID: " + id));
 
-        // Determine if the caller is an ADMIN — skip ownership check if so
         boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
                 .getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
-        if (!isAdmin && !settlement.getWorker().getNationalId().equals(nationalId)) {
+        if (!isAdmin && !settlement.getWorker().getNationalId().equals(nationalId))
             throw new SecurityException("Access denied: this settlement does not belong to you");
-        }
 
         SettlementStatus completed = settlementStatusRepository.findByName(SettlementStatusLevel.COMPLETED.name())
                 .orElseThrow(() -> new IllegalStateException("COMPLETED status not seeded in settlement_statuses"));
@@ -159,8 +132,7 @@ public class SettlementService {
         // If every settlement for this task is now COMPLETED, close the task lifecycle
         Task task = settlement.getTask();
         List<Settlement> allForTask = settlementRepository.findByTaskId(task.getId());
-        boolean allDone = allForTask.stream()
-                .allMatch(s -> SettlementStatusLevel.COMPLETED.name().equals(s.getStatus().getName()));
+        boolean allDone = allForTask.stream().allMatch(s -> SettlementStatusLevel.COMPLETED.name().equals(s.getStatus().getName()));
         if (allDone) {
             TaskStatus closed = taskStatusRepository.findByName(TaskStatusLevel.CLOSED.name())
                     .orElseThrow(() -> new IllegalStateException("CLOSED status not seeded in task_statuses"));
@@ -172,9 +144,6 @@ public class SettlementService {
         return mapper.toDto(settlement);
     }
 
-    /**
-     * Retrieve all settlements for a specific task.
-     */
     @Transactional(readOnly = true)
     public List<SettlementResponseDto> getSettlementsByTask(Long taskId) {
         if (!taskRepository.existsById(taskId))
@@ -185,14 +154,6 @@ public class SettlementService {
                 .toList();
     }
 
-    /**
-     * Retrieve settlements within a date range.
-     *
-     * @param startDate the start date (inclusive)
-     * @param endDate the end date (inclusive)
-     * @return list of settlements within the date range
-     * @throws IllegalArgumentException if start date is after end date
-     */
     @Transactional(readOnly = true)
     public List<SettlementResponseDto> getSettlementsByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
         if (startDate.isAfter(endDate))
@@ -203,13 +164,6 @@ public class SettlementService {
                 .toList();
     }
 
-    /**
-     * Delete a settlement by its ID.
-     *
-     * @param id the settlement ID to delete
-     * @return true if deleted successfully
-     * @throws IllegalArgumentException if settlement not found
-     */
     @Transactional
     public boolean deleteSettlement(Long id) {
         if (!settlementRepository.existsById(id))

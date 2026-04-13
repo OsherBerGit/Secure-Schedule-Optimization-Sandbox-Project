@@ -9,14 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * AlgoController — exposes the scheduling endpoint to the main-backend.
- *
- * <p>Single responsibility: accept the HTTP request, delegate all business
- * logic to {@link AlgoService}, and return the HTTP response.</p>
- *
- * <p>Base path: {@code /api/v1/algo}</p>
- */
 @RestController
 @RequestMapping("/api/v1/algo")
 public class AlgoController {
@@ -29,16 +21,6 @@ public class AlgoController {
         this.algoService = algoService;
     }
 
-    /**
-     * Runs the scheduling algorithm for the supplied workers and tasks.
-     *
-     * <p>The request body is validated via {@code @Valid} before the service
-     * layer is reached. Any constraint violations are returned as a 400 response
-     * by Spring's default {@code MethodArgumentNotValidException} handler.</p>
-     *
-     * @param request the scheduling request (workers + tasks + optional strategy)
-     * @return 200 OK with the scheduling result
-     */
     @PostMapping("/schedule")
     public ResponseEntity<SchedulingResponseDto> schedule(
             @Valid @RequestBody SchedulingRequestDto request) {

@@ -10,40 +10,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * AlgoMapper â€” stateless translator between the side-backend DTO layer and the
- * algorithm model layer.
- *
- * <h3>Zero-Trust guarantee</h3>
- * <ul>
- * <li>No PII fields (names, emails) are ever copied â€” the DTOs don't carry them
- * and the models don't accept them.</li>
- * <li>Every {@code null} collection is normalised to an empty, immutable collection
- * so the algorithm engine never needs to perform null checks on lists/sets.</li>
- * </ul>
- *
- * <h3>skill ID convention</h3>
- * Both {@code UserDto.skillIds} and {@code TaskDto.requiredSkillIds} are processed as technical IDs.
- * Temporal constraints (e.g., maximum working hours, vacations) are parsed into generic intervals.
- *
- * <h3>Usage</h3>
- * <pre>{@code
- * AlgoUser  user   = AlgoMapper.toModel(userDto);
- * AlgoTask  task   = AlgoMapper.toModel(taskDto);
- * // Full request mapping:
- * MappedRequest mapped = AlgoMapper.toModels(request);
- * }</pre>
- */
 @Component
 public final class AlgoMapper {
 
-    /**
-     * Converts a single {@link VacationDto} belonging to the given worker.
-     *
-     * @param dto    source vacation record (must not be null)
-     * @param userId the ID of the owning worker (for traceability inside the engine)
-     * @return immutable {@link AlgoVacation}
-     */
     public AlgoVacation toModel(VacationDto dto, Long userId) {
         return new AlgoVacation(
                 dto.id(),
@@ -53,10 +22,6 @@ public final class AlgoMapper {
         );
     }
 
-    /**
-     * Converts a (possibly null) list of {@link VacationDto}s for one worker.
-     * Returns an empty list when the input is null or empty.
-     */
     public List<AlgoVacation> toVacationModels(List<VacationDto> dtos, Long userId) {
         if (dtos == null || dtos.isEmpty()) return Collections.emptyList();
         List<AlgoVacation> result = new ArrayList<>(dtos.size());
@@ -65,18 +30,10 @@ public final class AlgoMapper {
         return result;
     }
 
-    /**
-     * Converts a single inlined {@link UserDto.WorkerAvailabilityDto} to an
-     * {@link AlgoWorkerAvailability} model.
-     */
     public AlgoWorkerAvailability toModel(UserDto.WorkerAvailabilityDto dto) {
         return new AlgoWorkerAvailability(dto.dayOfWeek(), dto.startTime(), dto.endTime());
     }
 
-    /**
-     * Converts a (possibly null) list of availability windows.
-     * Returns an empty list when the input is null or empty.
-     */
     public List<AlgoWorkerAvailability> toAvailabilityModels(List<UserDto.WorkerAvailabilityDto> dtos) {
         if (dtos == null || dtos.isEmpty()) return Collections.emptyList();
         List<AlgoWorkerAvailability> result = new ArrayList<>(dtos.size());
@@ -85,14 +42,6 @@ public final class AlgoMapper {
         return result;
     }
 
-    /**
-     * Converts a single {@link UserDto} to an {@link AlgoUser} model.
-     * Vacations are read directly from {@code dto.vacations()}.
-     * Availability windows are mapped from {@code dto.availabilities()}.
-     *
-     * @param dto source DTO (must not be null)
-     * @return immutable {@link AlgoUser}
-     */
     public AlgoUser toModel(UserDto dto) {
         Set<Long> skills = dto.skillIds() != null ? Set.copyOf(dto.skillIds()) : Collections.emptySet();
         List<AlgoVacation> vacations = toVacationModels(dto.vacations(), dto.id());
@@ -100,10 +49,6 @@ public final class AlgoMapper {
         return new AlgoUser(dto.id(), availabilities, dto.maxTasks(), skills, vacations);
     }
 
-    /**
-     * Bulk-converts a list of {@link UserDto}s.
-     * Returns an empty list when the input is null or empty.
-     */
     public List<AlgoUser> toUserModels(List<UserDto> dtos) {
         if (dtos == null || dtos.isEmpty()) return Collections.emptyList();
         List<AlgoUser> result = new ArrayList<>(dtos.size());
@@ -112,13 +57,6 @@ public final class AlgoMapper {
         return result;
     }
 
-    /**
-     * Converts a single {@link TaskDto} to an {@link AlgoTask} model.
-     * A null {@code priorityLevel} is normalised to {@code 0} inside {@link AlgoTask}.
-     *
-     * @param dto source DTO (must not be null)
-     * @return immutable {@link AlgoTask}
-     */
     public AlgoTask toModel(TaskDto dto) {
         Set<Long> requiredSkills = (dto.requiredSkillIds() != null)
                 ? new java.util.HashSet<>(dto.requiredSkillIds())
@@ -141,10 +79,6 @@ public final class AlgoMapper {
         );
     }
 
-    /**
-     * Bulk-converts a list of {@link TaskDto}s.
-     * Returns an empty list when the input is null or empty.
-     */
     public List<AlgoTask> toTaskModels(List<TaskDto> dtos) {
         if (dtos == null || dtos.isEmpty()) return Collections.emptyList();
         List<AlgoTask> result = new ArrayList<>(dtos.size());
@@ -153,10 +87,6 @@ public final class AlgoMapper {
         return result;
     }
 
-    /**
-     * Converts a single {@link TaskConstraintDto} to an {@link AlgoConstraint} model.
-     * Safely maps the DTO Enum to the Algorithm Model Enum.
-     */
     private com.example.algorithm.model.AlgoConstraint toConstraintModel(TaskConstraintDto dto) {
         if (dto == null) return null;
 
@@ -171,14 +101,6 @@ public final class AlgoMapper {
         return new com.example.algorithm.model.AlgoConstraint(dto.predecessorId(), modelType);
     }
 
-    /**
-     * Converts a {@link SchedulingConfigurationDto} to an
-     * {@link AlgoSchedulingConfiguration} model.
-     * Returns {@code null} when the input is {@code null} (config is optional in the request).
-     *
-     * @param dto source config DTO (may be null)
-     * @return immutable {@link AlgoSchedulingConfiguration}, or {@code null} if dto is null
-     */
     public AlgoSchedulingConfiguration toModel(SchedulingConfigurationDto dto) {
         if (dto == null) return null;
         return new AlgoSchedulingConfiguration(
@@ -193,16 +115,6 @@ public final class AlgoMapper {
         );
     }
 
-    /**
-     * Extracts and converts all three model groups from a {@link SchedulingRequestDto}
-     * at once, returning them as a {@link MappedRequest} value object.
-     *
-     * <p>Prefer calling this single method in {@code AlgoService} instead of
-     * three separate calls to reduce boilerplate.</p>
-     *
-     * @param request fully-validated inbound DTO (must not be null)
-     * @return {@link MappedRequest} containing users, tasks, and (possibly null) config
-     */
     public MappedRequest toModels(SchedulingRequestDto request) {
         return new MappedRequest(
                 toUserModels(request.users()),
@@ -211,11 +123,6 @@ public final class AlgoMapper {
         );
     }
 
-    /**
-     * Lightweight value object returned by {@link AlgoMapper#toModels(SchedulingRequestDto)}.
-     * Groups users, tasks, and config into a single carry object so the service layer
-     * receives everything it needs in one call.
-     */
     public record MappedRequest(
             List<AlgoUser>                users,
             List<AlgoTask>                tasks,

@@ -21,9 +21,6 @@ public class User {
 
     // Authentication Details
 
-    /**
-     * Unique identifier for authentication and business operations.
-     */
     @Column(unique = true, nullable = false)
     private String nationalId; // Person ID
 

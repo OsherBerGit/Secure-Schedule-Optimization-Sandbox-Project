@@ -15,7 +15,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
 
     boolean existsByTask_IdAndWorker_Id(Long taskId, Long userId);
 
-    /** Eagerly load all associations to prevent LazyInitializationException outside transactions. */
+    // Eagerly load all associations to prevent LazyInitializationException outside transactions.
     @Query("SELECT s FROM Settlement s JOIN FETCH s.task JOIN FETCH s.worker JOIN FETCH s.status")
     List<Settlement> findAllWithDetails();
 

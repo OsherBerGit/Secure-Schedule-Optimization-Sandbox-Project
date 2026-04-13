@@ -10,14 +10,14 @@ public class SchedulingConfigurationMapper {
         if (dto == null) return null;
 
         return SchedulingConfiguration.builder()
-                .id(dto.getId())                           // null for new records → AUTO generates id
+                .id(dto.getId())
                 .configName(dto.getConfigName())
                 .weightPriority(dto.getWeightPriority())
                 .weightDeadline(dto.getWeightDeadline())
                 .weightFairness(dto.getWeightFairness())
                 .isActive(dto.isActive())
                 .populationSize(dto.getPopulationSize())
-                .maxGenerations(dto.getMaxGenerations())   // field was "generations" — now unified
+                .maxGenerations(dto.getMaxGenerations())
                 .mutationRate(dto.getMutationRate())
                 .crossoverRate(dto.getCrossoverRate())
                 .localSearchFrequency(dto.getLocalSearchFrequency())

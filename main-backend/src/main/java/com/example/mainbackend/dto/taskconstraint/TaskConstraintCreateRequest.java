@@ -20,6 +20,5 @@ public class TaskConstraintCreateRequest {
     @NotNull(message = "Constraint type ID is required")
     private Long constraintTypeId;
 
-    // Lag time in minutes (default 0 if not provided)
     private Integer lagMinutes;
 }

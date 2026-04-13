@@ -10,12 +10,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * DTO for creating / updating a SchedulingConfiguration.
- * Weight fields must each be in [0.0, 1.0].
- * No Lombok — manual getters, setters, and constructors per project rules.
- */
-
 @Data
 @Builder
 @AllArgsConstructor

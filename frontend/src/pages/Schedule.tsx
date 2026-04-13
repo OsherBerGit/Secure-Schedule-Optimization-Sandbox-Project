@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Play,
-  Square,
-  Settings,
-  Database,
-  Calendar,
-  List,
-  LayoutGrid,
-  LayoutDashboard,
-  CheckCircle2,
-  Sparkles,
-  Loader2,
-  Info
+    Play,
+    Settings,
+    Database,
+    Calendar,
+    List,
+    LayoutGrid,
+    LayoutDashboard,
+    CheckCircle2,
+    Sparkles,
+    Loader2,
+    Info,
+    AlertCircle // Added for error display
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -36,15 +36,15 @@ const STRATEGY_DESCRIPTIONS: Record<ScheduleStrategy, string> = {
 }
 
 const Schedule: React.FC = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState(false);
 
-  useEffect(() => {
-    const checkDarkMode = () => setIsDarkMode(document.documentElement.classList.contains('dark'));
-    checkDarkMode();
-    const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
+    useEffect(() => {
+        const checkDarkMode = () => setIsDarkMode(document.documentElement.classList.contains('dark'));
+        checkDarkMode();
+        const observer = new MutationObserver(checkDarkMode);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
 
     const { user: currentUser } = useAuth()
     const isAdmin = currentUser?.role === 'ADMIN'
@@ -53,7 +53,20 @@ const Schedule: React.FC = () => {
     const canManage = isAdmin || isManager
 
     const { tasks, workers, departments, settlements, isLoading: isDataLoading, refreshData, error: dataError } = useScheduleData()
-    const { scheduleResult, fitnessData, isGenerating, isSaving, error: algoError, successMsg, runAlgorithm, saveSchedule } = useScheduleAlgorithm()
+
+    // Extracted validationErrors from the updated hook
+    const {
+        scheduleResult,
+        fitnessData,
+        isGenerating,
+        isSaving,
+        error: algoError,
+        validationErrors, // Added this
+        successMsg,
+        runAlgorithm,
+        saveSchedule
+    } = useScheduleAlgorithm()
+
     const { configs, isConfigModalOpen, selectedConfigId, isLoading: isConfigLoading, error: configError, openConfigModal, closeConfigModal, selectConfig, createConfig, fetchConfigs } = useSchedulingConfig()
 
     const [searchParams, setSearchParams] = useSearchParams()
@@ -88,12 +101,12 @@ const Schedule: React.FC = () => {
     return (
         <div className="schedule-page">
             <div
-              className="schedule-header"
-              style={isDarkMode ? { background: 'transparent', backgroundColor: 'transparent', boxShadow: 'none' } : {}}
+                className="schedule-header"
+                style={isDarkMode ? { background: 'transparent', backgroundColor: 'transparent', boxShadow: 'none' } : {}}
             >
                 <div
-                  className="header-left"
-                  style={isDarkMode ? { background: 'transparent', backgroundColor: 'transparent' } : {}}
+                    className="header-left"
+                    style={isDarkMode ? { background: 'transparent', backgroundColor: 'transparent' } : {}}
                 >
                     <div className="header-icon-wrapper">
                         <Calendar className="text-primary" size={32} />
@@ -105,8 +118,8 @@ const Schedule: React.FC = () => {
                 </div>
 
                 <div
-                  className="header-right"
-                  style={isDarkMode ? { background: 'transparent', backgroundColor: 'transparent' } : {}}
+                    className="header-right"
+                    style={isDarkMode ? { background: 'transparent', backgroundColor: 'transparent' } : {}}
                 >
                     <div className="view-switcher">
                         <button className={viewMode === 'gantt' ? 'active' : ''} onClick={() => setViewMode('gantt')}>
@@ -141,6 +154,48 @@ const Schedule: React.FC = () => {
                 </div>
             </div>
 
+            {/* --- Global Error Banner & Validation List --- */}
+            {(algoError || dataError || configError) && (
+                <div
+                    className="error-banner"
+                    style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '12px',
+                        padding: '16px',
+                        backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+                        border: `1px solid ${isDarkMode ? 'rgba(239, 68, 68, 0.3)' : '#f87171'}`,
+                        color: isDarkMode ? '#f87171' : '#991b1b',
+                        borderRadius: '8px',
+                        marginBottom: '20px'
+                    }}
+                >
+                    <AlertCircle size={24} style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 600, fontSize: '1.05rem' }}>
+                            {algoError || dataError || configError}
+                        </span>
+
+                        {/* Render specific Zero-Trust validation errors if they exist */}
+                        {validationErrors && validationErrors.length > 0 && (
+                            <ul style={{
+                                marginTop: '12px',
+                                paddingLeft: '24px',
+                                fontSize: '0.95rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '6px'
+                            }}>
+                                {validationErrors.map((err, idx) => (
+                                    <li key={idx}><strong>Violation:</strong> {err}</li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </div>
+            )}
+            {/* ------------------------------------------- */}
+
             {successMsg && (
                 <div className="success-banner">
                     <CheckCircle2 size={20} />
@@ -166,8 +221,8 @@ const Schedule: React.FC = () => {
                     <h2>No Schedule Generated</h2>
                     <p>Select a strategy and click Generate to start the optimization process.</p>
                     <div
-                      className="strategy-info-box"
-                      style={isDarkMode ? { backgroundColor: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.3)' } : {}}
+                        className="strategy-info-box"
+                        style={isDarkMode ? { backgroundColor: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.3)' } : {}}
                     >
                         <Info size={20} className="strategy-icon" style={isDarkMode ? { color: '#60a5fa' } : {}} />
                         <div>

@@ -2,6 +2,7 @@ package com.example.mainbackend.algorithm;
 
 import com.example.mainbackend.algorithm.dto.AlgoScheduleRequest;
 import com.example.mainbackend.algorithm.dto.AlgoScheduleResponse;
+import jakarta.validation.Validator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -19,26 +20,21 @@ import org.springframework.web.client.RestClientResponseException;
 public class AlgorithmClient {
 
     private final RestClient restClient;
+    private final Validator validator;
 
-    public AlgorithmClient(@Value("${algorithm.service.url}") String algorithmServiceUrl) {
+    public AlgorithmClient(@Value("${algorithm.service.url}") String algorithmServiceUrl, Validator validator) {
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory();
-        requestFactory.setReadTimeout(java.time.Duration.ofMinutes(5));
-        requestFactory.setReadTimeout(java.time.Duration.ofSeconds(30));
+        requestFactory.setReadTimeout(java.time.Duration.ofMinutes(2));
 
         this.restClient = RestClient.builder()
                 .baseUrl(algorithmServiceUrl)
                 .build();
+        this.validator = validator;
     }
 
-    /**
-     * Sends a scheduling request to the algorithm service and returns the result.
-     * @throws RuntimeException if the algorithm service is unreachable or returns an error
-     */
     public AlgoScheduleResponse requestSchedule(AlgoScheduleRequest request) {
-        log.info("Calling algorithm service — strategy: {}, users: {}, tasks: {}",
-                request.getStrategy(),
-                request.getUsers() != null ? request.getUsers().size() : 0,
-                request.getTasks() != null ? request.getTasks().size() : 0);
+        log.info("Requesting schedule from Algorithm Service [Strategy: {}]", request.getStrategy());
+
         try {
             AlgoScheduleResponse response = restClient.post()
                     .uri("/api/v1/algo/schedule")
@@ -46,9 +42,18 @@ public class AlgorithmClient {
                     .retrieve()
                     .body(AlgoScheduleResponse.class);
 
-            log.info("Algorithm response — assigned: {}, unassigned: {}",
-                    response != null ? response.getAssignedTasks() : 0,
-                    response != null ? response.getUnassignedTasks() : 0);
+            if (response == null)
+                throw new RuntimeException("Algorithm service returned empty body");
+
+            var violations = validator.validate(response);
+            if (!violations.isEmpty()) {
+                log.error("Invalid response from Algorithm: {}", violations);
+                throw new RuntimeException("Algorithm response failed validation");
+            }
+
+            log.info("Algorithm calculation successful: {} tasks assigned, {} remains unassigned.",
+                    response.getAssignedTasks(), response.getUnassignedTasks());
+
             return response;
         } catch (RestClientResponseException e) {
             log.error("Algorithm service returned HTTP error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());

@@ -8,10 +8,6 @@ import lombok.NoArgsConstructor;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 
-/**
- * Represents one weekly availability window (shift) for a worker.
- * Used in API responses and requests to/from the frontend.
- */
 @Data
 @Builder
 @NoArgsConstructor

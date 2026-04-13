@@ -46,35 +46,6 @@ public class TaskMapper {
                 .build();
     }
 
-    /**
-     * Maps a Task entity to an anonymous AlgoTaskRequest.
-     * Zero-Trust: only scheduling-relevant fields are included - no titles, descriptions, or PII.
-     *
-     * @param task the Task entity
-     * @return anonymous AlgoTaskRequest for the algorithm engine
-     */
-    public AlgoTaskRequest toAlgoRequest(Task task) {
-        return toAlgoRequest(task, null);
-    }
-
-    /**
-     * Maps a Task entity to an anonymous AlgoTaskRequest, filtering out predecessor IDs
-     * that are not present in {@code openTaskIds}.
-     *
-     * This prevents the algorithm from rejecting a task because its predecessor is already
-     * SCHEDULED/LOCKED/CLOSED and therefore not included in the current scheduling run.
-     * If a predecessor is not OPEN it has already been handled and the dependency is irrelevant.
-     *
-     * @param task        the Task entity
-     * @param openTaskIds set of task IDs being sent in this scheduling request; pass
-     *                    {@code null} to skip filtering (all predecessors are kept as-is)
-     * @return anonymous AlgoTaskRequest for the algorithm engine
-     */
-
-    /**
-     * Maps a Task entity to an anonymous AlgoTaskRequest, including detailed constraints (FS, SS, etc.).
-     * Filters out constraints where the predecessor is not in {@code openTaskIds}.
-     */
     public AlgoTaskRequest toAlgoRequest(Task task, Set<Long> openTaskIds) {
         if (task == null) return null;
 
@@ -89,9 +60,6 @@ public class TaskMapper {
                 .build();
     }
 
-    /**
-     * Helper to map TaskConstraint entities to AlgoConstraintRequest DTOs.
-     */
     private List<AlgoConstraintRequest> mapConstraints(List<TaskConstraint> entities, Set<Long> openTaskIds) {
         if (entities == null || entities.isEmpty())
             return Collections.emptyList();

@@ -6,17 +6,6 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
-/**
- * Top-level inbound DTO for POST /api/v1/algo/schedule.
- *
- * <p>Zero-Trust contract: carries only anonymous IDs, numeric capacities,
- * and dates. No names, emails, titles, or descriptions are accepted.</p>
- *
- * @param strategy  Scheduling strategy: "GREEDY" (default) or "ROUND_ROBIN"
- * @param config    Active scheduling configuration (weights, GA params)
- * @param users     Workers available for assignment
- * @param tasks     Tasks to be scheduled
- */
 public record SchedulingRequestDto(
 
         String strategy,

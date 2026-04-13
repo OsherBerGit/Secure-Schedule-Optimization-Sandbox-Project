@@ -18,11 +18,6 @@ public class SettlementStatusService {
     private final SettlementStatusRepository settlementStatusRepository;
     private final SettlementStatusMapper mapper;
 
-    /**
-     * Retrieves all settlement statuses from the database.
-     *
-     * @return List of SettlementStatusResponseDto
-     */
     @Transactional(readOnly = true)
     public List<SettlementStatusResponseDto> getAllStatuses() {
         return settlementStatusRepository.findAll().stream()
@@ -30,13 +25,6 @@ public class SettlementStatusService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Retrieves a specific settlement status by its ID.
-     *
-     * @param id the ID of the status
-     * @return SettlementStatusResponseDto
-     * @throws EntityNotFoundException if the status is not found
-     */
     @Transactional(readOnly = true)
     public SettlementStatusResponseDto getStatusById(Long id) {
         return settlementStatusRepository.findById(id)

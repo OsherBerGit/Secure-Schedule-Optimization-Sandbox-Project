@@ -21,10 +21,6 @@ public class TaskConstraintController {
 
     private final TaskConstraintService taskConstraintService;
 
-    /**
-     * Creates a new constraint between two tasks.
-     * ALLOWED FOR: ADMIN, or MANAGER (if they manage BOTH tasks involved).
-     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or (hasRole('MANAGER') and @securityHelper.canManageTask(#request.predecessorTaskId) and @securityHelper.canManageTask(#request.successorTaskId))")
     public ResponseEntity<TaskConstraintResponseDto> createConstraint(
@@ -33,10 +29,6 @@ public class TaskConstraintController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Retrieves a constraint by ID.
-     * ALLOWED FOR: ADMIN, MANAGER of the tasks, or WORKER assigned to either task.
-     */
     @GetMapping("/{id}")
     @PreAuthorize("@securityHelper.canViewConstraint(#id)")
     public ResponseEntity<TaskConstraintResponseDto> getConstraintById(@PathVariable Long id) {
@@ -44,10 +36,6 @@ public class TaskConstraintController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Retrieves all constraints globally.
-     * ALLOWED FOR: Any authenticated user (service will filter by department if manager).
-     */
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<TaskConstraintResponseDto>> getAllConstraints() {
@@ -55,10 +43,6 @@ public class TaskConstraintController {
         return ResponseEntity.ok(constraints);
     }
 
-    /**
-     * Retrieves constraints where the given task is the predecessor.
-     * ALLOWED FOR: Anyone who can view the predecessor task.
-     */
     @GetMapping("/predecessor/{taskId}")
     @PreAuthorize("@securityHelper.canViewTask(#taskId)")
     public ResponseEntity<List<TaskConstraintResponseDto>> getConstraintsByPredecessor(
@@ -67,10 +51,6 @@ public class TaskConstraintController {
         return ResponseEntity.ok(constraints);
     }
 
-    /**
-     * Retrieves constraints where the given task is the successor.
-     * ALLOWED FOR: Anyone who can view the successor task.
-     */
     @GetMapping("/successor/{taskId}")
     @PreAuthorize("@securityHelper.canViewTask(#taskId)")
     public ResponseEntity<List<TaskConstraintResponseDto>> getConstraintsBySuccessor(
@@ -79,10 +59,6 @@ public class TaskConstraintController {
         return ResponseEntity.ok(constraints);
     }
 
-    /**
-     * Updates an existing constraint.
-     * ALLOWED FOR: ADMIN, or MANAGER of the tasks.
-     */
     @PutMapping("/{id}")
     @PreAuthorize("@securityHelper.canManageConstraint(#id)")
     public ResponseEntity<TaskConstraintResponseDto> updateConstraint(
@@ -92,10 +68,6 @@ public class TaskConstraintController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Deletes a constraint.
-     * ALLOWED FOR: ADMIN, or MANAGER of the tasks.
-     */
     @DeleteMapping("/{id}")
     @PreAuthorize("@securityHelper.canManageConstraint(#id)")
     public ResponseEntity<Void> deleteConstraint(@PathVariable Long id) {

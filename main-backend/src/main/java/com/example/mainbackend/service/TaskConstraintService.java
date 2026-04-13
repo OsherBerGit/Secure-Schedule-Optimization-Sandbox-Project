@@ -10,6 +10,7 @@ import com.example.mainbackend.repository.ConstraintTypeRepository;
 import com.example.mainbackend.repository.TaskConstraintRepository;
 import com.example.mainbackend.repository.TaskRepository;
 import com.example.mainbackend.security.SecurityHelper;
+import com.example.mainbackend.util.CycleDetectionUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,16 +26,14 @@ public class TaskConstraintService {
     private final ConstraintTypeRepository constraintTypeRepository;
     private final TaskConstraintMapper mapper;
     private final SecurityHelper securityHelper;
+    private final CycleDetectionUtil cycleDetectionUtil;
 
     @Transactional
     public TaskConstraintResponseDto createConstraint(TaskConstraintCreateRequest request) {
-        // Validate that predecessor and successor are different
         if (request.getPredecessorTaskId().equals(request.getSuccessorTaskId()))
             throw new IllegalArgumentException("A task cannot have a constraint with itself");
 
-        // Check if constraint already exists
-        if (taskConstraintRepository.existsByPredecessorTaskIdAndSuccessorTaskId(
-                request.getPredecessorTaskId(), request.getSuccessorTaskId()))
+        if (taskConstraintRepository.existsByPredecessorTaskIdAndSuccessorTaskId(request.getPredecessorTaskId(), request.getSuccessorTaskId()))
             throw new IllegalArgumentException("Constraint already exists between these tasks");
 
         // Fetch entities
@@ -48,9 +47,9 @@ public class TaskConstraintService {
                 .orElseThrow(() -> new IllegalArgumentException("Constraint type not found with ID: " + request.getConstraintTypeId()));
 
         // Validate for circular dependency BEFORE saving
-        validateNoCircularDependency(request.getPredecessorTaskId(), request.getSuccessorTaskId());
+        if (hasCircularDependency(request.getPredecessorTaskId(), request.getSuccessorTaskId()))
+            throw new IllegalArgumentException("Adding this constraint would create a circular dependency in the task graph");
 
-        // Build and save the constraint
         TaskConstraint constraint = TaskConstraint.builder()
                 .predecessorTask(predecessorTask)
                 .successorTask(successorTask)
@@ -111,11 +110,15 @@ public class TaskConstraintService {
         if (!existing.getPredecessorTask().getId().equals(request.getPredecessorTaskId()) ||
             !existing.getSuccessorTask().getId().equals(request.getSuccessorTaskId())) {
 
-            // Temporarily remove this constraint from the graph for validation
+            // Temporarily remove this constraint from the DB and flush the transaction.
+            // WHY: hasCircularDependency() rebuilds the graph from taskConstraintRepository.findAll().
+            // If we don't flush the deletion to the database first, the old edge will still be 
+            // queried, which might cause a false-positive cycle detection.
             taskConstraintRepository.delete(existing);
             taskConstraintRepository.flush();
 
-            validateNoCircularDependency(request.getPredecessorTaskId(), request.getSuccessorTaskId());
+            if (hasCircularDependency(request.getPredecessorTaskId(), request.getSuccessorTaskId()))
+                throw new IllegalArgumentException("Adding this constraint would create a circular dependency in the task graph");
 
             // Re-fetch entities
             Task predecessorTask = taskRepository.findById(request.getPredecessorTaskId())
@@ -149,75 +152,9 @@ public class TaskConstraintService {
         return true;
     }
 
-    /**
-     * Validates that adding a constraint from predecessorId to successorId
-     * will not create a circular dependency in the task graph.
-     *
-     * <p>Uses DFS (Depth-First Search) to detect cycles.</p>
-     *
-     * <h3>Complexity Analysis</h3>
-     * <ul>
-     *   <li><b>Time Complexity:</b> O(V + E)</li>
-     *   <li><b>Variables:</b>
-     *     <ul>
-     *       <li>V = Vertices (Tasks)</li>
-     *       <li>E = Edges (Dependencies/Constraints)</li>
-     *     </ul>
-     *   </li>
-     *   <li><b>Explanation:</b>
-     *     <ul>
-     *       <li>Building the graph takes O(E).</li>
-     *       <li>The DFS traversal visits every node and edge at most once.</li>
-     *       <li>We maintain a <code>visited</code> set to avoid recounting nodes and a <code>recursionStack</code> to detect back-edges (cycles) in the current path.</li>
-     *       <li>This ensures linear time complexity relative to the size of the graph.</li>
-     *     </ul>
-     *   </li>
-     * </ul>
-     */
-    private void validateNoCircularDependency(Long predecessorId, Long successorId) {
-        // Build adjacency list of the constraint graph
-        Map<Long, List<Long>> graph = new HashMap<>();
+    private boolean hasCircularDependency(Long predecessorId, Long successorId) {
         List<TaskConstraint> allConstraints = taskConstraintRepository.findAll();
-
-        for (TaskConstraint constraint : allConstraints) {
-            Long pred = constraint.getPredecessorTask().getId();
-            Long succ = constraint.getSuccessorTask().getId();
-            graph.computeIfAbsent(pred, k -> new ArrayList<>()).add(succ);
-        }
-
-        // Add the new edge
-        graph.computeIfAbsent(predecessorId, k -> new ArrayList<>()).add(successorId);
-
-        // Check if there's a cycle using DFS
-        Set<Long> visited = new HashSet<>();
-        Set<Long> recursionStack = new HashSet<>();
-
-        for (Long node : graph.keySet())
-            if (hasCycle(node, graph, visited, recursionStack))
-                throw new IllegalArgumentException("Adding this constraint would create a circular dependency in the task graph");
-    }
-
-    /**
-     * DFS cycle detection helper.
-     */
-    private boolean hasCycle(Long node, Map<Long, List<Long>> graph,
-                             Set<Long> visited, Set<Long> recursionStack) {
-        if (recursionStack.contains(node))
-            return true; // Cycle detected
-
-        if (visited.contains(node))
-            return false; // Already processed
-
-        visited.add(node);
-        recursionStack.add(node);
-
-        List<Long> neighbors = graph.get(node);
-        if (neighbors != null)
-            for (Long neighbor : neighbors)
-                if (hasCycle(neighbor, graph, visited, recursionStack))
-                    return true;
-
-        recursionStack.remove(node);
-        return false;
+        Map<Long, List<Long>> graph = cycleDetectionUtil.buildGraph(allConstraints);
+        return cycleDetectionUtil.wouldCreateCycle(predecessorId, successorId, graph);
     }
 }

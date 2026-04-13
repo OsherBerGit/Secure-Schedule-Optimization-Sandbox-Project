@@ -31,9 +31,6 @@ public class VacationService {
     private final VacationMapper mapper;
     private final SecurityHelper securityHelper;
 
-    /**
-     * ADMIN creates a vacation directly — auto-set to APPROVED.
-     */
     @Transactional
     public VacationResponseDto createVacation(VacationCreateRequest request) {
         if (request.getStartDate().isAfter(request.getEndDate()))
@@ -46,10 +43,9 @@ public class VacationService {
                 .orElseThrow(() -> new IllegalArgumentException("Worker not found with ID: " + request.getWorkerId()));
 
         List<Vacation> existing = vacationRepository.findByWorkerId(request.getWorkerId());
-        for (Vacation v : existing) {
+        for (Vacation v : existing)
             if (datesOverlap(v.getStartDate(), v.getEndDate(), request.getStartDate(), request.getEndDate()))
                 throw new IllegalArgumentException("Vacation period overlaps with an existing vacation");
-        }
 
         VacationStatus approved = vacationStatusRepository.findByName(VacationStatusLevel.APPROVED.name())
                 .orElseThrow(() -> new IllegalStateException("APPROVED vacation status not found in database"));
@@ -64,12 +60,6 @@ public class VacationService {
         return mapper.toDto(vacationRepository.save(vacation));
     }
 
-    /**
-     * WORKER submits a vacation request — starts as PENDING.
-     * Worker identity is resolved from the workerId in the request.
-     *
-     * @param request    the vacation date range and workerId
-     */
     @Transactional
     public VacationResponseDto requestVacation(VacationRequestDto request) {
         if (request.getStartDate().isAfter(request.getEndDate()))
@@ -96,12 +86,6 @@ public class VacationService {
         return mapper.toDto(vacationRepository.save(vacation));
     }
 
-    /**
-     * ADMIN approves or rejects a PENDING vacation request.
-     *
-     * @param id      the vacation ID
-     * @param request contains the target status (APPROVED or REJECTED)
-     */
     @Transactional
     public VacationResponseDto updateVacationStatus(Long id, VacationStatusUpdateRequest request) {
         Vacation vacation = vacationRepository.findById(id)
@@ -124,11 +108,6 @@ public class VacationService {
         return mapper.toDto(vacationRepository.save(vacation));
     }
 
-    /**
-     * Retrieves pending vacation requests.
-     * ADMIN sees all pending requests.
-     * MANAGER sees only pending requests from their department.
-     */
     @Transactional(readOnly = true)
     public List<VacationResponseDto> getPendingVacations() {
         if (securityHelper.isManager()) {

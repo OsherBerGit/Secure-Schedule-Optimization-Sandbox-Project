@@ -13,16 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * GlobalExceptionHandler — centralised error responses for the side-backend.
- *
- * <p>Handles:</p>
- * <ul>
- *   <li>{@link MethodArgumentNotValidException} — bean-validation failures (400)</li>
- *   <li>{@link IllegalArgumentException}        — sanitization failures   (400)</li>
- *   <li>{@link Exception}                       — unexpected errors        (500)</li>
- * </ul>
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

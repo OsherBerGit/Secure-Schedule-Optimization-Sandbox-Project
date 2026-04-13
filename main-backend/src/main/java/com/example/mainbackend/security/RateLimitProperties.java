@@ -12,4 +12,6 @@ import org.springframework.context.annotation.Configuration;
 public class RateLimitProperties {
     private int capacity = 100;
     private long timeUnitMinutes = 1;
+    private long cacheExpirationMinutes = 60;
+    private int cacheMaximumSize = 100000;
 }

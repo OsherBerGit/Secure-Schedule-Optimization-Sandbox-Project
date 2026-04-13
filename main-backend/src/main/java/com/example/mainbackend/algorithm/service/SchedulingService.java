@@ -5,12 +5,7 @@ import com.example.mainbackend.algorithm.dto.*;
 import com.example.mainbackend.constants.RoleType;
 import com.example.mainbackend.constants.SettlementStatusLevel;
 import com.example.mainbackend.constants.TaskStatusLevel;
-import com.example.mainbackend.entity.Department;
-import com.example.mainbackend.entity.Settlement;
-import com.example.mainbackend.entity.SettlementStatus;
-import com.example.mainbackend.entity.Task;
-import com.example.mainbackend.entity.TaskStatus;
-import com.example.mainbackend.entity.User;
+import com.example.mainbackend.entity.*;
 import com.example.mainbackend.exception.BatchValidationException;
 import com.example.mainbackend.mapper.TaskMapper;
 import com.example.mainbackend.mapper.UserMapper;
@@ -34,16 +29,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Orchestrates the full scheduling flow:
- *  1. Fetch the active scheduling configuration (weights, population size, etc.)
- *  2. Fetch only OPEN tasks Zero-Trust: LOCKED/SCHEDULED/CLOSED tasks are never sent to the algorithm
- *  3. Build a minimal, anonymous request (no PII) for the algorithm service
- *  4. Apply results: Task  SCHEDULED (lifecycle), Settlement ASSIGNED (execution)
- *
- * Rules enforced:
- *  - Zero-Trust only IDs and capacity data leave this service to the algorithm
- *  - Mapper Pattern entity-to-DTO conversion delegated to TaskMapper / UserMapper
- *  - N+1 prevention JOIN FETCH queries used for tasks and users
+ * Orchestrates the secure scheduling flow (Zero-Trust execution).
+ * * Architecture Rules Enforced:
+ * 1. Zero-Trust: The Algorithm engine is treated as an untrusted external entity.
+ * All outputs must be strictly validated against the central DB state before persistence.
+ * 2. Data Isolation: Only OPEN tasks are exposed. CLOSED/LOCKED tasks remain hidden.
+ * 3. N+1 Prevention: Uses Bulk-fetching patterns to validate assignments efficiently.
  */
 @Service
 @Slf4j
@@ -60,21 +51,6 @@ public class SchedulingService {
     private final UserMapper userMapper;
     private final TaskMapper taskMapper;
 
-
-    // Public API
-
-    /**
-     * PHASE 1 Preview / Draft Mode.
-     *
-     * Runs the scheduling algorithm and returns an enriched preview response.
-     * Nothing is written to the database. Task statuses remain OPEN; no settlements
-     * are created. The frontend stores this as a draft for admin review before
-     * calling {@link #saveApprovedSchedule}.
-     *
-     * @param strategy     the scheduling strategy name
-     * @param departmentId optional department scope for ADMIN users; ignored for MANAGER
-     * @param configId     optional configuration ID (uses active if null)
-     */
     @Transactional(readOnly = true)
     public AlgoScheduleResponse runScheduling(String strategy, Long departmentId, Long configId, String nationalId) {
         log.info("User {} is requesting a schedule preview using strategy: {}", nationalId, strategy);
@@ -82,40 +58,15 @@ public class SchedulingService {
         User currentUser = userRepository.findByNationalId(nationalId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found: " + nationalId));
 
-
         SchedulingConfigurationDto config = configService.getConfigurationById(configId, nationalId);
-
         AlgoScheduleRequest request = buildRequest(strategy, config, currentUser, departmentId);
 
         AlgoScheduleResponse response = algorithmClient.requestSchedule(request);
 
-        // Enrich with human-readable names for the preview no DB writes
         enrichForPreview(response);
         return response;
     }
 
-    /**
-     * Backwards compatibility overload for existing tests/calls
-     */
-    @Transactional(readOnly = true)
-    public AlgoScheduleResponse runScheduling(String strategy, Long departmentId, String nationalId) {
-        return runScheduling(strategy, departmentId, null, nationalId);
-    }
-
-    /**
-     * PHASE 2 Approve and Save.
-     * Refactored for strict Zero-Trust validation, N+1 prevention, and ACID compliance.
-     *
-     * Persists the admin-approved draft assignments:
-     *   - Task lifecycle SCHEDULED
-     *   - Settlement exec ASSIGNED  (idempotent guard against duplicates)
-     *
-     * Uses Bulk-fetching pattern to eliminate N+1 queries.
-     * Accumulates all validation errors and fails the entire batch if any issue is found.
-     *
-     * @param saveRequest the approved assignments forwarded from the frontend
-     * @throws BatchValidationException if any validation fails (triggers rollback)
-     */
     @Transactional(rollbackFor = Exception.class)
     public void saveApprovedSchedule(SaveScheduleRequest saveRequest, String nationalId) {
         if (saveRequest == null || saveRequest.getAssignments() == null || saveRequest.getAssignments().isEmpty()) {
@@ -123,18 +74,12 @@ public class SchedulingService {
             return;
         }
 
-        // 1. Initial Status Checks (Cached)
-        TaskStatus scheduledStatus = taskStatusRepository
-                .findByName(TaskStatusLevel.SCHEDULED.name())
-                .orElseThrow(() -> new IllegalStateException(
-                        "TaskStatus '" + TaskStatusLevel.SCHEDULED.name() + "' not seeded in task_statuses table"));
+        TaskStatus scheduledStatus = taskStatusRepository.findByName(TaskStatusLevel.SCHEDULED.name())
+                .orElseThrow(() -> new IllegalStateException("TaskStatus '" + TaskStatusLevel.SCHEDULED.name() + "' not seeded in task_statuses table"));
 
-        SettlementStatus assignedStatus = settlementStatusRepository
-                .findByName(SettlementStatusLevel.ASSIGNED.name())
-                .orElseThrow(() -> new IllegalStateException(
-                        "SettlementStatus 'ASSIGNED' not seeded in settlement_statuses table"));
+        SettlementStatus assignedStatus = settlementStatusRepository.findByName(SettlementStatusLevel.ASSIGNED.name())
+                .orElseThrow(() -> new IllegalStateException("SettlementStatus 'ASSIGNED' not seeded in settlement_statuses table"));
 
-        // 2. Extract IDs for Bulk Fetching (prevents N+1)
         Set<Long> taskIds = saveRequest.getAssignments().stream()
                 .filter(a -> a.getAssignedUserId() != null)
                 .map(SaveScheduleRequest.TaskAssignmentDto::getTaskId)
@@ -148,142 +93,109 @@ public class SchedulingService {
 
         if (taskIds.isEmpty()) return;
 
-        // 3. Bulk Load Entities
+        // Security Gate: Bulk load to verify entities exist and to prevent N+1 queries
         Map<Long, Task> taskMap = taskRepository.findAllById(taskIds).stream()
                 .collect(Collectors.toMap(Task::getId, t -> t));
 
         Map<Long, User> userMap = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
-        // Load existing settlements for these tasks to check for duplicates efficiently
         Map<Long, List<Settlement>> existingSettlementsMap = settlementRepository.findByTaskIdIn(taskIds).stream()
                 .collect(Collectors.groupingBy(s -> s.getTask().getId()));
 
-        // Create a lookup map for the *proposed* batch to validate dependencies within the batch
         Map<Long, SaveScheduleRequest.TaskAssignmentDto> batchAssignments = saveRequest.getAssignments().stream()
                 .collect(Collectors.toMap(SaveScheduleRequest.TaskAssignmentDto::getTaskId, a -> a, (a, b) -> a));
 
-        // Track worker schedules to prevent overlaps within this batch
         Map<Long, List<LocalDateTime[]>> workerIntervals = new java.util.HashMap<>();
-
-        // 4. Validate & Process Batch
         List<String> validationErrors = new ArrayList<>();
         List<Task> tasksToSave = new ArrayList<>();
         List<Settlement> settlementsToSave = new ArrayList<>();
 
         for (SaveScheduleRequest.TaskAssignmentDto assignment : saveRequest.getAssignments()) {
-            if (assignment.getAssignedUserId() == null) {
-                log.debug("Skipping unassigned task ID: {}", assignment.getTaskId());
+            if (assignment.getAssignedUserId() == null) continue;
+
+            Task task = taskMap.get(assignment.getTaskId());
+            User user = userMap.get(assignment.getAssignedUserId());
+
+            List<String> currentAssignmentErrors = new ArrayList<>();
+
+            currentAssignmentErrors.addAll(validateAssignmentBasic(assignment, task, user));
+            if (!currentAssignmentErrors.isEmpty()) {
+                validationErrors.addAll(currentAssignmentErrors);
                 continue;
             }
 
-            Long taskId = assignment.getTaskId();
-            Long userId = assignment.getAssignedUserId();
-
-            Task task = taskMap.get(taskId);
-            User user = userMap.get(userId);
-            
-            // Accumulate errors for this assignment
-            List<String> currentAssignmentErrors = new ArrayList<>();
-
-            // Basic Validations
-            currentAssignmentErrors.addAll(validateAssignmentBasic(assignment, task, user));
-
-            if (!currentAssignmentErrors.isEmpty()) {
-                validationErrors.addAll(currentAssignmentErrors);
-                continue; // Move to next assignment if basic validation fails
-            }
-
-            // Temporal and Dependency Validations (only if basic checks pass)
             currentAssignmentErrors.addAll(validateTemporalAndDependencies(assignment, task, batchAssignments));
-
             if (!currentAssignmentErrors.isEmpty()) {
                 validationErrors.addAll(currentAssignmentErrors);
-                continue; // Move to next assignment if temporal/dependency validation fails
+                continue;
             }
 
-            // Overlap Protection (only if previous checks pass)
-            currentAssignmentErrors.addAll(validateWorkerOverlap(userId, assignment, workerIntervals, user));
-
+            currentAssignmentErrors.addAll(validateWorkerOverlap(user.getId(), assignment, workerIntervals, user));
             if (!currentAssignmentErrors.isEmpty()) {
                 validationErrors.addAll(currentAssignmentErrors);
-                continue; // Move to next assignment if overlap validation fails
+                continue;
             }
 
-            // If all validations pass, prepare entities for saving
             prepareEntitiesForSave(assignment, task, user, scheduledStatus, assignedStatus, existingSettlementsMap, tasksToSave, settlementsToSave);
         }
 
-        // 5. Final Decision: Commit or Rollback
         if (!validationErrors.isEmpty()) {
             log.error("Batch validation failed with {} errors: {}", validationErrors.size(), validationErrors);
             throw new BatchValidationException(validationErrors);
         }
 
-        // 6. Persistence (Batch Save)
         taskRepository.saveAll(tasksToSave);
         settlementRepository.saveAll(settlementsToSave);
 
-        log.info("saveApprovedSchedule: Successfully persisted {} tasks and {} settlements.",
-                tasksToSave.size(), settlementsToSave.size());
+        log.info("saveApprovedSchedule: Successfully persisted {} tasks and {} settlements.", tasksToSave.size(), settlementsToSave.size());
     }
-
-    // Private Helper Methods for saveApprovedSchedule
 
     private List<String> validateAssignmentBasic(SaveScheduleRequest.TaskAssignmentDto assignment,
                                                  Task task,
                                                  User user) {
         List<String> errors = new ArrayList<>();
-        Long taskId = assignment.getTaskId();
-        Long userId = assignment.getAssignedUserId();
 
         if (task == null) {
-            errors.add("Task ID " + taskId + " not found.");
+            errors.add(String.format("Security/Integrity Risk: Task ID %d not found in database.", assignment.getTaskId()));
             return errors;
         }
         if (user == null) {
-            errors.add("User ID " + userId + " not found.");
+            errors.add(String.format("Security/Integrity Risk: Assigned User ID %d not found in database.", assignment.getAssignedUserId()));
             return errors;
         }
 
         if (!TaskStatusLevel.OPEN.name().equals(task.getStatus().getName()))
-            errors.add("Task ID " + taskId + " is not OPEN (current status: " + task.getStatus().getName() + ").");
+            errors.add(String.format("State violation: Task ID %d is not OPEN (current: %s).", task.getId(), task.getStatus().getName()));
 
         Long entityVersion = task.getVersion() != null ? task.getVersion() : 0L;
         Long requestVersion = assignment.getVersion() != null ? assignment.getVersion() : 0L;
 
         if (!entityVersion.equals(requestVersion))
-            errors.add("Concurrency Error: Task ID [" + task.getId() + "] was modified by another user. Please refresh.");
+            errors.add(String.format("Concurrency violation: Task ID %d was modified externally. Requires refresh.", task.getId()));
 
         if (task.getRequiredSkills() != null && !task.getRequiredSkills().isEmpty() && !user.getSkills().containsAll(task.getRequiredSkills()))
-            errors.add("User ID " + userId + " lacks required skills for Task ID " + taskId + ".");
+            errors.add(String.format("Compliance violation: User %s lacks required skills for Task %d.", user.getEmail(), task.getId()));
 
-        LocalDateTime proposedStart = assignment.getScheduledStart();
-        LocalDateTime proposedEnd = assignment.getScheduledEnd();
+        if (assignment.getScheduledStart() == null || assignment.getScheduledEnd() == null)
+            errors.add(String.format("Data violation: Task %d schedule times cannot be null.", task.getId()));
 
-        if (proposedStart == null || proposedEnd == null)
-            errors.add("Task ID " + taskId + " has invalid schedule times (start or end is null).");
-        else if (proposedStart.isAfter(proposedEnd))
-            errors.add("Task ID " + taskId + " has an invalid schedule: start time (" + proposedStart + ") is after end time (" + proposedEnd + ").");
+        else if (assignment.getScheduledStart().isAfter(assignment.getScheduledEnd()))
+            errors.add(String.format("Temporal violation: Task %d start time must precede end time.", task.getId()));
 
         return errors;
     }
 
-    private List<String> validateTemporalAndDependencies(SaveScheduleRequest.TaskAssignmentDto assignment,
-                                                        Task task,
+    private List<String> validateTemporalAndDependencies(SaveScheduleRequest.TaskAssignmentDto assignment, Task task,
                                                         Map<Long, SaveScheduleRequest.TaskAssignmentDto> batchAssignments) {
         List<String> errors = new ArrayList<>();
-        LocalDateTime proposedStart = assignment.getScheduledStart();
-        LocalDateTime proposedEnd = assignment.getScheduledEnd();
-
         if (task.getIncomingConstraints() == null || task.getIncomingConstraints().isEmpty()) return errors;
 
-        for (com.example.mainbackend.entity.TaskConstraint constraint : task.getIncomingConstraints()) {
+        for (TaskConstraint constraint : task.getIncomingConstraints()) {
             Task predecessor = constraint.getPredecessorTask();
             if (predecessor == null) continue;
 
-            if (TaskStatusLevel.CLOSED.name().equals(predecessor.getStatus().getName()))
-                continue; // Valid per rule: if closed in DB, consider it implicitly valid.
+            if (TaskStatusLevel.CLOSED.name().equals(predecessor.getStatus().getName())) continue;
 
             if (batchAssignments.containsKey(predecessor.getId())) {
                 SaveScheduleRequest.TaskAssignmentDto predAssignment = batchAssignments.get(predecessor.getId());
@@ -296,61 +208,49 @@ public class SchedulingService {
 
                 switch (type) {
                     case "FINISH_TO_START" -> {
-                        if (predEnd.isAfter(proposedStart))
-                            errors.add("Temporal Conflict (FS): " + task.getTitle() + " must start after " + predecessor.getTitle() + " ends.");
+                        if (predEnd.isAfter(assignment.getScheduledStart()))
+                            errors.add(String.format("Constraint (FS) failed: Task '%s' must start after '%s' ends.", task.getTitle(), predecessor.getTitle()));
                     }
                     case "START_TO_START" -> {
-                        if (predStart.isAfter(proposedStart))
-                            errors.add("Temporal Conflict (SS): " + task.getTitle() + " cannot start before " + predecessor.getTitle() + " starts.");
+                        if (predStart.isAfter(assignment.getScheduledStart()))
+                            errors.add(String.format("Constraint (SS) failed: Task '%s' cannot start before '%s' starts.", task.getTitle(), predecessor.getTitle()));
                     }
                     case "FINISH_TO_FINISH" -> {
-                        if (predEnd.isAfter(proposedEnd))
-                            errors.add("Temporal Conflict (FF): " + task.getTitle() + " cannot finish before " + predecessor.getTitle() + " finishes.");
+                        if (predEnd.isAfter(assignment.getScheduledEnd()))
+                            errors.add(String.format("Constraint (FF) failed: Task '%s' cannot finish before '%s' finishes.", task.getTitle(), predecessor.getTitle()));
                     }
                     case "START_TO_FINISH" -> {
-                        if (predStart.isAfter(proposedEnd))
-                            errors.add("Temporal Conflict (SF): " + task.getTitle() + " cannot finish before " + predecessor.getTitle() + " starts.");
+                        if (predStart.isAfter(assignment.getScheduledEnd()))
+                            errors.add(String.format("Constraint (SF) failed: Task '%s' cannot finish before '%s' starts.", task.getTitle(), predecessor.getTitle()));
                     }
                 }
             } else
-                errors.add("Dependency Error: Task [" + task.getTitle() + "] depends on [" + predecessor.getTitle() + "] which is missing from this batch.");
+                errors.add(String.format("Dependency missing: Task '%s' requires '%s', which is absent from this batch.", task.getTitle(), predecessor.getTitle()));
         }
 
         return errors;
     }
 
-    private List<String> validateWorkerOverlap(Long userId,
-                                               SaveScheduleRequest.TaskAssignmentDto assignment,
-                                               Map<Long, List<LocalDateTime[]>> workerIntervals,
-                                               User user) {
+    private List<String> validateWorkerOverlap(Long userId, SaveScheduleRequest.TaskAssignmentDto assignment, Map<Long, List<LocalDateTime[]>> workerIntervals, User user) {
         List<String> errors = new ArrayList<>();
-        LocalDateTime proposedStart = assignment.getScheduledStart();
-        LocalDateTime proposedEnd = assignment.getScheduledEnd();
-
         List<LocalDateTime[]> intervals = workerIntervals.computeIfAbsent(userId, k -> new ArrayList<>());
+
         boolean overlaps = intervals.stream().anyMatch(interval ->
-                (proposedStart.isBefore(interval[1]) && proposedEnd.isAfter(interval[0]))
+                (assignment.getScheduledStart().isBefore(interval[1]) && assignment.getScheduledEnd().isAfter(interval[0]))
         );
 
         if (overlaps)
-            errors.add("Overlap Conflict: User [" + user.getEmail() + "] is assigned overlapping tasks. Proposed interval: [" + proposedStart + " - " + proposedEnd + "].");
+            errors.add(String.format("Schedule overlap: User '%s' already has assignments during [%s - %s].", user.getEmail(), assignment.getScheduledStart(), assignment.getScheduledEnd()));
         else
-            intervals.add(new LocalDateTime[]{proposedStart, proposedEnd});
+            intervals.add(new LocalDateTime[]{assignment.getScheduledStart(), assignment.getScheduledEnd()});
 
         return errors;
     }
 
-    private void prepareEntitiesForSave(SaveScheduleRequest.TaskAssignmentDto assignment,
-                                        Task task,
-                                        User user,
-                                        TaskStatus scheduledStatus,
-                                        SettlementStatus assignedStatus,
-                                        Map<Long, List<Settlement>> existingSettlementsMap,
-                                        List<Task> tasksToSave,
-                                        List<Settlement> settlementsToSave) {
-        
-        task.setVersion(assignment.getVersion()); // Set version for optimistic locking
-        
+    private void prepareEntitiesForSave(SaveScheduleRequest.TaskAssignmentDto assignment, Task task, User user, TaskStatus scheduledStatus, SettlementStatus assignedStatus,
+                                        Map<Long, List<Settlement>> existingSettlementsMap, List<Task> tasksToSave, List<Settlement> settlementsToSave) {
+
+        task.setVersion(assignment.getVersion());
         task.setStartTime(assignment.getScheduledStart());
         task.setStatus(scheduledStatus);
         tasksToSave.add(task);
@@ -367,58 +267,27 @@ public class SchedulingService {
                     .build());
     }
 
-    // Build request
-
-    /**
-     * Builds the anonymous algorithm request, scoping users and tasks based on
-     * the caller's Spring Security roles:
-     *
-     * <ul>
-     *   <li>{@code MANAGER} ALWAYS scoped to the manager's own department (parameter ignored).</li>
-     *   <li>{@code ADMIN}   scoped to {@code departmentId} when non-null; global when null.</li>
-     *   <li>anything else   not permitted to trigger scheduling.</li>
-     * </ul>
-     *
-     * @param departmentId optional ADMIN-only scope override; always ignored for MANAGER
-     */
-    private AlgoScheduleRequest buildRequest(String strategy,
-                                             SchedulingConfigurationDto config,
-                                             User currentUser,
-                                             Long departmentId) {
+    private AlgoScheduleRequest buildRequest(String strategy, SchedulingConfigurationDto config, User currentUser, Long departmentId) {
         String roleName = currentUser.getRole().getRoleName();
-
         boolean isAdmin   = RoleType.ADMIN.name().equals(roleName);
         boolean isManager = RoleType.MANAGER.name().equals(roleName);
 
         if (!isAdmin && !isManager)
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Only ADMIN or MANAGER roles are permitted to trigger scheduling");
+            throw new org.springframework.security.access.AccessDeniedException("Scheduling restricted to ADMIN or MANAGER roles.");
 
         List<AlgoUserRequest> users;
         List<AlgoTaskRequest> tasks;
 
         if (isManager) {
-            // MANAGER ALWAYS scope to their own department, parameter is irrelevant
             Department dept = currentUser.getDepartment();
-            if (dept == null)
-                throw new IllegalStateException(
-                        "MANAGER user [id=" + currentUser.getId() + "] has no department assigned");
+            if (dept == null) throw new IllegalStateException("MANAGER lacks assigned department context.");
 
-            log.info("Scheduling scope: MANAGER department '{}' (id={})", dept.getName(), dept.getId());
             users = buildUserRequests(dept.getId());
             tasks = buildTaskRequests(dept.getId());
         } else {
-            // ADMIN scope to departmentId if provided, otherwise global
-            if (departmentId != null)
-                log.info("Scheduling scope: ADMIN department-scoped to id={}", departmentId);
-            else
-                log.info("Scheduling scope: ADMIN global (all departments)");
-
             users = buildUserRequests(departmentId);
             tasks = buildTaskRequests(departmentId);
         }
-
-        log.info("Scheduling request: strategy={}, users={}, tasks={}", strategy, users.size(), tasks.size());
 
         return AlgoScheduleRequest.builder()
                 .strategy(strategy)
@@ -428,11 +297,6 @@ public class SchedulingService {
                 .build();
     }
 
-    /**
-     * Loads workers with their roles eagerly.
-     *
-     * @param departmentId {@code null} all users (ADMIN); non-null department-scoped (MANAGER)
-     */
     private List<AlgoUserRequest> buildUserRequests(Long departmentId) {
         List<User> users = (departmentId == null)
                 ? userRepository.findAllWithSkills()
@@ -440,18 +304,11 @@ public class SchedulingService {
 
         if (users.isEmpty()) return Collections.emptyList();
 
-        List<String> activeStatuses = List.of(
-                SettlementStatusLevel.ASSIGNED.name(),
-                SettlementStatusLevel.IN_PROGRESS.name()
-        );
-
+        List<String> activeStatuses = List.of(SettlementStatusLevel.ASSIGNED.name(), SettlementStatusLevel.IN_PROGRESS.name());
         List<Long> workerIds = users.stream().map(User::getId).collect(Collectors.toList());
-        List<Object[]> counts = settlementRepository.countActiveSettlementsByWorkerIds(workerIds, activeStatuses);
-        Map<Long, Long> activeCountMap = counts.stream()
-                .collect(Collectors.toMap(
-                        row -> (Long) row[0],
-                        row -> (Long) row[1]
-                ));
+
+        Map<Long, Long> activeCountMap = settlementRepository.countActiveSettlementsByWorkerIds(workerIds, activeStatuses).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
 
         return users.stream()
                 .map(user -> {
@@ -459,69 +316,39 @@ public class SchedulingService {
                     int effectiveMaxTasks = Math.max(0, user.getMaxTasks() - (int) activeCount);
                     return userMapper.toAlgoRequest(user, effectiveMaxTasks);
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    /**
-     * Loads OPEN tasks with roles and constraints eagerly merged in-memory to avoid
-     * a Cartesian product (HHH90003004).
-     *
-     * @param departmentId {@code null} all OPEN tasks (ADMIN); non-null department-scoped (MANAGER)
-     */
     private List<AlgoTaskRequest> buildTaskRequests(Long departmentId) {
-        List<Task> tasksWithRoles;
-        List<Task> tasksWithConstraints;
+        List<Task> tasksWithRoles = (departmentId == null)
+                ? taskRepository.findOpenTasksWithRoles(TaskStatusLevel.OPEN.name())
+                : taskRepository.findOpenTasksWithRolesByDepartment(TaskStatusLevel.OPEN.name(), departmentId);
 
-        if (departmentId == null) {
-            tasksWithRoles       = taskRepository.findOpenTasksWithRoles(TaskStatusLevel.OPEN.name());
-            tasksWithConstraints = taskRepository.findOpenTasksWithConstraints(TaskStatusLevel.OPEN.name());
-        } else {
-            tasksWithRoles       = taskRepository.findOpenTasksWithRolesByDepartment(TaskStatusLevel.OPEN.name(), departmentId);
-            tasksWithConstraints = taskRepository.findOpenTasksWithConstraintsByDepartment(TaskStatusLevel.OPEN.name(), departmentId);
-        }
+        List<Task> tasksWithConstraints = (departmentId == null)
+                ? taskRepository.findOpenTasksWithConstraints(TaskStatusLevel.OPEN.name())
+                : taskRepository.findOpenTasksWithConstraintsByDepartment(TaskStatusLevel.OPEN.name(), departmentId);
 
-        // Index the constraints result by task ID for O(1) merge
         Map<Long, Task> constraintMap = tasksWithConstraints.stream()
                 .collect(Collectors.toMap(Task::getId, t -> t, (a, b) -> a));
 
-        // Merge: use the roles-loaded entity but copy the constraints collection across
         List<Task> mergedTasks = tasksWithRoles.stream().peek(task -> {
             Task withConstraints = constraintMap.get(task.getId());
-            if (withConstraints != null)
-                task.setIncomingConstraints(withConstraints.getIncomingConstraints());
+            if (withConstraints != null) task.setIncomingConstraints(withConstraints.getIncomingConstraints());
         }).toList();
 
-        log.info("Sending {} OPEN tasks to algorithm (LOCKED/SCHEDULED/CLOSED excluded)", mergedTasks.size());
-
-        Set<Long> openTaskIds = mergedTasks.stream()
-                .map(Task::getId)
-                .collect(Collectors.toSet());
+        Set<Long> openTaskIds = mergedTasks.stream().map(Task::getId).collect(Collectors.toSet());
 
         return mergedTasks.stream()
                 .map(task -> taskMapper.toAlgoRequest(task, openTaskIds))
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    // Enrich for preview (read-only)
-
-    /**
-     * Injects human-readable names ({@code taskTitle}, {@code assignedUserFullName})
-     * into the algorithm response for display in the frontend draft view.
-     *
-     * <strong>No database writes are performed.</strong>
-     */
     private void enrichForPreview(AlgoScheduleResponse response) {
         if (response == null || response.getAssignments() == null) return;
 
-        // Pre-load all affected task IDs (assigned + unscheduled) to avoid N+1 queries
-        Set<Long> assignedTaskIds = response.getAssignments().stream()
-                .map(AlgoTaskAssignmentResponse::getTaskId)
-                .collect(Collectors.toSet());
-
+        Set<Long> assignedTaskIds = response.getAssignments().stream().map(AlgoTaskAssignmentResponse::getTaskId).collect(Collectors.toSet());
         Set<Long> unscheduledTaskIds = (response.getUnscheduledTasks() != null)
-                ? response.getUnscheduledTasks().stream()
-                        .map(AlgoUnscheduledTaskResponse::getTaskId)
-                        .collect(Collectors.toSet())
+                ? response.getUnscheduledTasks().stream().map(AlgoUnscheduledTaskResponse::getTaskId).collect(Collectors.toSet())
                 : Set.of();
 
         Set<Long> allTaskIds = new java.util.HashSet<>(assignedTaskIds);
@@ -538,50 +365,24 @@ public class SchedulingService {
         Map<Long, User> userCache = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
-        // Enrich assigned tasks (names only - no persistence)
         for (AlgoTaskAssignmentResponse assignment : response.getAssignments()) {
             Task task = taskCache.get(assignment.getTaskId());
-            if (task != null)
-                assignment.setTaskTitle(task.getTitle());
+            if (task != null) assignment.setTaskTitle(task.getTitle());
 
             if (assignment.getAssignedUserId() == null) continue;
 
             User user = userCache.get(assignment.getAssignedUserId());
             if (user != null) {
-                String fullName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
-                        + (user.getLastName() != null ? user.getLastName() : "")).trim();
-                assignment.setAssignedUserFullName(
-                        fullName.isEmpty() ? "Worker #" + user.getId() : fullName);
-            }
+                String fullName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " + (user.getLastName() != null ? user.getLastName() : "")).trim();
+                assignment.setAssignedUserFullName(fullName.isEmpty() ? "Worker #" + user.getId() : fullName);            }
         }
 
-        // Enrich unscheduled tasks with human-readable names
         if (response.getUnscheduledTasks() != null) {
             for (AlgoUnscheduledTaskResponse unscheduled : response.getUnscheduledTasks()) {
                 Task task = taskCache.get(unscheduled.getTaskId());
-                if (task != null)
-                    unscheduled.setTaskName(task.getTitle());
-                else {
-                    unscheduled.setTaskName("Task #" + unscheduled.getTaskId());
-                    log.warn("Unscheduled taskId={} not found in DB", unscheduled.getTaskId());
-                }
+                if (task != null) unscheduled.setTaskName(task.getTitle());
+                else unscheduled.setTaskName("Task #" + unscheduled.getTaskId());
             }
         }
-
-        log.info("enrichForPreview: enriched {} assignments for draft view (no DB writes)",
-                response.getAssignedTasks());
-    }
-
-    private boolean checkFallbackEligibility(Task task, User user) {
-        // Must match scheduling window logic
-        if (task.getDeadline() != null && task.getDeadline().isBefore(LocalDateTime.now().plusDays(1)))
-            return false;
-
-        // Skip if user doesn't have ALL of the task's required skills
-        if (task.getRequiredSkills() != null && !task.getRequiredSkills().isEmpty())
-            if (!user.getSkills().containsAll(task.getRequiredSkills()))
-                return false;
-
-        return true;
     }
 }

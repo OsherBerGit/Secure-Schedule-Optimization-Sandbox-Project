@@ -6,9 +6,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SettlementStatusMapper {
-    /**
-     * Maps a SettlementStatus entity to its corresponding Response DTO.
-     */
+
     public SettlementStatusResponseDto toDto(SettlementStatus entity) {
         if (entity == null) return null;
 

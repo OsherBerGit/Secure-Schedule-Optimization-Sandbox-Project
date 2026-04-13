@@ -3,7 +3,6 @@ import type { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axio
 
 const BASE_URL = 'http://localhost:8080/api';
 
-// Create axios instance
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -11,25 +10,20 @@ const axiosInstance = axios.create({
   },
 });
 
-// Request interceptor - attach JWT token to every request
+// Zero-Trust: Automatically attach the JWT access token to every outgoing request
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('accessToken');
     if (token)
       config.headers.Authorization = `Bearer ${token}`;
-
     return config;
   },
-  (error: AxiosError) => {
-    return Promise.reject(error);
-  }
+  (error: AxiosError) => Promise.reject(error)
 );
 
-// Response interceptor - handle token refresh
+// Global Error Handler & Stateless JWT Refresh Flow
 axiosInstance.interceptors.response.use(
-  (response: AxiosResponse) => {
-    return response;
-  },
+  (response: AxiosResponse) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
@@ -40,6 +34,7 @@ axiosInstance.interceptors.response.use(
     }
 
     // Handle 409 Conflict (Optimistic Locking)
+    // Optimistic Locking guard (syncs with Backend @Version mechanism)
     if (error.response?.status === 409) {
       alert("Data Conflict: The schedule has been modified by another user. Please refresh the page to get the latest version.");
       return Promise.reject(error);
@@ -47,36 +42,34 @@ axiosInstance.interceptors.response.use(
 
     // Handle 422 Unprocessable Entity (Batch Validation)
     if (error.response?.status === 422 && error.response.data) {
-      // Ensure the component receives the structured error details
-      // We pass the error through, but the component will inspect error.response.data.details
       console.warn("Batch validation failed:", error.response.data);
     }
 
-    // If error is 401 (expired) or 403 (blacklisted/invalid) and we haven't retried yet
+    // Token Refresh Execution (Triggered on 401/403 Unauthorized)
     if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
         const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken)
-          throw new Error('No refresh token available');
+        if (!refreshToken) throw new Error('No refresh token available');
 
-        // Try to refresh the token
         const response = await axios.post(`${BASE_URL}/auth/refresh-token`, {
           refreshToken,
         });
 
         const { accessToken, refreshToken: newRefreshToken } = response.data;
 
-        // Store new tokens
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', newRefreshToken);
 
-        // Retry original request with new token
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        // Re-attempt the original failed request with the new access token
+        if (originalRequest.headers)
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
         return axiosInstance(originalRequest);
+
       } catch (refreshError) {
-        // Refresh failed - redirect to login
+        // Security fallback: Purge sensitive data on refresh failure
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
@@ -90,4 +83,3 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance;
-

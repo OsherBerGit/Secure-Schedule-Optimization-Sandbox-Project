@@ -9,10 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST controller for managing task statuses.
- * Provides endpoints for CRUD operations on status lookup table.
- */
 @RestController
 @RequestMapping("/api/task-statuses")
 @RequiredArgsConstructor

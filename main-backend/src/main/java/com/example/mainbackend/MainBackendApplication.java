@@ -6,8 +6,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableScheduling // Enable scheduled tasks (e.g., token blacklist cleanup)
-@EnableConfigurationProperties // Enable @ConfigurationProperties binding
+@EnableScheduling
+@EnableConfigurationProperties
 public class MainBackendApplication {
     public static void main(String[] args) {
         SpringApplication.run(MainBackendApplication.class, args);

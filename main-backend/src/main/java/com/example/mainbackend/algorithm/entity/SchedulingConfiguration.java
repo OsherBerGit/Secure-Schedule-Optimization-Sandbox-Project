@@ -4,10 +4,6 @@ import com.example.mainbackend.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
-/**
- * Stores a named set of weights and algorithm parameters used by the scheduling engine.
- * Only one configuration may be active at a time (enforced by deactivateAll before save).
- */
 @Getter
 @Setter
 @Builder

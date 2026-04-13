@@ -5,10 +5,6 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-/**
- * Represents the assignment of a worker to a task with execution tracking.
- * Execution states: PENDING → IN_PROGRESS → COMPLETED (or FAILED).
- */
 @Getter
 @Setter
 @Builder
@@ -29,10 +25,6 @@ public class Settlement {
     @JoinColumn(name = "worker_id", nullable = false)
     private User worker;
 
-    /**
-     * Settlement execution status (PENDING → IN_PROGRESS → COMPLETED / FAILED).
-     * Stored in the settlement_statuses table.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "settlement_status_id", nullable = false)
     private SettlementStatus status;

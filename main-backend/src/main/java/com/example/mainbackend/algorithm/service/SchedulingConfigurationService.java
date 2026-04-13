@@ -10,10 +10,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Manages scheduling configurations.
- * Only one configuration may be active at a time.
- */
 @Service
 @AllArgsConstructor
 public class SchedulingConfigurationService {
@@ -22,11 +18,6 @@ public class SchedulingConfigurationService {
     private final SchedulingConfigurationMapper mapper;
     private final UserRepository userRepository;
 
-    /**
-     * Returns the currently active configuration.
-     * Falls back to a safe in-memory default if the database is empty —
-     * this ensures the scheduling engine always has valid weights to work with.
-     */
     @Transactional(readOnly = true)
     public SchedulingConfigurationDto getActiveConfiguration(String nationalId) {
         return repository.findByIsActiveTrueAndCreatedBy_NationalId(nationalId)
@@ -37,10 +28,6 @@ public class SchedulingConfigurationService {
                         .orElseGet(this::getDefaultConfiguration));
     }
 
-    /**
-     * Returns a specific configuration by its ID.
-     * Falls back to the active configuration if the ID is null.
-     */
     @Transactional(readOnly = true)
     public SchedulingConfigurationDto getConfigurationById(Long id, String nationalId) {
         if (id == null) return getActiveConfiguration(nationalId);
@@ -50,11 +37,6 @@ public class SchedulingConfigurationService {
                 .orElseThrow(() -> new IllegalArgumentException("Configuration not found"));
     }
 
-    /**
-     * Returns configurations based on role:
-     * ADMIN sees all configurations.
-     * MANAGER sees only their own configurations.
-     */
     @Transactional(readOnly = true)
     public java.util.List<SchedulingConfigurationDto> getAllConfigurations(String nationalId, boolean isAdmin) {
         if (isAdmin)
@@ -96,10 +78,6 @@ public class SchedulingConfigurationService {
         return mapper.mapToDto(saved);
     }
 
-    /**
-     * Safe in-memory fallback — returned when no configuration is seeded in the DB.
-     * This is never persisted; it only keeps the algorithm from crashing on first boot.
-     */
     private SchedulingConfigurationDto getDefaultConfiguration() {
         return new SchedulingConfigurationDto(
                 null, "Default",

@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import type { Task, ScheduleStrategy, ScheduleResult, SaveTaskAssignment } from '../types'
 import { scheduleApi } from '../api'
+import { isAxiosError } from 'axios'
 
 export const useScheduleAlgorithm = () => {
     const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null)
-    const [fitnessData, setFitnessData] = useState<any[]>([])
+    const [fitnessData, setFitnessData] = useState<number[]>([])
     const [isGenerating, setIsGenerating] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -17,35 +18,30 @@ export const useScheduleAlgorithm = () => {
         configId: number | null
     ) => {
         setIsGenerating(true)
-        setError(null)
-        setSuccessMsg(null)
+        clearMessages()
         setScheduleResult(null)
         setFitnessData([])
 
         try {
-            let res;
-            if (strategy === 'MEMETIC' && configId) {
-                res = await scheduleApi.runWithConfig(strategy, configId, departmentId)
-            } else {
-                res = await scheduleApi.run(strategy, departmentId)
-            }
+            const res = (strategy === 'MEMETIC' && configId)
+                ? await scheduleApi.runWithConfig(strategy, configId, departmentId)
+                : await scheduleApi.run(strategy, departmentId)
 
-            if (res.data.fitnessHistory) {
+            if (res.data.fitnessHistory)
                 setFitnessData(res.data.fitnessHistory)
-            }
 
             setScheduleResult(res.data)
-            const assigned = res.data.assignedTasks
-            const unassigned = res.data.unassignedTasks
+
+            const { assignedTasks, unassignedTasks, strategyUsed } = res.data
 
             setSuccessMsg(
                 `Draft generated using ${res.data.strategyUsed} - ` +
-                `${assigned} assigned, ${unassigned} unassigned. ` +
+                `${assignedTasks} assigned, ${unassignedTasks} unassigned. ` +
                 `Review below and click "Approve & Save" to persist.`
             )
             return res.data
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Failed to generate schedule'
+            const msg = isAxiosError(err) ? err.response?.data?.message || err.message : 'Failed to generate schedule'
             setError(msg)
             throw new Error(msg)
         } finally {
@@ -57,16 +53,17 @@ export const useScheduleAlgorithm = () => {
         if (!scheduleResult) return
 
         setIsSaving(true)
-        setError(null)
-        setValidationErrors([])
-        setSuccessMsg(null)
+        clearMessages()
 
         try {
             const assignments: SaveTaskAssignment[] = scheduleResult.assignments.map(a => {
                 const originalTask = tasks.find(t => t.id === a.taskId)
-                if (!originalTask) {
+
+                if (!originalTask)
                     throw new Error(`Task ID ${a.taskId} not found in local state.`)
-                }
+
+                if (originalTask.version === undefined || originalTask.version === null)
+                    throw new Error(`Integrity Error: Task ID ${a.taskId} is missing a version number required for saving.`)
 
                 return {
                     taskId: a.taskId,
@@ -79,22 +76,28 @@ export const useScheduleAlgorithm = () => {
 
             await scheduleApi.save({ assignments })
 
-            const msg = `Schedule approved and saved - ${scheduleResult.assignedTasks} task(s) scheduled.`
+            const msg = `Schedule approved and saved - ${scheduleResult.assignedTasks} task(s) updated.`
             setSuccessMsg(msg)
+
             setScheduleResult(null)
             setFitnessData([])
+
             return msg
         } catch (err: unknown) {
-            // @ts-expect-error safely checked
-            if (err?.response?.status === 422 && Array.isArray(err?.response?.data?.details)) {
-                // @ts-expect-error checked above
-                setValidationErrors(err.response.data.details)
-                setError('Batch validation failed. Please review the errors below.')
-            } else if (err instanceof Error) {
+            if (isAxiosError(err)) {
+                if (err.response?.status === 422 && Array.isArray(err.response.data?.details)) {
+                    setValidationErrors(err.response.data.details)
+                    setError('Batch validation failed. Please review the specific errors.')
+                } else if (err.response?.status === 409)
+                    setError('Data Conflict: Tasks were modified by another user. Please refresh and try again.')
+                else
+                    setError(err.response?.data?.message || err.message)
+
+            } else if (err instanceof Error)
                 setError(err.message)
-            } else {
-                setError('Failed to save schedule')
-            }
+            else
+                setError('An unexpected error occurred while saving the schedule')
+
             throw err
         } finally {
             setIsSaving(false)

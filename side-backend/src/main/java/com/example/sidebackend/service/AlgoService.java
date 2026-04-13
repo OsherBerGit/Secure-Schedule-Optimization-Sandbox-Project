@@ -14,19 +14,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * AlgoService — Sandbox Gatekeeper bridge layer.
- *
- * <p>Responsibilities (in order):</p>
- * <ol>
- *   <li><b>Sanitize</b>  — validate business-level invariants that {@code @Valid} cannot catch.</li>
- *   <li><b>Map</b>       — convert side-backend DTOs to algorithm internal models.</li>
- *   <li><b>Execute</b>   — instantiate the requested {@link SchedulingStrategy} and run it.</li>
- *   <li><b>Map back</b>  — convert {@link TaskAssignment} results to outbound DTOs.</li>
- * </ol>
- *
- * <p>This service is completely stateless — no DB, no HTTP, no file I/O.</p>
- */
 @Service
 public class AlgoService {
 
@@ -38,22 +25,9 @@ public class AlgoService {
 
     public AlgoService(AlgoMapper algoMapper) { this.algoMapper = algoMapper; }
 
-
-    // ─── Public entry point ───────────────────────────────────────────────────
-
-    /**
-     * Validates, maps and runs the scheduling algorithm for the given request.
-     *
-     * @param request fully-validated inbound DTO (already passed {@code @Valid})
-     * @return scheduling results wrapped in a response DTO
-     * @throws IllegalArgumentException if sanitization detects unsafe/invalid data
-     */
     public SchedulingResponseDto schedule(SchedulingRequestDto request) {
-
-        // 1. Sanitization — business-level safety checks
         sanitize(request);
 
-        // 2. Map DTOs → algorithm models (via AlgoMapper)
         MappedRequest mapped = algoMapper.toModels(request);
 
         List<AlgoTask> sortedTasks;
@@ -65,7 +39,6 @@ public class AlgoService {
 
         ScheduleData data = new ScheduleData(mapped.users(), sortedTasks);
 
-        // 3. Select and execute strategy
         SchedulingStrategy strategy = resolveStrategy(request.strategy(), mapped.config());
         log.info("[AlgoService] Running strategy '{}' with {} user(s) and {} task(s)",
                 strategy.getName(), mapped.users().size(), mapped.tasks().size());
@@ -73,41 +46,19 @@ public class AlgoService {
         Scheduler scheduler = new Scheduler(strategy);
         List<TaskAssignment> assignments = scheduler.run(data);
 
-        // 4. Map results → response DTO (pass strategy so fitnessHistory can be extracted)
         return buildResponse(strategy, mapped.tasks().size(), assignments);
     }
 
     // ─── Step 1: Sanitization ─────────────────────────────────────────────────
-
-    /**
-     * Performs deep business-level sanitization before data reaches the algorithm.
-     *
-     * <p>Checks include:</p>
-     * <ul>
-     *   <li>No duplicate worker or task IDs.</li>
-     *   <li>Each availability window has startTime strictly before endTime.</li>
-     *   <li>maxTasks is within sensible bounds (1–100).</li>
-     *   <li>durationHours is positive and does not exceed 8760 (one year in hours).</li>
-     *   <li>priorityLevel, if present, is non-negative.</li>
-     *   <li>Vacation dates: startDate must not be after endDate.</li>
-     *   <li>Predecessor task IDs must reference existing task IDs (no dangling refs, no self-loops).</li>
-     * </ul>
-     *
-     * @throws IllegalArgumentException with a descriptive message on first violation found
-     */
     private void sanitize(SchedulingRequestDto request) {
-
-        // ── User ID uniqueness ────────────────────────────────────────────────
         List<Long> userIds = request.users().stream().map(UserDto::id).toList();
         if (userIds.stream().distinct().count() != userIds.size())
             throw new IllegalArgumentException("Duplicate user IDs detected in the request.");
 
-        // ── Task ID uniqueness ────────────────────────────────────────────────
         List<Long> taskIds = request.tasks().stream().map(TaskDto::id).toList();
         if (taskIds.stream().distinct().count() != taskIds.size())
             throw new IllegalArgumentException("Duplicate task IDs detected in the request.");
 
-        // ── User field bounds ─────────────────────────────────────────────────
         for (UserDto u : request.users()) {
             if (u.availabilities() != null)
                 for (UserDto.WorkerAvailabilityDto a : u.availabilities())
@@ -126,7 +77,6 @@ public class AlgoService {
                                 + v.startDate() + "] is after endDate [" + v.endDate() + "].");
         }
 
-        // ── Task field bounds ─────────────────────────────────────────────────
         for (TaskDto t : request.tasks()) {
             if (t.durationHours() <= 0)
                 throw new IllegalArgumentException(
@@ -177,11 +127,6 @@ public class AlgoService {
 
     // ─── Step 4: Model → Response DTO mapping ────────────────────────────────
 
-    /**
-     * Maps TaskAssignment results to the anonymous outbound response DTO.
-     * Extracts fitnessHistory from MemeticSchedulingStrategy if applicable.
-     * Zero-Trust: no names or task titles are included in the response — only IDs and reasons.
-     */
     private SchedulingResponseDto buildResponse(SchedulingStrategy strategy, int totalTasks,
                                                 List<TaskAssignment> assignments) {
         List<AssignmentDto> dtos = new ArrayList<>(assignments.size());
@@ -207,7 +152,6 @@ public class AlgoService {
             }
         }
 
-        // Extract convergence data — only MemeticSchedulingStrategy populates this
         List<Double> fitnessHistory = (strategy instanceof MemeticSchedulingStrategy memetic)
                 ? new ArrayList<>(memetic.getFitnessHistory())
                 : null;

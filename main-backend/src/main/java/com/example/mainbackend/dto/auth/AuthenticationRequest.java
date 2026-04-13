@@ -13,10 +13,10 @@ import lombok.Setter;
 public class AuthenticationRequest {
 
     @NotBlank(message = "National ID is required")
-    private String nationalId; // Israeli National ID (Teudat Zehut)
+    private String nationalId;
 
     @NotBlank(message = "Password is required")
     private String password;
 
-    private String ip;  // field to store the IP address of the client (set by server)
+    private String ip;
 }

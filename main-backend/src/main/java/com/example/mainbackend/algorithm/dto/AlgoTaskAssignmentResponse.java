@@ -1,5 +1,7 @@
 package com.example.mainbackend.algorithm.dto;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -9,12 +11,23 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AlgoTaskAssignmentResponse {
+    @NotNull(message = "Task ID must not be null")
+    @Positive
     private Long taskId;
+
+    @NotNull(message = "Assigned User ID must not be null")
+    @Positive
     private String taskTitle;
+
     private Long assignedUserId;
+
     private String assignedUserFullName;
+
+    @NotNull(message = "End time is required")
     private LocalDateTime scheduledStart;
+
+    @NotNull(message = "End time is required")
     private LocalDateTime scheduledEnd;
+
     private String reason;
 }
-

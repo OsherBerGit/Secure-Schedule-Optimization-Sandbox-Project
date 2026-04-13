@@ -3,12 +3,6 @@ package com.example.mainbackend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-/**
- * Represents an organisational department (e.g. "Engineering", "Operations").
- *
- * <p>Users and Tasks are scoped to a department so that MANAGER-role users
- * can only schedule work within their own department.</p>
- */
 @Getter
 @Setter
 @Builder

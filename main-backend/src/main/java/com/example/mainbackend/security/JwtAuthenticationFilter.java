@@ -37,20 +37,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        // retrieve the Authorization header from the request
         String token, header = request.getHeader(JwtProperties.HEADER_STRING);
 
-        // extract the token from the header if it's present
-        // this is when sending the token in the Authorization header
         if (header != null && header.startsWith(JwtProperties.TOKEN_PREFIX))
             token = header.substring(JwtProperties.TOKEN_PREFIX.length());
         else
-        // if the header is not present or does not start with the TOKEN_PREFIX,
-        // we will try to get the token from a query parameter
-        {
-            // alternatively, try to get the token from a query parameter
             token = request.getParameter("token");
-        }
 
         // Strict approach: if no token is provided, return 401 Unauthorized
         if (token == null) {
@@ -66,21 +58,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            // extract the nationalId from the token
             String nationalId = jwtUtil.extractNationalId(token);
-            // load user details using the extracted nationalId
             UserDetails userDetails = customUserDetailsService.loadUserByUsername(nationalId);
 
-            // validate the token with the loaded user details
             if (jwtUtil.validateToken(token, userDetails)) {
-                // create an authentication object and set it in the Security Context
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                // set the authentication in the SecurityContextHolder
-                /*
-                This is like preforming a login operation,
-                where the user is authenticated and their details are stored in the SecurityContext.
-                 */
+
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } else {
                 // If token validation fails, return 401 Unauthorized
@@ -101,7 +85,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // pass the request along the filter chain
         filterChain.doFilter(request, response);
     }
 }

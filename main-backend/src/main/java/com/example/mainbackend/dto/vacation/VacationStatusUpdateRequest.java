@@ -7,10 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
-/**
- * DTO for an ADMIN updating the status of a vacation request.
- * Only APPROVED or REJECTED are valid target statuses.
- */
 @Data
 @Builder
 @NoArgsConstructor

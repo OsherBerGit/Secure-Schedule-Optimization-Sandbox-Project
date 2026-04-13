@@ -12,9 +12,6 @@ import java.util.Optional;
 public interface SchedulingConfigurationRepository extends JpaRepository<SchedulingConfiguration, Long> {
     List<SchedulingConfiguration> findByIsActiveTrue();
 
-    /**
-     * Finds all configurations created by a specific user (by their Id).
-     */
     List<SchedulingConfiguration> findByCreatedBy_NationalId(String nationalId);
 
     Optional<SchedulingConfiguration> findByIsActiveTrueAndCreatedBy_NationalId(String nationalId);

@@ -23,17 +23,11 @@ public class JwtProperties {
      */
     private String secret = "default-dev-secret-key-change-in-production-min-32-chars";
 
-    /**
-     * Access token expiration time in milliseconds.
-     * Default: 15 minutes (900000 ms)
-     */
     private long accessTokenExpiration = 15 * 60 * 1000;
 
-    /**
-     * Refresh token expiration time in milliseconds.
-     * Default: 7 days (604800000 ms)
-     */
     private long refreshTokenExpiration = 7 * 24 * 60 * 60 * 1000L;
+
+    private int cacheMaximumSize = 100000;
 
     // Static constants for backward compatibility
     public static final String TOKEN_PREFIX = "Bearer ";

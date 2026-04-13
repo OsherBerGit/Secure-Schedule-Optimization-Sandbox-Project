@@ -4,10 +4,10 @@ import com.example.mainbackend.constants.TaskStatusLevel;
 import com.example.mainbackend.dto.task.TaskCreateRequest;
 import com.example.mainbackend.dto.task.TaskResponseDto;
 import com.example.mainbackend.entity.*;
-import com.example.mainbackend.exception.CustomValidationException;
 import com.example.mainbackend.mapper.TaskMapper;
 import com.example.mainbackend.repository.*;
 import com.example.mainbackend.security.SecurityHelper;
+import com.example.mainbackend.util.CycleDetectionUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -35,6 +35,7 @@ public class TaskService {
     private final TaskMapper taskMapper;
     private final SecurityHelper securityHelper;
     private final DepartmentRepository departmentRepository;
+    private final CycleDetectionUtil cycleDetectionUtil;
 
     @Transactional
     public TaskResponseDto createTask(TaskCreateRequest request) {
@@ -83,7 +84,10 @@ public class TaskService {
         return taskRepository.findById(id).map(existing -> {
 
             boolean requiresStatusReset = false;
-            // 1. Check if requiredSkills is changed
+            
+            // BUSINESS RULE: If the required skills for a task change, the currently assigned workers 
+            // might no longer be qualified. We must delete existing assignments (settlements) 
+            // and force the task back to the OPEN pool so the algorithm can reschedule it.
             if (request.getRequiredSkills() != null
                     && existing.getRequiredSkills() != null) {
                 Set<Long> existingSkillIds = existing.getRequiredSkills().stream()
@@ -107,19 +111,20 @@ public class TaskService {
 
             // 2. Resolve the new status
             TaskStatus newStatus = existing.getStatus();
-            if (requiresStatusReset) {
+            if (requiresStatusReset)
                 newStatus = taskStatusRepository.findByName(TaskStatusLevel.OPEN.name())
                         .orElseThrow(() -> new IllegalStateException("OPEN status not seeded"));
-            } else if (request.getStatusId() != null && !request.getStatusId().equals(existing.getStatus().getId())) {
+
+            else if (request.getStatusId() != null && !request.getStatusId().equals(existing.getStatus().getId())) {
                 newStatus = taskStatusRepository.findById(request.getStatusId())
                         .orElseThrow(() -> new IllegalArgumentException("TaskStatus not found: " + request.getStatusId()));
 
-                // If moving to LOCKED, drop settlements
+                // BUSINESS RULE: LOCKED status means the task is suspended or on hold.
+                // We drop existing settlements to free up those workers for other tasks.
                 if (newStatus.getName().equals(TaskStatusLevel.LOCKED.name())) {
                     List<Settlement> settlements = settlementRepository.findByTaskId(id);
-                    if (!settlements.isEmpty()) {
+                    if (!settlements.isEmpty())
                         settlementRepository.deleteAll(settlements);
-                    }
                 }
             }
 
@@ -136,13 +141,11 @@ public class TaskService {
 
             if (request.getRequiredSkills() != null && !request.getRequiredSkills().isEmpty()) {
                 List<Skill> skills = skillRepository.findAllById(request.getRequiredSkills());
-                if (skills.size() != request.getRequiredSkills().size()) {
+                if (skills.size() != request.getRequiredSkills().size())
                     throw new IllegalArgumentException("One or more skills not found.");
-                }
                 existing.setRequiredSkills(new java.util.HashSet<>(skills));
-            } else {
+            } else
                 existing.setRequiredSkills(new java.util.HashSet<>());
-            }
 
             return taskMapper.toDto(taskRepository.save(existing));
         });
@@ -170,10 +173,6 @@ public class TaskService {
         return true;
     }
 
-    /**
-     * Returns all tasks assigned to a worker via their Settlements.
-     * Assignment is now the single source of truth in the Settlement entity.
-     */
     @Transactional(readOnly = true)
     public List<TaskResponseDto> getTasksByWorkerId(Long workerId) {
         return settlementRepository.findByWorkerId(workerId).stream()
@@ -182,81 +181,25 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Returns only OPEN tasks for the scheduling algorithm.
-     * No category check needed task_statuses table holds only task lifecycle statuses.
-     */
     @Transactional(readOnly = true)
     public List<Task> getOpenTasksForScheduling() { return taskRepository.findByStatusName(TaskStatusLevel.OPEN.name()); }
 
-    /**
-     * Retrieves all tasks with a specific status.
-     *
-     * @param statusId the ID of the task status
-     * @return list of TaskResponseDto
-     */
+    @Transactional(readOnly = true)
     public List<TaskResponseDto> getTasksByStatusId(Long statusId) {
         return taskRepository.findByStatusId(statusId).stream()
                 .map(taskMapper::toDto)
                 .collect(Collectors.toList());
     }
 
-    public void validateNoCircularDependency(Long predecessorId, Long successorId) {
-        Map<Long, List<Long>> graph = new HashMap<>();
-        List<TaskConstraint> allConstraints = taskConstraintRepository.findAll();
-
-        for (TaskConstraint constraint : allConstraints) {
-            Long pred = constraint.getPredecessorTask().getId();
-            Long succ = constraint.getSuccessorTask().getId();
-            graph.computeIfAbsent(pred, k -> new ArrayList<>()).add(succ);
-        }
-
-        graph.computeIfAbsent(predecessorId, k -> new ArrayList<>()).add(successorId);
-
-        Set<Long> visited = new HashSet<>();
-        Set<Long> recursionStack = new HashSet<>();
-
-        for (Long node : graph.keySet())
-            if (hasCycle(node, graph, visited, recursionStack))
-                throw new CustomValidationException("Adding this constraint would create a circular dependency in the task graph");
-    }
-
-    private boolean hasCycle(Long node, Map<Long, List<Long>> graph,
-                             Set<Long> visited, Set<Long> recursionStack) {
-        if (recursionStack.contains(node))
-            return true;
-
-        if (visited.contains(node))
-            return false;
-
-        visited.add(node);
-        recursionStack.add(node);
-
-        List<Long> neighbors = graph.get(node);
-        if (neighbors != null) {
-            for (Long neighbor : neighbors) {
-                if (hasCycle(neighbor, graph, visited, recursionStack)) {
-                    return true;
-                }
-            }
-        }
-
-        recursionStack.remove(node);
-        return false;
-    }
-
     @Transactional(readOnly = true)
     public List<TaskResponseDto> getValidPrerequisites(Long successorId) {
+        // Build the graph ONCE outside the loop to prevent N+1 queries
+        List<TaskConstraint> allConstraints = taskConstraintRepository.findAll();
+        Map<Long, List<Long>> graph = cycleDetectionUtil.buildGraph(allConstraints);
+
         return getAllTasks().stream()
                 .filter(possiblePred -> !possiblePred.getId().equals(successorId))
-                .filter(possiblePred -> {
-                    try {
-                        validateNoCircularDependency(possiblePred.getId(), successorId);
-                        return true;
-                    } catch (CustomValidationException e) {
-                        return false;
-                    }
-                })
+                .filter(possiblePred -> !cycleDetectionUtil.wouldCreateCycle(possiblePred.getId(), successorId, graph))
                 .collect(Collectors.toList());
     }
 

@@ -9,10 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Represents a work requirement in the system.
- * Lifecycle: OPEN -> LOCKED (assigned by algorithm) -> CLOSED (all settlements done).
- */
 @Getter
 @Setter
 @Builder
@@ -34,10 +30,6 @@ public class Task {
     @JoinColumn(name = "priority_id", nullable = false)
     private TaskPriority priority;
 
-    /**
-     * Task lifecycle status (OPEN -> SCHEDULED -> CLOSED).
-     * Stored in the task_statuses table.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_status_id", nullable = false)
     private TaskStatus status;
@@ -45,9 +37,7 @@ public class Task {
     @Column(name = "start_time")
     private LocalDateTime startTime;
 
-    /**
-     * Version field for optimistic locking to handle concurrent updates safely.
-     */
+    // Version field for optimistic locking to handle concurrent updates safely.
     @Version
     private Long version;
     

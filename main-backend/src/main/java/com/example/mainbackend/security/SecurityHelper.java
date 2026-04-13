@@ -18,10 +18,6 @@ public class SecurityHelper {
     private final SettlementRepository settlementRepository;
     private final TaskConstraintRepository taskConstraintRepository;
 
-    /**
-     * Retrieves the currently authenticated user from the database.
-     * Throws an exception if the user is not found.
-     */
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal()))
@@ -41,10 +37,6 @@ public class SecurityHelper {
                 .orElseThrow(() -> new IllegalStateException("User not found in database: " + nationalId));
     }
 
-    /**
-     * Checks if the current user has the given role.
-     * The role name should be provided without the "ROLE_" prefix (e.g., "ADMIN").
-     */
     public boolean hasRole(String roleName) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) return false;
@@ -59,13 +51,8 @@ public class SecurityHelper {
 
     public boolean isWorker() { return hasRole("WORKER"); }
 
-    /**
-     * Helper to enforce department-level access control.
-     * Returns the department ID for MANAGERs.
-     * Returns null for ADMINs (global access).
-     */
     public Long getCurrentUserDepartmentId() {
-        if (isAdmin()) { return null; } // Global access
+        if (isAdmin()) return null; // Global access
 
         User user = getCurrentUser();
         if (user.getDepartment() == null)
@@ -90,9 +77,7 @@ public class SecurityHelper {
         return false; // Workers cannot manage departments
     }
 
-    /**
-     * Checks if the current user is operating on their own data.
-     */
+    // Checks if the current user is operating on their own data.
     public boolean isSelf(Long targetUserId) {
         if (targetUserId == null) return false;
         User currentUser = getCurrentUser();

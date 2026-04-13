@@ -11,5 +11,5 @@ import lombok.Setter;
 @AllArgsConstructor
 public class RefreshTokenRequest {
     private String refreshToken;
-    private String ip; // field to store the IP address of the client
+    private String ip;
 }

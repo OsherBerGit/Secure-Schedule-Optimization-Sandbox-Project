@@ -16,13 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Authentication controller for login and token refresh.
- *
- * Business Rules:
- * - Users authenticate using their nationalId (Israeli National ID) and password
- * - No public registration - only ADMIN users can create new users via POST /api/users
- */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/auth")
@@ -31,14 +24,6 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
     private final RefreshTokenService refreshTokenService;
 
-    /**
-     * Authenticate user using nationalId and password.
-     * Generates JWT access token and refresh token.
-     *
-     * @param authenticationRequest credentials (nationalId and password)
-     * @param request HTTP request to extract client IP
-     * @return JWT access token and refresh token
-     */
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody AuthenticationRequest authenticationRequest,
                                               HttpServletRequest request) {
@@ -52,13 +37,6 @@ public class AuthenticationController {
         }
     }
 
-    /**
-     * Refresh access token using refresh token.
-     *
-     * @param refreshTokenRequest contains the refresh token
-     * @param request HTTP request to extract client IP
-     * @return new JWT access token
-     */
     @PostMapping("/refresh-token")
     public ResponseEntity<?> refreshAccessToken(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest,
                                                 HttpServletRequest request) {

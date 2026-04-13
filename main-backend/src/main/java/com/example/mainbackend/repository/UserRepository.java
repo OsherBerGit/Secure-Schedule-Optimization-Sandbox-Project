@@ -15,7 +15,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     List<User> findByRole_RoleName(String roleName); // Updated to single Role
 
-    /** All users scoped to a specific department. */
     List<User> findAllByDepartmentId(Long departmentId);
 
     /**

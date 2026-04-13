@@ -26,16 +26,12 @@ public class UserDto {
     private String address;
     private Integer maxTasks;
 
-    /** Weekly availability windows (shifts) for this worker. */
     private List<WorkerAvailabilityDto> availabilities;
 
-    /** Name of the department this user belongs to (null if unassigned). */
     private String departmentName;
 
-    // Access Level: Single role (ADMIN, MANAGER, WORKER)
     private String role;
 
-    // Functional Skills
     private Set<SkillDto> skills;
     private Set<Long> skillIds;
 }
