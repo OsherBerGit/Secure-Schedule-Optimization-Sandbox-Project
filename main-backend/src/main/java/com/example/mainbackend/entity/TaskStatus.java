@@ -23,8 +23,4 @@ public class TaskStatus {
 
     @Column(nullable = false, unique = true)
     private String name;
-
-    /** Hex colour code for frontend badge rendering (e.g. "#3B82F6"). */
-    @Column(name = "color_code")
-    private String colorCode;
 }

@@ -10,26 +10,22 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
   const { isAuthenticated, user, isLoading } = useAuth();
 
-  if (isLoading) {
+  if (isLoading)
     return <div>Loading...</div>;
-  }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated)
     return <Navigate to="/login" replace />;
-  }
 
   if (allowedRoles && user) {
     // Derive role defensively: use stored role field, fall back to roles array
     // This prevents a redirect when role is undefined after a page refresh
     const effectiveRole: 'ADMIN' | 'MANAGER' | 'WORKER' = user.role ?? 'WORKER';
 
-    if (!allowedRoles.includes(effectiveRole)) {
+    if (!allowedRoles.includes(effectiveRole))
       return <Navigate to="/unauthorized" replace />;
-    }
   }
 
   return children;
 };
 
 export default ProtectedRoute;
-

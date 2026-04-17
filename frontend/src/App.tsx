@@ -21,9 +21,8 @@ import './App.css';
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
+    if (savedTheme)
       return savedTheme === 'dark';
-    }
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 

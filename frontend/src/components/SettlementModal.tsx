@@ -27,9 +27,7 @@ const SettlementModal = ({ tasks: initialTasks, workers: initialWorkers, settlem
 
     const filteredWorkers = initialWorkers.filter(w => {
         const activeAssignmentsCount = settlements.filter(s => s.workerId === w.id && s.statusName !== 'COMPLETED').length;
-        if (w.maxTasks !== null && w.maxTasks !== undefined && activeAssignmentsCount >= w.maxTasks) {
-            return false;
-        }
+        if (w.maxTasks !== null && w.maxTasks !== undefined && activeAssignmentsCount >= w.maxTasks) return false;
 
         if (!taskId) return true
         const selectedTask = initialTasks.find(t => t.id === taskId)
@@ -40,9 +38,7 @@ const SettlementModal = ({ tasks: initialTasks, workers: initialWorkers, settlem
 
     const filteredTasks = initialTasks.filter(t => {
         const hasActiveSettlement = settlements.some(s => s.taskId === t.id && s.statusName !== 'COMPLETED');
-        if (hasActiveSettlement || (t.taskStatusName && t.taskStatusName !== 'OPEN')) {
-            return false;
-        }
+        if (hasActiveSettlement || (t.taskStatusName && t.taskStatusName !== 'OPEN')) return false;
 
         if (!workerId) return true
         const selectedWorker = initialWorkers.find(w => w.id === workerId)
@@ -53,12 +49,11 @@ const SettlementModal = ({ tasks: initialTasks, workers: initialWorkers, settlem
     })
 
     // Auto-clear invalid selections
-    if (taskId && !filteredTasks.some(t => t.id === taskId)) {
+    if (taskId && !filteredTasks.some(t => t.id === taskId))
         setTaskId('')
-    }
-    if (workerId && !filteredWorkers.some(w => w.id === workerId)) {
+
+    if (workerId && !filteredWorkers.some(w => w.id === workerId))
         setWorkerId('')
-    }
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault()

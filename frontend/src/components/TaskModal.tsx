@@ -27,11 +27,10 @@ const TaskModal = ({ task, departments, skills, statuses = [], priorities = [], 
     const [requiredSkills, setRequiredSkills] = useState<number[]>([]);
 
     useEffect(() => {
-        if (task?.requiredSkills) {
+        if (task?.requiredSkills)
             setRequiredSkills(task.requiredSkills.map(s => s.id));
-        } else {
+        else
             setRequiredSkills([]);
-        }
     }, [task]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -46,11 +45,10 @@ const TaskModal = ({ task, departments, skills, statuses = [], priorities = [], 
     }, [priorities, statuses, task, priorityId, statusId]);
     function handleSkillChange(id: number) {
         setRequiredSkills(prev => {
-            if (prev.includes(id)) {
+            if (prev.includes(id))
                 return prev.filter(s => s !== id);
-            } else {
+            else
                 return [...prev, id];
-            }
         });
     }
     async function handleSubmit(e: FormEvent) {
@@ -70,9 +68,8 @@ const TaskModal = ({ task, departments, skills, statuses = [], priorities = [], 
             departmentId: departmentId !== '' ? Number(departmentId) : undefined,
             requiredSkills: [...requiredSkills]
         };
-        if (task) {
+        if (task)
             (data as UpdateTaskRequest).statusId = Number(statusId);
-        }
         try {
             const res = onSubmit(data);
             if (res instanceof Promise) await res;

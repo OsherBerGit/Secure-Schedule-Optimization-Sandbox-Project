@@ -23,9 +23,8 @@ const Layout = ({ children, isDarkMode, setIsDarkMode }: LayoutProps) => {
 
     const hideNav = ['/login', '/unauthorized'].includes(location.pathname)
 
-    if (!isAuthenticated || hideNav) {
+    if (!isAuthenticated || hideNav)
         return <>{children}</>
-    }
 
     const currentRole = user?.role ?? 'WORKER';
 

@@ -20,6 +20,14 @@ const Dashboard: React.FC = () => {
   const [settlementsLoading, setSettlementsLoading] = useState(false);
   const [settlementsError, setSettlementsError] = useState<string | null>(null);
 
+  const settlementStatusColors: { [key: string]: string } = {
+      'PENDING': '#6B7280',
+      'ASSIGNED': '#3B82F6',
+      'IN_PROGRESS': '#8B5CF6',
+      'COMPLETED': '#10B981',
+      'FAILED': '#EF4444',
+  };
+
   useEffect(() => {
     if (!isAdmin) {
       const loadSettlements = async () => {
@@ -85,13 +93,14 @@ const Dashboard: React.FC = () => {
                         <tbody>
                         {mySettlements.map(s => {
                           const isCompleted = s.statusName === 'COMPLETED';
+                          const colorCode = s.statusName ? settlementStatusColors[s.statusName] : undefined;
                           return (
                               <tr key={s.id}>
                                 <td className="assignment-task-title">{s.taskTitle}</td>
                                 <td>
                             <span
                                 className="status-badge"
-                                style={s.statusColorCode ? { background: s.statusColorCode + '22', color: s.statusColorCode, border: `1px solid ${s.statusColorCode}44` } : undefined}
+                                style={colorCode ? { background: colorCode + '22', color: colorCode, border: `1px solid ${colorCode}44` } : undefined}
                             >
                               {s.statusName ?? '-'}
                             </span>

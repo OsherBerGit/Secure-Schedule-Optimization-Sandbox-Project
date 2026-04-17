@@ -28,18 +28,16 @@ const Vacations = () => {
     const [filterWorker, setFilterWorker] = useState<string>('')
 
     useEffect(() => {
-        if (location.state?.filterWorkerName) {
+        if (location.state?.filterWorkerName)
             setFilterWorker(location.state.filterWorkerName)
-        }
     }, [location.state])
 
     useEffect(() => {
         const workerId = searchParams.get('workerId')
         if (workerId && users.length > 0) {
             const user = users.find(u => u.id === Number(workerId))
-            if (user) {
+            if (user)
                 setFilterWorker(`${user.firstName} ${user.lastName}`)
-            }
         }
     }, [searchParams, users])
 
@@ -125,9 +123,9 @@ const Vacations = () => {
 
     const displayedVacations = useMemo(() => {
         let list = vacations;
-        if (currentUser?.role === 'WORKER') {
+        if (currentUser?.role === 'WORKER')
             list = list.filter(v => v.workerId === currentUser.id);
-        } else {
+        else {
             list = list.filter(v => {
                 if (filterDepartment && getDepartmentName(v) !== filterDepartment) return false
                 if (filterWorker && !v.workerName.toLowerCase().includes(filterWorker.toLowerCase())) return false

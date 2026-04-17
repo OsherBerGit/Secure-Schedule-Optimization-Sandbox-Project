@@ -404,4 +404,3 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
 }
 
 export default UserModal;
-

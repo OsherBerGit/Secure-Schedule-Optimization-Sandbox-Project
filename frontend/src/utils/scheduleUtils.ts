@@ -13,7 +13,6 @@
 export function formatReason(rawReason: string): string {
     if (!rawReason) return 'Unknown reason'
 
-    // Strip known algorithm prefixes (case-insensitive), including the separator that follows
     const prefixPattern = /^(memetic|greedy|round.?robin)\s*:\s*(constraint violation during decode\s*[-–-]+\s*|[^-–]*(decode|scheduling)\s*[-–-]+\s*)?/i
     const stripped = rawReason.replace(prefixPattern, '').trim()
 
@@ -31,4 +30,3 @@ export function getPriorityColor(priorityName: string | null) {
         default:         return '#667eea'
     }
 }
-

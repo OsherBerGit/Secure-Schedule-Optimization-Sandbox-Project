@@ -71,10 +71,8 @@ export interface Task {
   departmentName: string | null;
   // Task lifecycle status (category="TASK": OPEN, LOCKED, CLOSED)
   taskStatusId: number | null;
-  taskStatusName: string | null;       // "OPEN" | "LOCKED" | "CLOSED"
-  taskStatusCategory: string | null;   // always "TASK"
-  taskStatusColorCode: string | null;  // hex colour for badge
-  
+  taskStatusName: string | null; // "OPEN" | "LOCKED" | "CLOSED"
+  taskStatusCategory: string | null; // always "TASK"
   /** Optimistic locking version from backend. */
   version: number;
   requiredSkills?: Skill[];
@@ -121,14 +119,12 @@ export interface UpdateTaskRequest {
 export interface Status {
   id: number;
   name: string;
-  colorCode: string | null;
 }
 
 /** Lookup values for Settlement execution lifecycle (PENDING, ASSIGNED, IN_PROGRESS, COMPLETED, FAILED). */
 export interface SettlementStatus {
   id: number;
   name: string;
-  colorCode: string | null;
 }
 
 export interface Priority {
@@ -213,7 +209,6 @@ export interface Settlement {
   // Settlement execution status (PENDING, IN_PROGRESS, COMPLETED, FAILED) - from settlement_statuses table
   statusId: number | null;
   statusName: string | null;
-  statusColorCode: string | null;
 }
 
 export interface CreateSettlementRequest {

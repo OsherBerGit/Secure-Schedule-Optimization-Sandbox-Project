@@ -9,21 +9,21 @@ import java.util.stream.Collectors;
 /**
  * Represents a Task as seen by the scheduling algorithm.
  *
- * <p>Zero-Trust compliant: no titles, descriptions, or status strings â€”
+ * <p>Zero-Trust compliant: no titles, descriptions, or status strings
  * only scheduling-relevant numeric and temporal data.
  * Pure Java: no Spring, Jackson, or Lombok annotations.</p>
  *
- * <p>Immutable by design â€” fields are set once via the constructor and exposed
+ * <p>Immutable by design fields are set once via the constructor and exposed
  * through read-only getters to prevent accidental mutation inside the engine.</p>
  *
  * <p>Field alignment with {@code TaskDto}:</p>
  * <ul>
- *   <li>{@code id}                â€” direct copy from {@code TaskDto.id}</li>
- *   <li>{@code durationHours}     â€” direct copy from {@code TaskDto.durationHours}</li>
- *   <li>{@code deadline}          â€” direct copy from {@code TaskDto.deadline}</li>
- *   <li>{@code priorityLevel}     â€” direct copy from {@code TaskDto.priorityLevel} (defaults to 0)</li>
- *   <li>{@code requiredSkills}      â€” {@code TaskDto.requiredSkillId} converted to {@code Set<String>}</li>
- *   <li>{@code predecessorTaskIds}â€” direct copy from {@code TaskDto.predecessorTaskIds}</li>
+ *   <li>{@code id}                direct copy from {@code TaskDto.id}</li>
+ *   <li>{@code durationHours}     direct copy from {@code TaskDto.durationHours}</li>
+ *   <li>{@code deadline}          direct copy from {@code TaskDto.deadline}</li>
+ *   <li>{@code priorityLevel}     direct copy from {@code TaskDto.priorityLevel} (defaults to 0)</li>
+ *   <li>{@code requiredSkills}       {@code TaskDto.requiredSkillId} converted to {@code Set<String>}</li>
+ *   <li>{@code predecessorTaskIds} direct copy from {@code TaskDto.predecessorTaskIds}</li>
  * </ul>
  */
 public final class AlgoTask {
@@ -39,9 +39,6 @@ public final class AlgoTask {
      */
     private final Set<Long> requiredSkills;
 
-    /**
-     * * Detailed incoming constraints (predecessor ID + constraint type like FS, SS).
-     */
     private final List<AlgoConstraint> constraints;
 
     public AlgoTask(Long id,
@@ -68,16 +65,6 @@ public final class AlgoTask {
     public Integer getPriorityLevel()        { return priorityLevel; }
     public Set<Long> getRequiredSkills()    { return requiredSkills; }
     public List<AlgoConstraint> getConstraints(){ return constraints; }
-
-    /**
-     * Helper method kept for backward compatibility with existing strategy code
-     * that only needs to know the IDs of the predecessors.
-     */
-    public List<Long> getPredecessorTaskIds() {
-        return constraints.stream()
-                .map(AlgoConstraint::predecessorId)
-                .collect(Collectors.toList());
-    }
 
     /**
      * Convenience alias kept for backward compatibility with BaseSchedulingStrategy,

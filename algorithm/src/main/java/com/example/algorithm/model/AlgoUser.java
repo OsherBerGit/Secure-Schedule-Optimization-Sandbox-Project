@@ -17,15 +17,12 @@ public final class AlgoUser {
 
     private final Long id;
 
-    /** Specific weekly shift windows defining when this worker is available. */
     private final List<AlgoWorkerAvailability> availabilities;
 
     private final Integer maxTasks;
 
-    /** Opaque skill identifiers (stored as skill IDs) */
     private final Set<Long> skills;
 
-    /** Approved vacation windows â€” treated as fully blocked availability */
     private final List<AlgoVacation> vacations;
 
     public AlgoUser(Long id,

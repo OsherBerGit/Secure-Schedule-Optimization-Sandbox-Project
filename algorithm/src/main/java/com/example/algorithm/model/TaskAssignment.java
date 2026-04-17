@@ -42,8 +42,6 @@ public final class TaskAssignment {
                 + ", reason='" + reason + "'}";
     }
 
-    // ── Fluent builder ────────────────────────────────────────────────────────
-
     public static final class Builder {
         private AlgoTask      task;
         private AlgoUser      assignedEmployee;

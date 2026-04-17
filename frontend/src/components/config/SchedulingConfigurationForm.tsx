@@ -20,12 +20,7 @@ const DEFAULT_CONFIG: Omit<SchedulingConfiguration, 'id' | 'isActive'> = {
     localSearchFrequency: 0.2
 }
 
-const SchedulingConfigurationForm: React.FC<SchedulingConfigurationFormProps> = ({
-                                                                                     initialConfig = DEFAULT_CONFIG,
-                                                                                     onSubmit,
-                                                                                     onCancel,
-                                                                                     isLoading
-                                                                                 }) => {
+const SchedulingConfigurationForm: React.FC<SchedulingConfigurationFormProps> = ({initialConfig = DEFAULT_CONFIG, onSubmit, onCancel, isLoading}) => {
     const [config, setConfig] = useState(initialConfig)
 
     const handleSubmit = (e: React.FormEvent) => {

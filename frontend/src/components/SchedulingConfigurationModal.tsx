@@ -15,15 +15,7 @@ interface SchedulingConfigurationModalProps {
     initialConfigId?: number | null
 }
 
-const SchedulingConfigurationModal: React.FC<SchedulingConfigurationModalProps> = ({
-                                                                                       configs,
-                                                                                       isLoading,
-                                                                                       error,
-                                                                                       onClose,
-                                                                                       onSelectConfig,
-                                                                                       onCreateConfig,
-                                                                                       initialConfigId
-                                                                                   }) => {
+const SchedulingConfigurationModal: React.FC<SchedulingConfigurationModalProps> = ({configs, isLoading, error, onClose, onSelectConfig, onCreateConfig, initialConfigId}) => {
     const { user } = useAuth()
     const isAdmin = user?.role === 'ADMIN'
 
@@ -155,4 +147,3 @@ const SchedulingConfigurationModal: React.FC<SchedulingConfigurationModalProps> 
 }
 
 export default SchedulingConfigurationModal
-

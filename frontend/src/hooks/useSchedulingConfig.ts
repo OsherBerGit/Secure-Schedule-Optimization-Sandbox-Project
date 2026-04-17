@@ -16,9 +16,8 @@ export const useSchedulingConfig = () => {
             const res = await schedulingConfigApi.getAll()
             setConfigs(res.data)
 
-            if (res.data.length > 0 && !selectedConfigId) {
+            if (res.data.length > 0 && !selectedConfigId)
                 setSelectedConfigId(res.data[0].id)
-            }
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Failed to load configurations'
             setError(msg)

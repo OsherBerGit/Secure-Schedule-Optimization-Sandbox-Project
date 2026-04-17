@@ -37,6 +37,14 @@ const Settlements = () => {
 
     const [searchParams, setSearchParams] = useSearchParams()
 
+    const settlementStatusColors: { [key: string]: string } = {
+        'PENDING': '#6B7280',
+        'ASSIGNED': '#3B82F6',
+        'IN_PROGRESS': '#8B5CF6',
+        'COMPLETED': '#10B981',
+        'FAILED': '#EF4444',
+    };
+
     useEffect(() => {
         if (location.state?.filterWorkerName) {
             setFilterWorkerName(location.state.filterWorkerName)
@@ -47,9 +55,8 @@ const Settlements = () => {
         const workerId = searchParams.get('workerId')
         if (workerId && workers.length > 0) {
             const user = workers.find(u => u.id === Number(workerId))
-            if (user) {
+            if (user)
                 setFilterWorkerName(`${user.firstName} ${user.lastName}`)
-            }
         }
     }, [searchParams, workers])
 
@@ -187,6 +194,7 @@ const Settlements = () => {
                         <tbody>
                         {displayedSettlements.map(s => {
                             const isCompleted = s.statusName === 'COMPLETED'
+                            const colorCode = s.statusName ? settlementStatusColors[s.statusName] : undefined;
                             return (
                                 <tr key={s.id}>
                                     <td style={{ fontWeight: 500 }}>{s.workerName}</td>
@@ -194,7 +202,7 @@ const Settlements = () => {
                                     <td>
                                             <span
                                                 className="status-badge"
-                                                style={s.statusColorCode ? { background: s.statusColorCode + '22', color: s.statusColorCode, border: `1px solid ${s.statusColorCode}44` } : undefined}
+                                                style={colorCode ? { background: colorCode + '22', color: colorCode, border: `1px solid ${colorCode}44` } : undefined}
                                             >
                                                 {s.statusName ?? '-'}
                                             </span>

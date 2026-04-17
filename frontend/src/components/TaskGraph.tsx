@@ -87,9 +87,8 @@ const TaskGraph = ({ tasks, constraints }: TaskGraphProps) => {
         return getLayoutedElements(initialNodes, initialEdges, 'TB')
     }, [tasks, constraints])
 
-    if (!tasks.length) {
+    if (!tasks.length)
         return <div className="graph-empty-state">No tasks to display in the graph.</div>
-    }
 
     return (
         <div className="task-graph-wrapper">

@@ -24,9 +24,5 @@ public class SettlementStatus {
 
     @Column(nullable = false, unique = true)
     private String name;
-
-    /** Hex colour code for frontend badge rendering (e.g. "#10B981"). */
-    @Column(name = "color_code")
-    private String colorCode;
 }
 

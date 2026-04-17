@@ -121,7 +121,7 @@ public class DataLoader implements CommandLineRunner {
 
     private void seedTaskStatus(String name, String colorCode) {
         if (taskStatusRepository.findByName(name).isEmpty()) {
-            taskStatusRepository.save(TaskStatus.builder().name(name).colorCode(colorCode).build());
+            taskStatusRepository.save(TaskStatus.builder().name(name).build());
             log.info("Seeded task status: {}", name);
         }
     }
@@ -137,7 +137,7 @@ public class DataLoader implements CommandLineRunner {
 
     private void seedSettlementStatus(String name, String colorCode) {
         if (settlementStatusRepository.findByName(name).isEmpty()) {
-            settlementStatusRepository.save(SettlementStatus.builder().name(name).colorCode(colorCode).build());
+            settlementStatusRepository.save(SettlementStatus.builder().name(name).build());
             log.info("Seeded settlement status: {}", name);
         }
     }
