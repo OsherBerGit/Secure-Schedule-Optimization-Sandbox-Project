@@ -15,10 +15,10 @@ public class AlgoTaskAssignmentResponse {
     @Positive
     private Long taskId;
 
-    @NotNull(message = "Assigned User ID must not be null")
-    @Positive
     private String taskTitle;
 
+    @NotNull(message = "Assigned User ID must not be null")
+    @Positive
     private Long assignedUserId;
 
     private String assignedUserFullName;

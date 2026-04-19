@@ -1,6 +1,5 @@
 package com.example.mainbackend.service;
 
-import com.example.mainbackend.dto.constrainttype.ConstraintTypeRequest;
 import com.example.mainbackend.dto.constrainttype.ConstraintTypeResponseDto;
 import com.example.mainbackend.entity.ConstraintType;
 import com.example.mainbackend.mapper.ConstraintTypeMapper;

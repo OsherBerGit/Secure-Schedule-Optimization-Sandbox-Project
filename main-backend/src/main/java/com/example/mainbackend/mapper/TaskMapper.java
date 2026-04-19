@@ -30,7 +30,6 @@ public class TaskMapper {
                 .priorityName(task.getPriority() != null ? task.getPriority().getName() : null)
                 .taskStatusId(task.getStatus() != null ? task.getStatus().getId() : null)
                 .taskStatusName(task.getStatus() != null ? task.getStatus().getName() : null)
-                .taskStatusColorCode(task.getStatus() != null ? task.getStatus().getColorCode() : null)
                 .departmentName(task.getDepartment() != null ? task.getDepartment().getName() : null)
                 .version(task.getVersion())
                 .requiredSkillIds(task.getRequiredSkills() != null ? 

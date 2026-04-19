@@ -1,6 +1,5 @@
 package com.example.mainbackend.service;
 
-import com.example.mainbackend.dto.taskpriority.TaskPriorityRequest;
 import com.example.mainbackend.dto.taskpriority.TaskPriorityResponseDto;
 import com.example.mainbackend.entity.TaskPriority;
 import com.example.mainbackend.mapper.TaskPriorityMapper;

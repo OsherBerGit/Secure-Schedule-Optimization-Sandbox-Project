@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -30,9 +31,14 @@ public class AlgoService {
 
         MappedRequest mapped = algoMapper.toModels(request);
 
+        Comparator<AlgoTask> taskPriorityComparator = Comparator
+                .comparingInt((AlgoTask t) -> t.getPriorityLevel() != null ? t.getPriorityLevel() : 0)
+                .reversed()
+                .thenComparing(AlgoTask::getDeadline, Comparator.nullsLast(Comparator.naturalOrder()));
+
         List<AlgoTask> sortedTasks;
         try {
-            sortedTasks = topologicalSorter.sort(mapped.tasks());
+            sortedTasks = topologicalSorter.sort(mapped.tasks(), taskPriorityComparator);
         } catch (IllegalStateException e) {
             throw new IllegalArgumentException("DAG Validation failed: " + e.getMessage());
         }
@@ -134,7 +140,11 @@ public class AlgoService {
         int assigned = 0;
 
         for (TaskAssignment a : assignments) {
-            boolean isAssigned = (a.getAssignedEmployee() != null);
+            boolean isAssigned = a.getAssignedEmployee() != null
+                    && a.getAssignedEmployee().getId() != null
+                    && a.getScheduledStart() != null
+                    && a.getScheduledEnd() != null;
+
             if (isAssigned) {
                 assigned++;
                 dtos.add(new AssignmentDto(
@@ -147,7 +157,7 @@ public class AlgoService {
             } else {
                 unscheduled.add(new SchedulingResponseDto.UnscheduledTaskDto(
                         a.getTask().getId(),
-                        a.getReason()
+                        (a.getReason() != null && !a.getReason().isEmpty()) ? a.getReason() : "Failed to assign valid constraints"
                 ));
             }
         }
@@ -161,4 +171,3 @@ public class AlgoService {
                 dtos, unscheduled, fitnessHistory);
     }
 }
-

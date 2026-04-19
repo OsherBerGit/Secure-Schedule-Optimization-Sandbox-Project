@@ -118,12 +118,7 @@ public abstract class BaseSchedulingStrategy implements SchedulingStrategy {
 
     protected List<AlgoTask> getSortedUnassignedTasks(List<AlgoTask> tasks) {
         return tasks.stream()
-
                 .filter(this::isTaskPending)
-                .sorted(Comparator
-                        .comparingInt((AlgoTask t) -> t.getPriorityLevel() != null ? t.getPriorityLevel() : 0)
-                        .reversed()
-                        .thenComparing(AlgoTask::getDeadline, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
     }
 
