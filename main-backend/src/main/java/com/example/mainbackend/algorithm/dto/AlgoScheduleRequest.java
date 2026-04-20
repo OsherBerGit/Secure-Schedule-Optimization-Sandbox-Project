@@ -14,4 +14,3 @@ public class AlgoScheduleRequest {
     private List<AlgoUserRequest> users;
     private List<AlgoTaskRequest> tasks;
 }
-

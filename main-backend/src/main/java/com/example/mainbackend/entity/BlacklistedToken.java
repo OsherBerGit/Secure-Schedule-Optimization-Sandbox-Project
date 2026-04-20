@@ -29,4 +29,3 @@ public class BlacklistedToken {
     @Column(length = 100)
     private String reason;
 }
-

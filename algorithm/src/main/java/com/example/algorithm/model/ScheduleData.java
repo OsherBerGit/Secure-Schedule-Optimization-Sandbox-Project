@@ -6,4 +6,3 @@ public record ScheduleData(
         List<AlgoUser> users,
         List<AlgoTask> tasks
 ) {}
-
