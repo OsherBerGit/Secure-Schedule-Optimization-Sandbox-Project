@@ -8,15 +8,14 @@ import org.springframework.stereotype.Component;
 public class VacationMapper {
 
     public VacationResponseDto toDto(Vacation vacation) {
-        if (vacation == null)
-            return null;
+        if (vacation == null) return null;
 
         return VacationResponseDto.builder()
                 .id(vacation.getId())
-                .workerId(vacation.getWorker().getId())
+                .userId(vacation.getUser().getId())
                 .startDate(vacation.getStartDate())
                 .endDate(vacation.getEndDate())
-                .workerName(vacation.getWorker().getFirstName() + " " + vacation.getWorker().getLastName())
+                .userName(vacation.getUser().getFirstName() + " " + vacation.getUser().getLastName())
                 .statusName(vacation.getStatus() != null ? vacation.getStatus().getName() : null)
                 .build();
     }

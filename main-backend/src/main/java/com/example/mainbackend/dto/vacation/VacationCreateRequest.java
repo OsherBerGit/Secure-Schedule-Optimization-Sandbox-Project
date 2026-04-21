@@ -13,8 +13,8 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 public class VacationCreateRequest {
-    @NotNull(message = "Worker ID is required")
-    private Long workerId;
+    @NotNull(message = "User ID is required")
+    private Long userId;
 
     @NotNull(message = "Start date is required")
     private LocalDate startDate;

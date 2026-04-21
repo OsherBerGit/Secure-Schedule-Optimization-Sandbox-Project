@@ -5,26 +5,26 @@ import './ScheduleTable.css'
 
 interface ScheduleTableProps {
     tasks: Task[]
-    workers: User[]
+    users: User[]
     assignmentMap: Map<number, number | null>
 }
 
-const ScheduleTable = ({ tasks, workers, assignmentMap }: ScheduleTableProps) => {
+const ScheduleTable = ({ tasks, users, assignmentMap }: ScheduleTableProps) => {
     return (
         <div className="st-fixed-container">
             <table className="st-table">
                 <thead>
                 <tr>
                     <th className="st-th">Task Details</th>
-                    <th className="st-th">Assigned Worker</th>
+                    <th className="st-th">Assigned User</th>
                     <th className="st-th">Scheduled Start</th>
                     <th className="st-th">Deadline</th>
                 </tr>
                 </thead>
                 <tbody>
                 {tasks.map(task => {
-                    const workerId = assignmentMap.get(task.id)
-                    const worker = workers.find(w => w.id === workerId)
+                    const userId = assignmentMap.get(task.id)
+                    const user = users.find(w => w.id === userId)
 
                     return (
                         <tr key={task.id} className="st-tr">
@@ -35,8 +35,8 @@ const ScheduleTable = ({ tasks, workers, assignmentMap }: ScheduleTableProps) =>
                                 </div>
                             </td>
                             <td className="st-td">
-                                    <span className="st-worker-name-plain">
-                                        {worker ? `${worker.firstName} ${worker.lastName}` : 'Unassigned'}
+                                    <span className="st-user-name-plain">
+                                        {user ? `${user.firstName} ${user.lastName}` : 'Unassigned'}
                                     </span>
                             </td>
                             <td className="st-td">

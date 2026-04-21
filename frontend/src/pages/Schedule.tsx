@@ -52,7 +52,7 @@ const Schedule: React.FC = () => {
     const isWorker = currentUser?.role === 'WORKER'
     const canManage = isAdmin || isManager
 
-    const { tasks, workers, departments, settlements, isLoading: isDataLoading, refreshData, error: dataError } = useScheduleData()
+    const { tasks, users, departments, settlements, isLoading: isDataLoading, refreshData, error: dataError } = useScheduleData()
 
     // Extracted validationErrors from the updated hook
     const {
@@ -70,7 +70,7 @@ const Schedule: React.FC = () => {
     const { configs, isConfigModalOpen, selectedConfigId, isLoading: isConfigLoading, error: configError, openConfigModal, closeConfigModal, selectConfig, createConfig, fetchConfigs } = useSchedulingConfig()
 
     const [searchParams, setSearchParams] = useSearchParams()
-    const queryWorkerId = searchParams.get('workerId')
+    const queryUserId = searchParams.get('userId')
 
     const [viewMode, setViewMode] = useState<'gantt' | 'table'>('gantt')
     const [strategy, setStrategy] = useState<ScheduleStrategy>('GREEDY')
@@ -86,7 +86,7 @@ const Schedule: React.FC = () => {
 
     const assignmentMap = useMemo(() => {
         const map = new Map<number, number | null>()
-        settlements?.forEach(s => { if (s.taskId) map.set(s.taskId, s.workerId) })
+        settlements?.forEach(s => { if (s.taskId) map.set(s.taskId, s.userId) })
         scheduleResult?.assignments.forEach(a => { map.set(a.taskId, a.assignedUserId) })
         return map
     }, [settlements, scheduleResult])
@@ -222,12 +222,17 @@ const Schedule: React.FC = () => {
                     <p>Select a strategy and click Generate to start the optimization process.</p>
                     <div
                         className="strategy-info-box"
-                        style={isDarkMode ? { backgroundColor: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.3)' } : {}}
+                        style={isDarkMode
+                            ? { backgroundColor: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.3)' }
+                            : { backgroundColor: 'rgba(59, 130, 246, 0.1)', borderColor: 'rgba(59, 130, 246, 0.2)' }
+                        }
                     >
-                        <Info size={20} className="strategy-icon" style={isDarkMode ? { color: '#60a5fa' } : {}} />
+                        <Info size={20} className="strategy-icon" style={isDarkMode ? { color: '#60a5fa' } : { color: '#3b82f6' }} />
                         <div>
-                            <strong style={{ display: 'block', color: '#1e3a8a', marginBottom: '4px' }}>Algorithm Info</strong>
-                            <span style={{ color: '#1e40af', fontSize: '0.95rem', lineHeight: '1.4' }}>{STRATEGY_DESCRIPTIONS[strategy]}</span>
+                            <strong style={{ display: 'block', color: isDarkMode ? '#60a5fa' : '#1e3a8a', marginBottom: '4px' }}>Algorithm Info</strong>
+                            <span style={{ color: isDarkMode ? '#93c5fd' : '#1e40af', fontSize: '0.95rem', lineHeight: '1.4' }}>
+                                A fast, straightforward approach that makes the optimal choice at each step, prioritizing immediate constraints without looking ahead.
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -282,9 +287,9 @@ const Schedule: React.FC = () => {
             {(scheduledTasks.length > 0 || scheduleResult) && (
                 <div className="schedule-content">
                     {viewMode === 'gantt' ? (
-                        <ScheduleGantt tasks={scheduledTasks} workers={workers} assignmentMap={assignmentMap} onTaskClick={setSelectedGanttTask} />
+                        <ScheduleGantt tasks={scheduledTasks} users={users} assignmentMap={assignmentMap} onTaskClick={setSelectedGanttTask} />
                     ) : (
-                        <ScheduleTable tasks={scheduledTasks} workers={workers} assignmentMap={assignmentMap} />
+                        <ScheduleTable tasks={scheduledTasks} users={users} assignmentMap={assignmentMap} />
                     )}
                 </div>
             )}

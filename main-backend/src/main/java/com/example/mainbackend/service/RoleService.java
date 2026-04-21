@@ -16,7 +16,7 @@ public class RoleService {
     public List<RoleResponseDto> getAllRoles() {
         return roleRepository.findAll().stream()
                 .map(role -> RoleResponseDto.builder()
-                        .name(role.getRoleName())
+                        .name(role.getName())
                         .build())
                 .toList();
     }

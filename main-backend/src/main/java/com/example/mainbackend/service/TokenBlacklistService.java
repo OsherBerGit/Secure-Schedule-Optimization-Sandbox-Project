@@ -11,10 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Date;
 
-/**
- * Service for managing blacklisted JWT tokens.
- * Uses database persistence to survive server restarts.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -53,8 +49,7 @@ public class TokenBlacklistService {
 
     @Transactional(readOnly = true)
     public boolean isTokenBlacklisted(String jwtId) {
-        if (jwtId == null)
-            return false;
+        if (jwtId == null) return false;
         return blacklistedTokenRepository.existsByJwtId(jwtId);
     }
 

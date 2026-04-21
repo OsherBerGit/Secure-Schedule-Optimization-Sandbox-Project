@@ -1,13 +1,10 @@
 package com.example.mainbackend.service;
 
+import com.example.mainbackend.constants.RoleType;
 import com.example.mainbackend.dto.user.CreateUserRequest;
 import com.example.mainbackend.dto.user.UserDto;
-import com.example.mainbackend.dto.user.WorkerAvailabilityDto;
-import com.example.mainbackend.entity.Department;
-import com.example.mainbackend.entity.Skill;
-import com.example.mainbackend.entity.Role;
-import com.example.mainbackend.entity.User;
-import com.example.mainbackend.entity.WorkerAvailability;
+import com.example.mainbackend.dto.user.UserAvailabilityDto;
+import com.example.mainbackend.entity.*;
 import com.example.mainbackend.mapper.UserMapper;
 import com.example.mainbackend.repository.DepartmentRepository;
 import com.example.mainbackend.repository.SkillRepository;
@@ -50,9 +47,9 @@ public class UserService {
 
         String roleName = (request.getRole() != null && !request.getRole().isBlank())
                 ? request.getRole().toUpperCase()
-                : "WORKER";
+                : RoleType.WORKER.name();
 
-        Role role = roleRepository.findByRoleName(roleName)
+        Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleName));
         user.setRole(role);
 
@@ -71,8 +68,8 @@ public class UserService {
 
         // Set availabilities if provided
         if (request.getAvailabilities() != null)
-            for (WorkerAvailabilityDto dto : request.getAvailabilities()) {
-                WorkerAvailability av = WorkerAvailability.builder()
+            for (UserAvailabilityDto dto : request.getAvailabilities()) {
+                UserAvailability av = UserAvailability.builder()
                         .dayOfWeek(dto.getDayOfWeek())
                         .startTime(dto.getStartTime())
                         .endTime(dto.getEndTime())
@@ -120,12 +117,12 @@ public class UserService {
     public List<UserDto> getUsersByRole(String roleName) {
         if (securityHelper.isManager()) {
             Long departmentId = securityHelper.getCurrentUserDepartmentId();
-            return userRepository.findByRole_RoleName(roleName).stream()
+            return userRepository.findByRole_Name(roleName).stream()
                     .filter(u -> u.getDepartment() != null && u.getDepartment().getId().equals(departmentId))
                     .map(userMapper::toDto)
                     .collect(Collectors.toList());
         }
-        return userRepository.findByRole_RoleName(roleName).stream() // Updated Method Name
+        return userRepository.findByRole_Name(roleName).stream() // Updated Method Name
                 .map(userMapper::toDto)
                 .collect(Collectors.toList());
     }
@@ -155,8 +152,6 @@ public class UserService {
                     if (userDto.getLastName() != null) existingUser.setLastName(userDto.getLastName());
                     if (userDto.getEmail() != null) existingUser.setEmail(userDto.getEmail());
                     if (userDto.getPhoneNumber() != null) existingUser.setPhoneNumber(userDto.getPhoneNumber());
-                    if (userDto.getSalary() != null) existingUser.setSalary(userDto.getSalary());
-                    if (userDto.getAddress() != null) existingUser.setAddress(userDto.getAddress());
                     if (userDto.getMaxTasks() != null) existingUser.setMaxTasks(userDto.getMaxTasks());
 
                     // Update department by name
@@ -171,7 +166,7 @@ public class UserService {
                     // Update role if provided
                     if (userDto.getRole() != null && !userDto.getRole().isEmpty()) {
                         String roleName = userDto.getRole().toUpperCase();
-                        Role role = roleRepository.findByRoleName(roleName)
+                        Role role = roleRepository.findByName(roleName)
                                 .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleName));
                         existingUser.setRole(role);
                     }
@@ -195,8 +190,8 @@ public class UserService {
                             existingUser.setAvailabilities(new java.util.ArrayList<>());
 
                         existingUser.getAvailabilities().clear();
-                        for (WorkerAvailabilityDto dto : userDto.getAvailabilities()) {
-                            WorkerAvailability av = WorkerAvailability.builder()
+                        for (UserAvailabilityDto dto : userDto.getAvailabilities()) {
+                            UserAvailability av = UserAvailability.builder()
                                     .dayOfWeek(dto.getDayOfWeek())
                                     .startTime(dto.getStartTime())
                                     .endTime(dto.getEndTime())

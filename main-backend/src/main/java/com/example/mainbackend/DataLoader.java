@@ -94,15 +94,15 @@ public class DataLoader implements CommandLineRunner {
 
     @Transactional
     public void seedRoles() {
-        if (roleRepository.findByRoleName(RoleType.ADMIN.name()).isEmpty()) {
+        if (roleRepository.findByName(RoleType.ADMIN.name()).isEmpty()) {
             roleRepository.save(new Role(null, RoleType.ADMIN.name()));
             log.info("Seeded role: ADMIN");
         }
-        if (roleRepository.findByRoleName(RoleType.MANAGER.name()).isEmpty()) {
+        if (roleRepository.findByName(RoleType.MANAGER.name()).isEmpty()) {
             roleRepository.save(new Role(null, RoleType.MANAGER.name()));
             log.info("Seeded role: MANAGER");
         }
-        if (roleRepository.findByRoleName(RoleType.WORKER.name()).isEmpty()) {
+        if (roleRepository.findByName(RoleType.WORKER.name()).isEmpty()) {
             roleRepository.save(new Role(null, RoleType.WORKER.name()));
             log.info("Seeded role: WORKER");
         }
@@ -193,9 +193,9 @@ public class DataLoader implements CommandLineRunner {
     // ---
     @Transactional
     public void seedUsers() {
-        Role adminRole  = roleRepository.findByRoleName(RoleType.ADMIN.name()).orElseThrow();
-        Role managerRole = roleRepository.findByRoleName(RoleType.MANAGER.name()).orElseThrow();
-        Role workerRole = roleRepository.findByRoleName(RoleType.WORKER.name()).orElseThrow();
+        Role adminRole  = roleRepository.findByName(RoleType.ADMIN.name()).orElseThrow();
+        Role managerRole = roleRepository.findByName(RoleType.MANAGER.name()).orElseThrow();
+        Role workerRole = roleRepository.findByName(RoleType.WORKER.name()).orElseThrow();
         Department generalDepartment = departmentRepository.findByName("General").orElseThrow();
         Skill softwareEngineer = skillRepository.findByName("Software Engineer").orElseThrow();
         Skill qaEngineer = skillRepository.findByName("QA Engineer").orElseThrow();
@@ -709,7 +709,7 @@ public class DataLoader implements CommandLineRunner {
     private void saveVacation(String nationalId, LocalDate start, LocalDate end, VacationStatus status) {
         userRepository.findByNationalId(nationalId).ifPresent(user -> {
             vacationRepository.save(Vacation.builder()
-                    .worker(user).startDate(start).endDate(end).status(status).build());
+                    .user(user).startDate(start).endDate(end).status(status).build());
             log.info("Seeded {} vacation for {} ({} - {})", status.getName(), nationalId, start, end);
         });
     }
@@ -738,7 +738,7 @@ public class DataLoader implements CommandLineRunner {
             t.setStatus(locked);
             taskRepository.save(t);
             settlementRepository.save(Settlement.builder()
-                    .task(t).worker(john).status(pending)
+                    .task(t).user(john).status(pending)
                     .settlementDate(LocalDateTime.now()).build());
             log.info("Seeded PENDING settlement: '{}' - {}", t.getTitle(), john.getFirstName());
         });
@@ -749,7 +749,7 @@ public class DataLoader implements CommandLineRunner {
             t.setStatus(closed);
             taskRepository.save(t);
             settlementRepository.save(Settlement.builder()
-                    .task(t).worker(carol).status(completed)
+                    .task(t).user(carol).status(completed)
                     .settlementDate(LocalDateTime.now().minusDays(2))
                     .completionDate(LocalDateTime.now().minusDays(1)).build());
             log.info("Seeded COMPLETED settlement: '{}' - {}", t.getTitle(), carol.getFirstName());
@@ -762,7 +762,7 @@ public class DataLoader implements CommandLineRunner {
     // ---
     private void upsertUser(String nationalId, String firstName, String lastName,
                              String email, int maxTasks, Role role,
-                             List<WorkerAvailability> availabilityTemplates, Department department, Set<Skill> skills) {
+                             List<UserAvailability> availabilityTemplates, Department department, Set<Skill> skills) {
         User user = userRepository.findByNationalId(nationalId).orElseGet(() -> {
             User u = new User();
             u.setNationalId(nationalId);
@@ -781,19 +781,19 @@ public class DataLoader implements CommandLineRunner {
 
         // Replace availability windows
         user.getAvailabilities().clear();
-        for (WorkerAvailability av : availabilityTemplates) {
+        for (UserAvailability av : availabilityTemplates) {
             av.setUser(user);
             user.getAvailabilities().add(av);
         }
         userRepository.save(user);
     }
 
-    private static List<WorkerAvailability> shifts(WorkerAvailability... items) {
+    private static List<UserAvailability> shifts(UserAvailability... items) {
         return List.of(items);
     }
 
-    private static WorkerAvailability shift(DayOfWeek day, String start, String end) {
-        return WorkerAvailability.builder()
+    private static UserAvailability shift(DayOfWeek day, String start, String end) {
+        return UserAvailability.builder()
                 .dayOfWeek(day)
                 .startTime(LocalTime.parse(start))
                 .endTime(LocalTime.parse(end))

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { userApi, departmentApi, skillApi } from '../api';
 import type { User, Department, Skill } from '../types';
 import UserModal from '../components/UserModal';
-import { Search, Pencil, Trash2, Plus, Users as UsersIcon, Plane, CalendarDays } from 'lucide-react';
+import { Search, Pencil, Trash2, Users as UsersIcon, Plane, CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './Users.css';
 
@@ -115,7 +115,7 @@ const Users: React.FC = () => {
             <h1>Users Management</h1>
           </div>
           <button className="btn-add-primary" onClick={() => handleOpenModal()}>
-            <Plus size={18} /> Add New User
+             Add New User
           </button>
         </div>
 
@@ -134,7 +134,7 @@ const Users: React.FC = () => {
             <option value="">All Roles</option>
             <option value="ADMIN">Admin</option>
             <option value="MANAGER">Manager</option>
-            <option value="WORKER">Worker</option>
+            <option value="WORKER">User</option>
           </select>
           <select className="modern-input" style={{ flex: '0 0 150px' }} value={departmentFilter} onChange={e => setDepartmentFilter(e.target.value)}>
             <option value="">All Departments</option>
@@ -203,10 +203,10 @@ const Users: React.FC = () => {
                         <button className="btn-icon edit-btn" onClick={() => handleOpenModal(u)} title="Edit User">
                           <Pencil size={16} />
                         </button>
-                        <button className="btn-icon vacation-btn" onClick={() => navigate(`/vacations?workerId=${u.id}`, { state: { filterWorkerName: `${u.firstName} ${u.lastName}` } })} title="Manage Vacations">
+                        <button className="btn-icon vacation-btn" onClick={() => navigate(`/vacations?userId=${u.id}`, { state: { filterUserName: `${u.firstName} ${u.lastName}` } })} title="Manage Vacations">
                           <Plane size={16} />
                         </button>
-                        <button className="btn-icon settlement-btn" onClick={() => navigate(`/settlements?workerId=${u.id}`, { state: { filterWorkerName: `${u.firstName} ${u.lastName}` } })} title="View Schedule">
+                        <button className="btn-icon settlement-btn" onClick={() => navigate(`/settlements?userId=${u.id}`, { state: { filterUserName: `${u.firstName} ${u.lastName}` } })} title="View Schedule">
                           <CalendarDays size={16} />
                         </button>
                         <button className="btn-icon delete-btn" onClick={() => handleDelete(u.nationalId)} title="Delete User">

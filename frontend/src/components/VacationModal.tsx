@@ -9,22 +9,22 @@ import './VacationModal.css'
 interface VacationModalProps {
     vacation: Vacation | null
     isAdmin: boolean
-    workers: User[]
+    users: User[]
     onSubmit: (data: any) => void
     onClose: () => void
 }
 
-const VacationModal = ({ vacation, isAdmin, workers, onSubmit, onClose }: VacationModalProps) => {
-    const [workerId, setWorkerId] = useState<number | ''>(vacation?.workerId || '')
+const VacationModal = ({ vacation, isAdmin, users, onSubmit, onClose }: VacationModalProps) => {
+    const [userId, setUserId] = useState<number | ''>(vacation?.userId || '')
     const [startDate, setStartDate] = useState<Date | null>(vacation ? new Date(vacation.startDate) : null)
     const [endDate, setEndDate] = useState<Date | null>(vacation ? new Date(vacation.endDate) : null)
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        if (!startDate || !endDate || (isAdmin && !workerId)) return
+        if (!startDate || !endDate || (isAdmin && !userId)) return
 
         onSubmit({
-            workerId: Number(workerId),
+            userId: Number(userId),
             startDate: format(startDate, 'yyyy-MM-dd'),
             endDate: format(endDate, 'yyyy-MM-dd'),
             status: vacation?.statusName || 'PENDING'
@@ -48,12 +48,12 @@ const VacationModal = ({ vacation, isAdmin, workers, onSubmit, onClose }: Vacati
                                 <label>Select Employee *</label>
                                 <select
                                     className="modern-input"
-                                    value={workerId}
-                                    onChange={e => setWorkerId(Number(e.target.value))}
+                                    value={userId}
+                                    onChange={e => setUserId(Number(e.target.value))}
                                     required
                                 >
-                                    <option value="">-- Select Worker --</option>
-                                    {workers.map(w => (
+                                    <option value="">-- Select User --</option>
+                                    {users.map(w => (
                                         <option key={w.id} value={w.id}>{w.firstName} {w.lastName}</option>
                                     ))}
                                 </select>
@@ -68,9 +68,8 @@ const VacationModal = ({ vacation, isAdmin, workers, onSubmit, onClose }: Vacati
                                     selected={startDate}
                                     onChange={(date: Date | null) => {
                                         setStartDate(date)
-                                        if (date && endDate && date > endDate) {
+                                        if (date && endDate && date > endDate)
                                             setEndDate(null)
-                                        }
                                     }}
                                     dateFormat="yyyy-MM-dd"
                                     portalId="root-portal"

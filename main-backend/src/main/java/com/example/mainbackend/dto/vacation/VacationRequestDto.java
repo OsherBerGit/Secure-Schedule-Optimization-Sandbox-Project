@@ -16,8 +16,8 @@ import java.time.LocalDate;
 @Builder
 public class VacationRequestDto {
 
-    @NotNull(message = "Worker ID is required")
-    private Long workerId;
+    @NotNull(message = "User ID is required")
+    private Long userId;
 
     @NotNull(message = "Start date is required")
     @FutureOrPresent(message = "Start date must be in the future")

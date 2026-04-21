@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Skill } from '../types'
 import { skillApi } from '../api'
-import { Lightbulb, Plus, Pencil, Trash2, X, Check, Search } from 'lucide-react'
+import { Lightbulb, Pencil, Trash2, X, Check, Search } from 'lucide-react'
 import './Skills.css'
 
 const Skills = () => {
@@ -9,10 +9,8 @@ const Skills = () => {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [newName, setNewName] = useState('')
-    const [newDesc, setNewDesc] = useState('')
     const [editId, setEditId] = useState<number | null>(null)
     const [editName, setEditName] = useState('')
-    const [editDesc, setEditDesc] = useState('')
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
 
@@ -38,9 +36,8 @@ const Skills = () => {
             return
         }
         try {
-            await skillApi.create(newName.trim(), newDesc.trim() || undefined)
+            await skillApi.create(newName.trim())
             setNewName('')
-            setNewDesc('')
             setIsModalOpen(false)
             setError(null)
             await fetchAll()
@@ -52,7 +49,7 @@ const Skills = () => {
     async function handleUpdate(id: number) {
         if (!editName.trim()) return
         try {
-            await skillApi.update(id, editName.trim(), editDesc.trim() || undefined)
+            await skillApi.update(id, editName.trim())
             setEditId(null)
             await fetchAll()
         } catch (err: any) {
@@ -72,10 +69,7 @@ const Skills = () => {
 
     const filteredItems = useMemo(() => {
         if (!searchQuery.trim()) return items
-        return items.filter(s =>
-            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            s.description?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        return items.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
     }, [items, searchQuery])
 
     return (
@@ -86,7 +80,7 @@ const Skills = () => {
                     <h1>Skills Management</h1>
                 </div>
                 <button className="btn-add-primary" onClick={() => setIsModalOpen(true)}>
-                    <Plus size={18} /> Add Skill
+                     Add Skill
                 </button>
             </div>
 
@@ -96,7 +90,7 @@ const Skills = () => {
                     <input
                         type="text"
                         className="modern-input search-input"
-                        placeholder="Search skills or descriptions..."
+                        placeholder="Search skills..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -116,7 +110,6 @@ const Skills = () => {
                         <tr>
                             <th className="th-id">ID</th>
                             <th className="th-name">Skill Name</th>
-                            <th className="th-desc">Description</th>
                             <th className="th-actions">Actions</th>
                         </tr>
                         </thead>
@@ -136,17 +129,6 @@ const Skills = () => {
                                         <span className="static-name">{item.name}</span>
                                     )}
                                 </td>
-                                <td className="desc-cell">
-                                    {editId === item.id ? (
-                                        <input
-                                            className="inline-edit-input"
-                                            value={editDesc}
-                                            onChange={e => setEditDesc(e.target.value)}
-                                        />
-                                    ) : (
-                                        <span className="static-desc">{item.description ?? '-'}</span>
-                                    )}
-                                </td>
                                 <td className="actions-cell">
                                     <div className="actions-container">
                                         {editId === item.id ? (
@@ -163,7 +145,6 @@ const Skills = () => {
                                                 <button className="btn-icon edit-btn" onClick={() => {
                                                     setEditId(item.id)
                                                     setEditName(item.name)
-                                                    setEditDesc(item.description ?? '')
                                                 }}>
                                                     <Pencil size={16} />
                                                 </button>
@@ -202,16 +183,6 @@ const Skills = () => {
                                         onChange={e => setNewName(e.target.value)}
                                         required
                                         autoFocus
-                                    />
-                                </div>
-                                <div className="modern-form-group" style={{ marginTop: '1.5rem' }}>
-                                    <label>Description</label>
-                                    <input
-                                        type="text"
-                                        className="modern-input"
-                                        placeholder="Short description of the skill"
-                                        value={newDesc}
-                                        onChange={e => setNewDesc(e.target.value)}
                                     />
                                 </div>
                             </div>

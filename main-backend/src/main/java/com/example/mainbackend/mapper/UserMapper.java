@@ -5,7 +5,7 @@ import com.example.mainbackend.algorithm.dto.AlgoVacationRequest;
 import com.example.mainbackend.constants.VacationStatusLevel;
 import com.example.mainbackend.dto.user.CreateUserRequest;
 import com.example.mainbackend.dto.user.UserDto;
-import com.example.mainbackend.dto.user.WorkerAvailabilityDto;
+import com.example.mainbackend.dto.user.UserAvailabilityDto;
 import com.example.mainbackend.dto.skill.SkillDto;
 import com.example.mainbackend.entity.Skill;
 import com.example.mainbackend.entity.User;
@@ -28,12 +28,10 @@ public class UserMapper {
                 .lastName(user.getLastName())
                 .email(user.getEmail())
                 .phoneNumber(user.getPhoneNumber())
-                .salary(user.getSalary())
-                .address(user.getAddress())
                 .maxTasks(user.getMaxTasks())
                 .availabilities(user.getAvailabilities() != null
                         ? user.getAvailabilities().stream()
-                                .map(a -> WorkerAvailabilityDto.builder()
+                                .map(a -> UserAvailabilityDto.builder()
                                         .id(a.getId())
                                         .dayOfWeek(a.getDayOfWeek())
                                         .startTime(a.getStartTime())
@@ -42,13 +40,12 @@ public class UserMapper {
                                 .collect(Collectors.toList())
                         : Collections.emptyList())
                 .departmentName(user.getDepartment() != null ? user.getDepartment().getName() : null)
-                .role(user.getRole() != null ? user.getRole().getRoleName() : null)
+                .role(user.getRole() != null ? user.getRole().getName() : null)
                 .skills(user.getSkills() != null
                         ? user.getSkills().stream()
                                 .map(s -> SkillDto.builder()
                                         .id(s.getId())
                                         .name(s.getName())
-                                        .description(s.getDescription())
                                         .build())
                                 .collect(Collectors.toSet())
                         : Collections.emptySet())
@@ -68,8 +65,6 @@ public class UserMapper {
                 .lastName(request.getLastName())
                 .email(request.getEmail())
                 .phoneNumber(request.getPhoneNumber())
-                .salary(request.getSalary())
-                .address(request.getAddress())
                 .maxTasks(request.getMaxTasks())
                 .build();
     }
@@ -89,9 +84,9 @@ public class UserMapper {
                         .collect(Collectors.toList())
                 : Collections.emptyList();
 
-        List<WorkerAvailabilityDto> availabilities = user.getAvailabilities() != null
+        List<UserAvailabilityDto> availabilities = user.getAvailabilities() != null
                 ? user.getAvailabilities().stream()
-                        .map(a -> WorkerAvailabilityDto.builder()
+                        .map(a -> UserAvailabilityDto.builder()
                                 .id(a.getId())
                                 .dayOfWeek(a.getDayOfWeek())
                                 .startTime(a.getStartTime())

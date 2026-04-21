@@ -3,6 +3,7 @@ package com.example.mainbackend.mapper;
 import com.example.mainbackend.algorithm.dto.AlgoConstraintRequest;
 import com.example.mainbackend.algorithm.dto.AlgoTaskRequest;
 import com.example.mainbackend.algorithm.dto.ConstraintType;
+import com.example.mainbackend.dto.skill.SkillDto;
 import com.example.mainbackend.dto.task.TaskResponseDto;
 import com.example.mainbackend.entity.Task;
 import com.example.mainbackend.entity.TaskConstraint;
@@ -36,10 +37,9 @@ public class TaskMapper {
                         task.getRequiredSkills().stream().map(com.example.mainbackend.entity.Skill::getId).collect(Collectors.toSet()) : null)
                 .requiredSkills(task.getRequiredSkills() != null ? 
                         task.getRequiredSkills().stream().map(s -> 
-                            com.example.mainbackend.dto.skill.SkillDto.builder()
+                            SkillDto.builder()
                                 .id(s.getId())
                                 .name(s.getName())
-                                .description(s.getDescription())
                                 .build()
                         ).collect(Collectors.toSet()) : null)
                 .build();

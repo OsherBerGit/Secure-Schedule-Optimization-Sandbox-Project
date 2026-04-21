@@ -81,7 +81,7 @@ const Departments = () => {
                     <h1>Departments Management</h1>
                 </div>
                 <button className="btn-add-primary" onClick={() => setIsModalOpen(true)}>
-                    <Plus size={18} /> Add Department
+                    Add Department
                 </button>
             </div>
 

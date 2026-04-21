@@ -3,7 +3,7 @@ import { taskApi, departmentApi, skillApi, statusApi, priorityApi } from '../api
 import type { Task, Department, Skill, Status, Priority } from '../types';
 import TaskModal from '../components/TaskModal';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Pencil, Trash2, ShieldAlert, ClipboardList } from 'lucide-react';
+import { Search, Pencil, Trash2, ShieldAlert, ClipboardList } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import './Tasks.css';
 
@@ -93,11 +93,10 @@ const Tasks: React.FC = () => {
 
     const handleTaskSubmit = async (taskData: import('../types').CreateTaskRequest | import('../types').UpdateTaskRequest) => {
         try {
-            if (selectedTask?.id) {
+            if (selectedTask?.id)
                 await taskApi.update(selectedTask.id, taskData as import('../types').UpdateTaskRequest);
-            } else {
+            else
                 await taskApi.create(taskData as import('../types').CreateTaskRequest);
-            }
             fetchTasks();
             handleModalClose();
         } catch (err: any) {
@@ -125,7 +124,7 @@ const Tasks: React.FC = () => {
                 </div>
                 {canManage && (
                     <button className="btn-add-primary" onClick={() => handleOpenModal()}>
-                        <Plus size={18} /> Add New Task
+                         Add New Task
                     </button>
                 )}
             </div>

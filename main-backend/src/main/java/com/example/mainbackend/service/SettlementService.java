@@ -1,5 +1,6 @@
 package com.example.mainbackend.service;
 
+import com.example.mainbackend.constants.RoleType;
 import com.example.mainbackend.constants.SettlementStatusLevel;
 import com.example.mainbackend.constants.TaskStatusLevel;
 import com.example.mainbackend.dto.settlement.SettlementCreateRequest;
@@ -26,7 +27,7 @@ import java.util.List;
 
 /**
  * Service for managing settlements (final schedule assignments).
- * A settlement represents the assignment of a worker to a task with dates.
+ * A settlement represents the assignment of a user to a task with dates.
  */
 @Service
 @RequiredArgsConstructor
@@ -42,12 +43,12 @@ public class SettlementService {
 
     @Transactional
     public SettlementResponseDto createSettlement(SettlementCreateRequest request) {
-        // Validate that both task and worker exist
+        // Validate that both task and user exist
         Task task = taskRepository.findById(request.getTaskId())
                 .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + request.getTaskId()));
 
-        User worker = userRepository.findById(request.getWorkerId())
-                .orElseThrow(() -> new IllegalArgumentException("Worker not found with ID: " + request.getWorkerId()));
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + request.getUserId()));
 
         // Resolve settlement status — default to PENDING
         SettlementStatus status;
@@ -60,7 +61,7 @@ public class SettlementService {
 
         Settlement settlement = Settlement.builder()
                 .task(task)
-                .worker(worker)
+                .user(user)
                 .status(status)
                 .settlementDate(request.getSettlementDate())
                 .completionDate(request.getCompletionDate())
@@ -92,18 +93,18 @@ public class SettlementService {
     }
 
     @Transactional(readOnly = true)
-    public List<SettlementResponseDto> getSettlementsByWorker(Long workerId) {
-        if (!userRepository.existsById(workerId))
-            throw new IllegalArgumentException("Worker not found with ID: " + workerId);
+    public List<SettlementResponseDto> getSettlementsByUser(Long userId) {
+        if (!userRepository.existsById(userId))
+            throw new IllegalArgumentException("User not found with ID: " + userId);
 
-        return settlementRepository.findByWorkerId(workerId).stream()
+        return settlementRepository.findByUserId(userId).stream()
                 .map(mapper::toDto)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<SettlementResponseDto> getMySettlements(String nationalId) {
-        return settlementRepository.findByWorker_NationalId(nationalId).stream()
+        return settlementRepository.findByUser_NationalId(nationalId).stream()
                 .map(mapper::toDto)
                 .toList();
     }
@@ -115,9 +116,9 @@ public class SettlementService {
 
         boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
                 .getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                .anyMatch(a -> a.getAuthority().equals("ROLE_" + RoleType.ADMIN.name()));
 
-        if (!isAdmin && !settlement.getWorker().getNationalId().equals(nationalId))
+        if (!isAdmin && !settlement.getUser().getNationalId().equals(nationalId))
             throw new SecurityException("Access denied: this settlement does not belong to you");
 
         SettlementStatus completed = settlementStatusRepository.findByName(SettlementStatusLevel.COMPLETED.name())
@@ -126,8 +127,6 @@ public class SettlementService {
         settlement.setStatus(completed);
         settlement.setCompletionDate(LocalDateTime.now());
         settlementRepository.save(settlement);
-
-        log.info("Settlement [{}] marked COMPLETED by '{}' (admin={})", id, nationalId, isAdmin);
 
         // If every settlement for this task is now COMPLETED, close the task lifecycle
         Task task = settlement.getTask();
@@ -138,7 +137,6 @@ public class SettlementService {
                     .orElseThrow(() -> new IllegalStateException("CLOSED status not seeded in task_statuses"));
             task.setStatus(closed);
             taskRepository.save(task);
-            log.info("Task [{}] '{}' transitioned to CLOSED — all settlements completed", task.getId(), task.getTitle());
         }
 
         return mapper.toDto(settlement);

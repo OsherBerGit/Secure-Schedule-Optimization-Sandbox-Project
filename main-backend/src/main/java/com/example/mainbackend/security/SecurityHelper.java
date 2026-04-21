@@ -128,8 +128,8 @@ public class SecurityHelper {
     public boolean canViewTask(Long taskId) {
         if (canManageTask(taskId)) return true; // If you can manage it, you can view it
         if (isWorker()) {
-            Long currentUserId = getCurrentUser().getId();
-            return settlementRepository.existsByTask_IdAndWorker_Id(taskId, currentUserId);
+            Long currentUserId =getCurrentUser().getId();
+            return settlementRepository.existsByTask_IdAndUser_Id(taskId, currentUserId);
         }
         return false;
     }
@@ -148,7 +148,7 @@ public class SecurityHelper {
 
         if (isManager())
             return vacationRepository.findById(vacationId)
-                    .map(vacation -> vacation.getWorker().getDepartment().getId().equals(getCurrentUserDepartmentId()))
+                    .map(vacation -> vacation.getUser().getDepartment().getId().equals(getCurrentUserDepartmentId()))
                     .orElse(false);
 
         return false;
@@ -163,7 +163,7 @@ public class SecurityHelper {
 
         // If it's a regular worker, check if it's their own vacation
         return vacationRepository.findById(vacationId)
-                .map(vacation -> vacation.getWorker().getId().equals(getCurrentUser().getId()))
+                .map(vacation -> vacation.getUser().getId().equals(getCurrentUser().getId()))
                 .orElse(false);
     }
 
@@ -196,7 +196,7 @@ public class SecurityHelper {
 
         if (isWorker())
             return settlementRepository.findById(settlementId)
-                    .map(settlement -> settlement.getWorker().getId().equals(getCurrentUser().getId()))
+                    .map(settlement -> settlement.getUser().getId().equals(getCurrentUser().getId()))
                     .orElse(false);
 
         return false;

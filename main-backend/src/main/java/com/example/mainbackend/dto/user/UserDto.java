@@ -22,11 +22,9 @@ public class UserDto {
     private String email;
     private String phoneNumber;
 
-    private Double salary;
-    private String address;
     private Integer maxTasks;
 
-    private List<WorkerAvailabilityDto> availabilities;
+    private List<UserAvailabilityDto> availabilities;
 
     private String departmentName;
 

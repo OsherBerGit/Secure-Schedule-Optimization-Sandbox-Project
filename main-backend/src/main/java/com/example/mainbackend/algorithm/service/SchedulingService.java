@@ -106,7 +106,7 @@ public class SchedulingService {
         Map<Long, SaveScheduleRequest.TaskAssignmentDto> batchAssignments = saveRequest.getAssignments().stream()
                 .collect(Collectors.toMap(SaveScheduleRequest.TaskAssignmentDto::getTaskId, a -> a, (a, b) -> a));
 
-        Map<Long, List<LocalDateTime[]>> workerIntervals = new java.util.HashMap<>();
+        Map<Long, List<LocalDateTime[]>> userIntervals = new java.util.HashMap<>();
         List<String> validationErrors = new ArrayList<>();
         List<Task> tasksToSave = new ArrayList<>();
         List<Settlement> settlementsToSave = new ArrayList<>();
@@ -131,7 +131,7 @@ public class SchedulingService {
                 continue;
             }
 
-            currentAssignmentErrors.addAll(validateWorkerOverlap(user.getId(), assignment, workerIntervals, user));
+            currentAssignmentErrors.addAll(validateUserOverlap(user.getId(), assignment, userIntervals, user));
             if (!currentAssignmentErrors.isEmpty()) {
                 validationErrors.addAll(currentAssignmentErrors);
                 continue;
@@ -231,13 +231,12 @@ public class SchedulingService {
         return errors;
     }
 
-    private List<String> validateWorkerOverlap(Long userId, SaveScheduleRequest.TaskAssignmentDto assignment, Map<Long, List<LocalDateTime[]>> workerIntervals, User user) {
+    private List<String> validateUserOverlap(Long userId, SaveScheduleRequest.TaskAssignmentDto assignment, Map<Long, List<LocalDateTime[]>> userIntervals, User user) {
         List<String> errors = new ArrayList<>();
-        List<LocalDateTime[]> intervals = workerIntervals.computeIfAbsent(userId, k -> new ArrayList<>());
+        List<LocalDateTime[]> intervals = userIntervals.computeIfAbsent(userId, k -> new ArrayList<>());
 
         boolean overlaps = intervals.stream().anyMatch(interval ->
-                (assignment.getScheduledStart().isBefore(interval[1]) && assignment.getScheduledEnd().isAfter(interval[0]))
-        );
+                (assignment.getScheduledStart().isBefore(interval[1]) && assignment.getScheduledEnd().isAfter(interval[0])));
 
         if (overlaps)
             errors.add(String.format("Schedule overlap: User '%s' already has assignments during [%s - %s].", user.getEmail(), assignment.getScheduledStart(), assignment.getScheduledEnd()));
@@ -256,19 +255,19 @@ public class SchedulingService {
         tasksToSave.add(task);
 
         boolean alreadySettled = existingSettlementsMap.getOrDefault(task.getId(), Collections.emptyList()).stream()
-                .anyMatch(s -> s.getWorker() != null && s.getWorker().getId().equals(user.getId()));
+                .anyMatch(s -> s.getUser() != null && s.getUser().getId().equals(user.getId()));
 
         if (!alreadySettled)
             settlementsToSave.add(Settlement.builder()
                     .task(task)
-                    .worker(user)
+                    .user(user)
                     .status(assignedStatus)
                     .settlementDate(LocalDateTime.now())
                     .build());
     }
 
     private AlgoScheduleRequest buildRequest(String strategy, SchedulingConfigurationDto config, User currentUser, Long departmentId) {
-        String roleName = currentUser.getRole().getRoleName();
+        String roleName = currentUser.getRole().getName();
         boolean isAdmin   = RoleType.ADMIN.name().equals(roleName);
         boolean isManager = RoleType.MANAGER.name().equals(roleName);
 
@@ -305,9 +304,9 @@ public class SchedulingService {
         if (users.isEmpty()) return Collections.emptyList();
 
         List<String> activeStatuses = List.of(SettlementStatusLevel.ASSIGNED.name(), SettlementStatusLevel.IN_PROGRESS.name());
-        List<Long> workerIds = users.stream().map(User::getId).collect(Collectors.toList());
+        List<Long> userIds = users.stream().map(User::getId).collect(Collectors.toList());
 
-        Map<Long, Long> activeCountMap = settlementRepository.countActiveSettlementsByWorkerIds(workerIds, activeStatuses).stream()
+        Map<Long, Long> activeCountMap = settlementRepository.countActiveSettlementsUserIds(userIds, activeStatuses).stream()
                 .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
 
         return users.stream()
@@ -321,8 +320,8 @@ public class SchedulingService {
 
     private List<AlgoTaskRequest> buildTaskRequests(Long departmentId) {
         List<Task> tasksWithRoles = (departmentId == null)
-                ? taskRepository.findOpenTasksWithRoles(TaskStatusLevel.OPEN.name())
-                : taskRepository.findOpenTasksWithRolesByDepartment(TaskStatusLevel.OPEN.name(), departmentId);
+                ? taskRepository.findOpenTasksWithSkills(TaskStatusLevel.OPEN.name())
+                : taskRepository.findOpenTasksWithSkillsByDepartment(TaskStatusLevel.OPEN.name(), departmentId);
 
         List<Task> tasksWithConstraints = (departmentId == null)
                 ? taskRepository.findOpenTasksWithConstraints(TaskStatusLevel.OPEN.name())
@@ -374,7 +373,7 @@ public class SchedulingService {
             User user = userCache.get(assignment.getAssignedUserId());
             if (user != null) {
                 String fullName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " + (user.getLastName() != null ? user.getLastName() : "")).trim();
-                assignment.setAssignedUserFullName(fullName.isEmpty() ? "Worker #" + user.getId() : fullName);            }
+                assignment.setAssignedUserFullName(fullName.isEmpty() ? "User #" + user.getId() : fullName);            }
         }
 
         if (response.getUnscheduledTasks() != null) {

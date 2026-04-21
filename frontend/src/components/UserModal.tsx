@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { departmentApi, skillApi } from '../api';
-import type { User, Department, Skill, WorkerAvailability, CreateUserRequest, UpdateUserRequest } from '../types';
+import type { User, Department, Skill, UserAvailability, CreateUserRequest, UpdateUserRequest } from '../types';
 import { X, User as UserIcon, Trash2 } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -37,7 +37,7 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
     const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>(user?.skills?.map(s => s.id) ?? [])
     const [maxTasks, setMaxTasks] = useState<number | ''>(user?.maxTasks ?? 5)
 
-    const toRows = (avs: WorkerAvailability[]): AvailRow[] =>
+    const toRows = (avs: UserAvailability[]): AvailRow[] =>
         avs.map(a => ({
             id: a.id,
             dayOfWeek: a.dayOfWeek as DayOfWeek,
@@ -134,7 +134,7 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
             }
         }
 
-        const availabilities: WorkerAvailability[] = availRows.map(r => ({
+        const availabilities: UserAvailability[] = availRows.map(r => ({
             id: r.id,
             dayOfWeek: r.dayOfWeek,
             startTime: r.startTime.length === 5 ? r.startTime + ':00' : r.startTime,
@@ -332,7 +332,7 @@ const UserModal = ({ user, onSubmit, onClose }: UserModalProps) => {
 
                             <div className="availability-section" style={{ gridColumn: '1 / -1', marginTop: '0.5rem' }}>
                                 <div className="availability-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700' }}>Worker Availability</h3>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700' }}>User Availability</h3>
                                     <button type="button" className="availability-btn" onClick={handleAddAvail} style={{ padding: '0.5rem 1rem', background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '0.5rem', fontWeight: '600', cursor: 'pointer' }}>+ Add Shift</button>
                                 </div>
 

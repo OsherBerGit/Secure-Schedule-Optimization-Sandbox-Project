@@ -4,7 +4,7 @@ import { taskConstraintApi, constraintTypeApi, taskApi, departmentApi } from '..
 import { useAuth } from '../context/useAuth'
 import TaskConstraintModal from '../components/TaskConstraintModal'
 import TaskGraph from '../components/TaskGraph'
-import { GitMerge, Plus, Search, Trash2, List, Network } from 'lucide-react'
+import { GitMerge, Search, Trash2, List, Network } from 'lucide-react'
 import './TaskConstraints.css'
 
 type ViewMode = 'table' | 'graph'
@@ -142,7 +142,7 @@ const TaskConstraints = () => {
 
                     {canManage && (
                         <button className="btn-add-primary" onClick={() => setShowModal(true)}>
-                            <Plus size={18} /> Add Constraint
+                             Add Constraint
                         </button>
                     )}
                 </div>

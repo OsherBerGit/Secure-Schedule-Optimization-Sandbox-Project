@@ -18,7 +18,7 @@ public class CreateUserRequest {
 
     @NotBlank(message = "National ID is required")
     @Size(min = 1, max = 20, message = "National ID must be between 1 and 20 characters")
-    private String nationalId; // Israeli National ID (Teudat Zehut)
+    private String nationalId;
 
     @NotBlank(message = "Password is required")
     @Size(min = 6, max = 100, message = "Password must be between 6 and 100 characters")
@@ -38,15 +38,9 @@ public class CreateUserRequest {
     @Size(max = 20, message = "Phone number cannot exceed 20 characters")
     private String phoneNumber;
 
-    @PositiveOrZero(message = "Salary must be zero or positive")
-    private Double salary;
-
-    @Size(max = 255, message = "Address cannot exceed 255 characters")
-    private String address;
-
-    /** Weekly availability windows (shifts) for this worker. Optional at creation time. */
+    /** Weekly availability windows (shifts) for this user. Optional at creation time. */
     @Valid
-    private List<WorkerAvailabilityDto> availabilities;
+    private List<UserAvailabilityDto> availabilities;
 
     /**
      * Role to assign to the new user: ADMIN, MANAGER or WORKER.

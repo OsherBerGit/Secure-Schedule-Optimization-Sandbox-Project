@@ -23,7 +23,7 @@ public class SettlementController {
     private final SettlementService settlementService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('MANAGER') and @securityHelper.canManageTask(#request.taskId) and @securityHelper.canManageUser(#request.workerId))")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MANAGER') and @securityHelper.canManageTask(#request.taskId) and @securityHelper.canManageUser(#request.userId))")
     public ResponseEntity<SettlementResponseDto> createSettlement(
             @Valid @RequestBody SettlementCreateRequest request) {
         SettlementResponseDto response = settlementService.createSettlement(request);
@@ -44,14 +44,14 @@ public class SettlementController {
         return ResponseEntity.ok(settlements);
     }
 
-    @GetMapping("/worker/{workerId}")
-    @PreAuthorize("@securityHelper.canManageUser(#workerId)")
-    public ResponseEntity<List<SettlementResponseDto>> getSettlementsByWorker(@PathVariable Long workerId) {
-        List<SettlementResponseDto> settlements = settlementService.getSettlementsByWorker(workerId);
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("@securityHelper.canManageUser(#userId)")
+    public ResponseEntity<List<SettlementResponseDto>> getSettlementsByUser(@PathVariable Long userId) {
+        List<SettlementResponseDto> settlements = settlementService.getSettlementsByUser(userId);
         return ResponseEntity.ok(settlements);
     }
 
-    @GetMapping("/worker/me")
+    @GetMapping("/user/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SettlementResponseDto>> getMySettlements(Authentication authentication) {
         String nationalId = authentication.getName();

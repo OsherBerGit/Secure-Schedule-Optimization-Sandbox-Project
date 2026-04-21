@@ -24,19 +24,11 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     // ADMIN scope (all departments)
 
-    /**
-     * Fetches ALL OPEN tasks with their requiredRoles eagerly loaded.
-     * Used by SchedulingService (ADMIN scope).
-     */
     @Query("SELECT DISTINCT t FROM Task t " +
            "LEFT JOIN FETCH t.requiredSkills " +
            "WHERE t.status.name = :statusName")
-    List<Task> findOpenTasksWithRoles(@Param("statusName") String statusName);
+    List<Task> findOpenTasksWithSkills(@Param("statusName") String statusName);
 
-    /**
-     * Fetches ALL OPEN tasks with their incomingConstraints eagerly loaded.
-     * Used by SchedulingService (ADMIN scope).
-     */
     @Query("SELECT DISTINCT t FROM Task t " +
            "LEFT JOIN FETCH t.incomingConstraints ic " +
            "LEFT JOIN FETCH ic.predecessorTask " +
@@ -45,21 +37,13 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     // MANAGER scope (single department)
 
-    /**
-     * Fetches OPEN tasks for a specific department with their requiredRoles eagerly loaded.
-     * Used by SchedulingService (MANAGER scope).
-     */
     @Query("SELECT DISTINCT t FROM Task t " +
            "LEFT JOIN FETCH t.requiredSkills " +
            "WHERE t.status.name = :statusName AND t.department.id = :departmentId")
-    List<Task> findOpenTasksWithRolesByDepartment(@Param("statusName") String statusName,
-                                                  @Param("departmentId") Long departmentId);
+    List<Task> findOpenTasksWithSkillsByDepartment(@Param("statusName") String statusName,
+                                                   @Param("departmentId") Long departmentId);
 
-    /**
-     * Fetches OPEN tasks for a specific department with their incomingConstraints eagerly loaded.
-     * Used by SchedulingService (MANAGER scope).
-     */
-    @Query("SELECT DISTINCT t FROM Task t " +
+   @Query("SELECT DISTINCT t FROM Task t " +
            "LEFT JOIN FETCH t.incomingConstraints ic " +
            "LEFT JOIN FETCH ic.predecessorTask " +
            "WHERE t.status.name = :statusName AND t.department.id = :departmentId")

@@ -17,8 +17,8 @@ public class SettlementCreateRequest {
     @NotNull(message = "Task ID is required")
     private Long taskId;
 
-    @NotNull(message = "Worker ID is required")
-    private Long workerId;
+    @NotNull(message = "User ID is required")
+    private Long userId;
 
     @NotNull(message = "Settlement date is required")
     private LocalDateTime settlementDate;

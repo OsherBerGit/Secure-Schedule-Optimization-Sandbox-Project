@@ -24,7 +24,7 @@ public class VacationController {
     private final VacationService vacationService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('MANAGER') and @securityHelper.canManageUser(#request.workerId))")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MANAGER') and @securityHelper.canManageUser(#request.userId))")
     public ResponseEntity<VacationResponseDto> createVacation(
             @Valid @RequestBody VacationCreateRequest request) {
         VacationResponseDto response = vacationService.createVacation(request);
@@ -62,10 +62,10 @@ public class VacationController {
         return ResponseEntity.ok(vacations);
     }
 
-    @GetMapping("/worker/{workerId}")
-    @PreAuthorize("@securityHelper.canManageUser(#workerId)")
-    public ResponseEntity<List<VacationResponseDto>> getVacationsByWorker(@PathVariable Long workerId) {
-        List<VacationResponseDto> vacations = vacationService.getVacationsByWorker(workerId);
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("@securityHelper.canManageUser(#userId)")
+    public ResponseEntity<List<VacationResponseDto>> getVacationsByUser(@PathVariable Long userId) {
+        List<VacationResponseDto> vacations = vacationService.getVacationsByWorker(userId);
         return ResponseEntity.ok(vacations);
     }
 

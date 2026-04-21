@@ -6,6 +6,7 @@ import { useAuth } from '../context/useAuth'
 import SettlementModal from '../components/SettlementModal'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import './Settlements.css'
+import {usePermissions} from "../hooks/usePermissions.ts";
 
 function formatDate(value: string | number[] | null | undefined): string {
     if (!value) return '-'
@@ -20,18 +21,17 @@ function formatDate(value: string | number[] | null | undefined): string {
 const Settlements = () => {
     const { user: currentUser } = useAuth()
     const location = useLocation()
-    const isAdmin = currentUser?.role === 'ADMIN'
-    const canAdd = currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER'
+    const { canAdd, isAdmin } = usePermissions()
 
     const [settlements, setSettlements] = useState<Settlement[]>([])
     const [tasks, setTasks] = useState<Task[]>([])
-    const [workers, setWorkers] = useState<User[]>([])
+    const [users, setUsers] = useState<User[]>([])
     const [statuses, setStatuses] = useState<Status[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [showModal, setShowModal] = useState(false)
 
-    const [filterWorkerName, setFilterWorkerName] = useState<string>('')
+    const [filterUserName, setFilterUserName] = useState<string>('')
     const [filterTaskName, setFilterTaskName] = useState<string>('')
     const [filterStatus, setFilterStatus] = useState<string>('')
 
@@ -46,19 +46,19 @@ const Settlements = () => {
     };
 
     useEffect(() => {
-        if (location.state?.filterWorkerName) {
-            setFilterWorkerName(location.state.filterWorkerName)
+        if (location.state?.filterUserName) {
+            setFilterUserName(location.state.filterUserName)
         }
     }, [location.state])
 
     useEffect(() => {
-        const workerId = searchParams.get('workerId')
-        if (workerId && workers.length > 0) {
-            const user = workers.find(u => u.id === Number(workerId))
+        const userId = searchParams.get('userId')
+        if (userId && users.length > 0) {
+            const user = users.find(u => u.id === Number(userId))
             if (user)
-                setFilterWorkerName(`${user.firstName} ${user.lastName}`)
+                setFilterUserName(`${user.firstName} ${user.lastName}`)
         }
-    }, [searchParams, workers])
+    }, [searchParams, users])
 
     const fetchSettlements = useCallback(async () => {
         setIsLoading(true)
@@ -78,7 +78,7 @@ const Settlements = () => {
     useEffect(() => {
         void fetchSettlements()
         taskApi.getAll().then(res => setTasks(res.data)).catch(() => {})
-        userApi.getByRole('WORKER').then(res => setWorkers(res.data)).catch(() => {})
+        userApi.getByRole('WORKER').then(res => setUsers(res.data)).catch(() => {})
         statusApi.getAll().then(res => setStatuses(res.data)).catch(() => {
             setStatuses([
                 { id: 1, name: 'SCHEDULED' },
@@ -105,12 +105,12 @@ const Settlements = () => {
 
     const displayedSettlements = useMemo(() => {
         return settlements.filter(s => {
-            const matchesWorker = !(isAdmin || currentUser?.role === 'MANAGER') || !filterWorkerName || s.workerName.toLowerCase().includes(filterWorkerName.toLowerCase())
+            const matchesUser = !(isAdmin || currentUser?.role === 'MANAGER') || !filterUserName || s.userName.toLowerCase().includes(filterUserName.toLowerCase())
             const matchesTask = !filterTaskName || (s.taskTitle && s.taskTitle.toLowerCase().includes(filterTaskName.toLowerCase()))
             const matchesStatus = !filterStatus || s.statusName === filterStatus
-            return matchesWorker && matchesTask && matchesStatus
+            return matchesUser && matchesTask && matchesStatus
         })
-    }, [settlements, filterWorkerName, filterTaskName, filterStatus, isAdmin, currentUser?.role])
+    }, [settlements, filterUserName, filterTaskName, filterStatus, isAdmin, currentUser?.role])
 
     return (
         <div className="settlements-page">
@@ -121,7 +121,7 @@ const Settlements = () => {
                 </div>
                 {canAdd && (
                     <button className="btn-add-primary" onClick={() => setShowModal(true)}>
-                        <Plus size={18} /> Add Settlement
+                        Add Settlement
                     </button>
                 )}
             </div>
@@ -133,12 +133,12 @@ const Settlements = () => {
                         <input
                             type="text"
                             className="modern-input search-input"
-                            placeholder="Search by worker name..."
-                            value={filterWorkerName}
+                            placeholder="Search by user name..."
+                            value={filterUserName}
                             onChange={(e) => {
-                                setFilterWorkerName(e.target.value)
-                                if (searchParams.has('workerId')) {
-                                    searchParams.delete('workerId')
+                                setFilterUserName(e.target.value)
+                                if (searchParams.has('userId')) {
+                                    searchParams.delete('userId')
                                     setSearchParams(searchParams)
                                 }
                             }}
@@ -183,7 +183,7 @@ const Settlements = () => {
                     <table className="modern-table settlements-table">
                         <thead>
                         <tr>
-                            <th>Worker</th>
+                            <th>User</th>
                             <th>Task</th>
                             <th>Status</th>
                             <th>Settlement Date</th>
@@ -197,7 +197,7 @@ const Settlements = () => {
                             const colorCode = s.statusName ? settlementStatusColors[s.statusName] : undefined;
                             return (
                                 <tr key={s.id}>
-                                    <td style={{ fontWeight: 500 }}>{s.workerName}</td>
+                                    <td style={{ fontWeight: 500 }}>{s.userName}</td>
                                     <td style={{ color: 'var(--text-primary)' }}>{s.taskTitle}</td>
                                     <td>
                                             <span
@@ -243,7 +243,7 @@ const Settlements = () => {
             {showModal && (
                 <SettlementModal
                     tasks={tasks}
-                    workers={workers}
+                    users={users}
                     settlements={settlements}
                     onSuccess={() => {
                         setShowModal(false)

@@ -4,7 +4,7 @@ import { taskApi, userApi, departmentApi, settlementApi } from '../api'
 
 export const useScheduleData = () => {
     const [tasks, setTasks] = useState<Task[]>([])
-    const [workers, setWorkers] = useState<User[]>([])
+    const [users, setUsers] = useState<User[]>([])
     const [departments, setDepartments] = useState<Department[]>([])
     const [settlements, setSettlements] = useState<Settlement[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -14,14 +14,14 @@ export const useScheduleData = () => {
         setIsLoading(true)
         setError(null)
         try {
-            const [tasksRes, workersRes, departmentsRes, settlementsRes] = await Promise.all([
+            const [tasksRes, usersRes, departmentsRes, settlementsRes] = await Promise.all([
                 taskApi.getAll(),
                 userApi.getByRole('WORKER'),
                 departmentApi.getAll().catch(() => ({ data: [] as Department[] })), // Safe fallback
                 settlementApi.getAll().catch(() => ({ data: [] as Settlement[] }))
             ])
             setTasks(tasksRes.data)
-            setWorkers(workersRes.data)
+            setUsers(usersRes.data)
             setDepartments(departmentsRes.data || [])
             setSettlements(settlementsRes.data || [])
         } catch (err: unknown) {
@@ -37,7 +37,7 @@ export const useScheduleData = () => {
 
     return {
         tasks,
-        workers,
+        users: users,
         departments,
         settlements,
         isLoading,

@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long> {
-    Optional<Role> findByRoleName(String roleName);
+    Optional<Role> findByName(String roleName);
 
     @Modifying
     @Query(value = "DELETE FROM user_role WHERE role_id = :roleId", nativeQuery = true)

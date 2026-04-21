@@ -84,7 +84,7 @@ class VacationServiceTest {
     @Test
     void createVacation_Success() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(worker));
-        when(vacationRepository.findByWorkerId(1L)).thenReturn(List.of());
+        when(vacationRepository.findByUserId(1L)).thenReturn(List.of());
         when(vacationRepository.save(any(Vacation.class))).thenReturn(vacation);
         when(mapper.toDto(vacation)).thenReturn(responseDto);
 
@@ -141,7 +141,7 @@ class VacationServiceTest {
                 .build();
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(worker));
-        when(vacationRepository.findByWorkerId(1L)).thenReturn(List.of(existingVacation));
+        when(vacationRepository.findByUserId(1L)).thenReturn(List.of(existingVacation));
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -189,7 +189,7 @@ class VacationServiceTest {
     @Test
     void getVacationsByWorker_Success() {
         List<Vacation> vacations = List.of(vacation);
-        when(vacationRepository.findByWorkerId(1L)).thenReturn(vacations);
+        when(vacationRepository.findByUserId(1L)).thenReturn(vacations);
         when(mapper.toDto(vacation)).thenReturn(responseDto);
 
         List<VacationResponseDto> result = vacationService.getVacationsByWorker(1L);
@@ -197,7 +197,7 @@ class VacationServiceTest {
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(1L, result.get(0).getWorkerId());
-        verify(vacationRepository, times(1)).findByWorkerId(1L);
+        verify(vacationRepository, times(1)).findByUserId(1L);
     }
 
     @Test

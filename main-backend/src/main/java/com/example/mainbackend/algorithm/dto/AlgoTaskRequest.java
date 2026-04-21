@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
-/** Task data sent to the algorithm service. */
 @Data
 @Builder
 @NoArgsConstructor

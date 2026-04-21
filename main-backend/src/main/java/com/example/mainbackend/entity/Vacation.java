@@ -18,7 +18,7 @@ public class Vacation {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User worker;
+    private User user;
 
     private LocalDate startDate;
     private LocalDate endDate;

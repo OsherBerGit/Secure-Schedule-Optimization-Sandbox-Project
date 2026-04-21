@@ -36,7 +36,6 @@ public class TaskConstraintService {
         if (taskConstraintRepository.existsByPredecessorTaskIdAndSuccessorTaskId(request.getPredecessorTaskId(), request.getSuccessorTaskId()))
             throw new IllegalArgumentException("Constraint already exists between these tasks");
 
-        // Fetch entities
         Task predecessorTask = taskRepository.findById(request.getPredecessorTaskId())
                 .orElseThrow(() -> new IllegalArgumentException("Predecessor task not found with ID: " + request.getPredecessorTaskId()));
 
@@ -120,7 +119,6 @@ public class TaskConstraintService {
             if (hasCircularDependency(request.getPredecessorTaskId(), request.getSuccessorTaskId()))
                 throw new IllegalArgumentException("Adding this constraint would create a circular dependency in the task graph");
 
-            // Re-fetch entities
             Task predecessorTask = taskRepository.findById(request.getPredecessorTaskId())
                     .orElseThrow(() -> new IllegalArgumentException("Predecessor task not found"));
             Task successorTask = taskRepository.findById(request.getSuccessorTaskId())
@@ -130,12 +128,10 @@ public class TaskConstraintService {
             existing.setSuccessorTask(successorTask);
         }
 
-        // Update constraint type
         ConstraintType constraintType = constraintTypeRepository.findById(request.getConstraintTypeId())
                 .orElseThrow(() -> new IllegalArgumentException("Constraint type not found"));
         existing.setConstraintType(constraintType);
 
-        // Update lag minutes
         existing.setLagMinutes(request.getLagMinutes() != null ? request.getLagMinutes() : 0);
 
         TaskConstraint updated = taskConstraintRepository.save(existing);

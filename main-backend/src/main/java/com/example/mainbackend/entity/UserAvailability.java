@@ -7,7 +7,7 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 
 /**
- * Represents a specific weekly availability window (shift) for a worker.
+ * Represents a specific weekly availability window (shift) for a user.
  *
  * <p>Replaces the coarse-grained {@code dailyAvailabilityHours} integer with
  * precise per-day time ranges so the scheduler can make accurate assignments.</p>
@@ -25,8 +25,8 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "worker_availabilities")
-public class WorkerAvailability {
+@Table(name = "user_availabilities")
+public class UserAvailability {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;

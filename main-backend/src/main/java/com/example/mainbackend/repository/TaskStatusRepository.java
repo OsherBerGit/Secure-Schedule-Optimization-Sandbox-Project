@@ -6,7 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/** Repository for Task lifecycle statuses (task_statuses table). */
 @Repository
 public interface TaskStatusRepository extends JpaRepository<TaskStatus, Long> {
     Optional<TaskStatus> findByName(String name);

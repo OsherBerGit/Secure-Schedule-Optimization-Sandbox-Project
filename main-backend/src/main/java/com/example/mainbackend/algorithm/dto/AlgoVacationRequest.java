@@ -3,7 +3,6 @@ package com.example.mainbackend.algorithm.dto;
 import lombok.*;
 import java.time.LocalDate;
 
-/** Vacation block sent to the algorithm service. */
 @Data
 @Builder
 @NoArgsConstructor

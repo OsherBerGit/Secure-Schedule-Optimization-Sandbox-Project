@@ -13,9 +13,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,7 +28,7 @@ public class TaskService {
     private final TaskStatusRepository taskStatusRepository;
     private final SettlementRepository settlementRepository;
     private final TaskConstraintRepository taskConstraintRepository;
-    private final SkillRepository skillRepository; // Added dependency
+    private final SkillRepository skillRepository;
     private final TaskMapper taskMapper;
     private final SecurityHelper securityHelper;
     private final DepartmentRepository departmentRepository;
@@ -41,16 +38,13 @@ public class TaskService {
     public TaskResponseDto createTask(TaskCreateRequest request) {
         Task task = buildTaskFromRequest(request);
 
-        // Department Access Control
         if (securityHelper.isManager()) {
             Long managerDeptId = securityHelper.getCurrentUserDepartmentId();
             if (request.getDepartmentId() != null && !request.getDepartmentId().equals(managerDeptId))
                 throw new AccessDeniedException("Managers cannot create tasks for other departments.");
 
-            // Enforce Manager's department
             task.setDepartment(departmentRepository.getReferenceById(managerDeptId));
         } else if (securityHelper.isAdmin()) {
-            // ADMIN can assign any department
             if (request.getDepartmentId() != null) {
                 Department dept = departmentRepository.findById(request.getDepartmentId())
                         .orElseThrow(() -> new IllegalArgumentException("Department not found: " + request.getDepartmentId()));
@@ -128,7 +122,6 @@ public class TaskService {
                 }
             }
 
-            // Update existing entity manually
             existing.setTitle(request.getTitle());
             existing.setDescription(request.getDescription());
             existing.setDeadline(request.getDeadline());
@@ -175,7 +168,7 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public List<TaskResponseDto> getTasksByWorkerId(Long workerId) {
-        return settlementRepository.findByWorkerId(workerId).stream()
+        return settlementRepository.findByUserId(workerId).stream()
                 .map(s -> taskMapper.toDto(s.getTask()))
                 .distinct()
                 .collect(Collectors.toList());
@@ -223,7 +216,6 @@ public class TaskService {
                 .priority(priority)
                 .status(resolvedStatus);
 
-        // Handle required skill
         if (request.getRequiredSkills() != null && !request.getRequiredSkills().isEmpty()) {
             List<Skill> skills = skillRepository.findAllById(request.getRequiredSkills());
             if (skills.size() != request.getRequiredSkills().size())

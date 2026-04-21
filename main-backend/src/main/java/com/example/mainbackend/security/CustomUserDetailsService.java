@@ -27,7 +27,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid national ID: " + nationalId));
 
         List<GrantedAuthority> authorities = Collections.singletonList(
-                new SimpleGrantedAuthority("ROLE_" + user.getRole().getRoleName())
+                new SimpleGrantedAuthority("ROLE_" + user.getRole().getName())
         );
 
         UserDetails userDetails = new org.springframework.security.core.userdetails.User(

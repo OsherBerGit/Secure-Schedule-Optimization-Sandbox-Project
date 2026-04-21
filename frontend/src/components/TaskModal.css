@@ -1,150 +1,63 @@
-.task-modal-card {
-    background: white;
-    border-radius: 1.25rem;
-    box-shadow: var(--shadow-md);
-    width: 90%;
-    max-width: 800px;
-    height: 90vh;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden !important;
-}
+.task-modal-card { background: white; border-radius: 1.25rem; box-shadow: var(--shadow-md); width: 90%; max-width: 800px; height: 90vh; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden !important; }
 
-.task-modal-form {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    flex: 1;
-    min-height: 0;
-}
+.task-modal-form { display: flex; flex-direction: column; overflow: hidden; flex: 1; min-height: 0; }
 
-.task-modal-body {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 2rem;
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 transparent;
-}
+.task-modal-body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 2rem; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
 
-.task-modal-body::-webkit-scrollbar {
-    width: 6px;
-}
+.task-modal-body::-webkit-scrollbar { width: 6px; }
 
-.task-modal-body::-webkit-scrollbar-track {
-    background: transparent;
-}
+.task-modal-body::-webkit-scrollbar-track { background: transparent; }
 
-.task-modal-body::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
-}
+.task-modal-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-.dark .task-modal-card {
-    background-color: var(--card-bg) !important;
-    color: var(--text-primary) !important;
-}
+.dark .task-modal-card { background-color: var(--card-bg) !important; color: var(--text-primary) !important; }
 
 .dark .task-modal-card input,
 .dark .task-modal-card select,
-.dark .task-modal-card textarea {
-    background-color: var(--input-bg) !important;
-    color: var(--text-primary) !important;
-    border: 1px solid var(--border-color) !important;
-}
+.dark .task-modal-card textarea { background-color: var(--input-bg) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; }
 
-.dark .task-modal-card label {
-    color: var(--text-secondary) !important;
-}
+.dark .task-modal-card label { color: var(--text-secondary) !important; }
 
 .dark .modal-header h2,
 .dark .modern-close-btn,
-.dark .task-modal-card h2 {
-    color: var(--text-primary) !important;
-}
+.dark .task-modal-card h2 { color: var(--text-primary) !important; }
 
-.dark .modal-header {
-    border-bottom: 1px solid var(--border-color) !important;
-}
+.dark .modal-header { border-bottom: 1px solid var(--border-color) !important; }
 
 .dark .modal-footer,
-.dark .modal-actions {
-    border-top: 1px solid var(--border-color) !important;
-}
+.dark .modal-actions { border-top: 1px solid var(--border-color) !important; }
 
 .dark .modal-header,
 .dark .modal-footer,
 .dark [class*="header"],
 .dark [class*="footer"],
-.dark .modal-actions {
-    background-color: var(--card-bg) !important;
-    background: var(--card-bg) !important;
-    color: var(--text-primary) !important;
-    border-color: var(--border-color) !important;
-}
+.dark .modal-actions { background-color: var(--card-bg) !important; background: var(--card-bg) !important; color: var(--text-primary) !important; border-color: var(--border-color) !important; }
 
 .dark .modal-header *,
 .dark .modal-footer *,
 .dark [class*="header"] *,
 .dark [class*="footer"] *,
-.dark .modal-actions * {
-    color: var(--text-primary) !important;
-}
+.dark .modal-actions * { color: var(--text-primary) !important; }
 
-.dark .modern-close-btn {
-    background: transparent !important;
-    border: none !important;
-    color: var(--text-secondary) !important;
-    box-shadow: none !important;
-}
+.dark .modern-close-btn { background: transparent !important; border: none !important; color: var(--text-secondary) !important; box-shadow: none !important; }
 
-.dark .modern-close-btn:hover {
-    color: var(--text-primary) !important;
-    background-color: rgba(255, 255, 255, 0.1) !important;
-}
+.dark .modern-close-btn:hover { color: var(--text-primary) !important; background-color: rgba(255, 255, 255, 0.1) !important; }
 
 .dark .btn-cancel,
-.dark .cancel-btn {
-    background: transparent !important;
-    color: var(--text-primary) !important;
-    border: 1px solid var(--border-color) !important;
-}
+.dark .cancel-btn { background: transparent !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; }
 
-.dark .skills-grid {
-    background-color: var(--input-bg) !important;
-    border: 1px solid var(--border-color) !important;
-}
+.dark .skills-grid { background-color: var(--input-bg) !important; border: 1px solid var(--border-color) !important; }
 
-.dark .skills-grid label {
-    color: var(--text-primary) !important;
-}
+.dark .skills-grid label { color: var(--text-primary) !important; }
 
-.dark .task-modal-card button:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-}
+.dark .task-modal-card button:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
 
-.dark .react-datepicker__calendar-icon {
-    filter: invert(1) brightness(1.8) !important;
-    opacity: 0.9 !important;
-    right: 10px !important;
-}
+.dark .react-datepicker__calendar-icon { filter: invert(1) brightness(1.8) !important; opacity: 0.9 !important; right: 10px !important; }
 
-.react-datepicker__navigation {
-    top: 5px !important;
-}
+.react-datepicker__navigation { top: 5px !important; }
 
-.react-datepicker__navigation--next {
-    right: 100px !important;
-    top: 3px !important;
-}
+.react-datepicker__navigation--next { right: 100px !important; top: 3px !important; }
 
-.react-datepicker__navigation--previous {
-    left: 0px !important;
-    top: 3px !important;
-}
+.react-datepicker__navigation--previous { left: 0px !important; top: 3px !important; }
 
-.dark .react-datepicker__day--disabled {
-    opacity: 0.2 !important;
-}
+.dark .react-datepicker__day--disabled { opacity: 0.2 !important; }

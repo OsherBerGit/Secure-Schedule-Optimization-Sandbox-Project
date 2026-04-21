@@ -13,11 +13,11 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class VacationResponseDto {
     private Long id;
-    private Long workerId;
+    private Long userId;
     private LocalDate startDate;
     private LocalDate endDate;
 
-    private String workerName;
+    private String userName;
 
     private String statusName;
 }

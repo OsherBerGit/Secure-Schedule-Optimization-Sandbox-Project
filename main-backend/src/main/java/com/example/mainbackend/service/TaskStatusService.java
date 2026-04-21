@@ -11,10 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Service for managing task statuses (lookup table).
- * Statuses define the current state of a task (e.g., PENDING, IN_PROGRESS, COMPLETED).
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j

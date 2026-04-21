@@ -5,7 +5,6 @@ import jakarta.validation.constraints.Positive;
 import lombok.*;
 import java.time.LocalDateTime;
 
-/** A single task assignment result returned by the algorithm service. */
 @Data
 @Builder
 @NoArgsConstructor

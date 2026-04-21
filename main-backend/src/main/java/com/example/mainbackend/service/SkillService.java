@@ -33,7 +33,6 @@ public class SkillService {
 
         Skill skill = Skill.builder()
                 .name(dto.getName())
-                .description(dto.getDescription())
                 .build();
 
         return skillRepository.save(skill);
@@ -46,7 +45,6 @@ public class SkillService {
             throw new IllegalArgumentException("Skill with this name already exists");
 
         skill.setName(dto.getName());
-        skill.setDescription(dto.getDescription());
         return skillRepository.save(skill);
     }
 

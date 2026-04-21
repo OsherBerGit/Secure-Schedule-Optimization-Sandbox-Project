@@ -1,14 +1,14 @@
 /**
  * Strips ugly algorithm-internal prefixes from reason strings while preserving
- * the detailed message (worker IDs, days, times) from the backend.
+ * the detailed message (user IDs, days, times) from the backend.
  *
  * Examples:
- *   "Memetic: constraint violation during decode - Worker 3 unavailable on MONDAY"
- *     → "Worker 3 unavailable on MONDAY"
- *   "Greedy: no eligible worker found for task"
- *     → "No eligible worker found for task"
- *   "Worker shift conflict: availability window 09:00–17:00 does not cover task"
- *     → "Worker shift conflict: availability window 09:00–17:00 does not cover task"
+ *   "Memetic: constraint violation during decode - User 3 unavailable on MONDAY"
+ *     → "User 3 unavailable on MONDAY"
+ *   "Greedy: no eligible user found for task"
+ *     → "No eligible user found for task"
+ *   "User shift conflict: availability window 09:00–17:00 does not cover task"
+ *     → "User shift conflict: availability window 09:00–17:00 does not cover task"
  */
 export function formatReason(rawReason: string): string {
     if (!rawReason) return 'Unknown reason'

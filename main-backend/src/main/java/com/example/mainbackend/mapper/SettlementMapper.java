@@ -13,11 +13,11 @@ public class SettlementMapper {
         return SettlementResponseDto.builder()
                 .id(settlement.getId())
                 .taskId(settlement.getTask().getId())
-                .workerId(settlement.getWorker().getId())
+                .userId(settlement.getUser().getId())
                 .settlementDate(settlement.getSettlementDate())
                 .completionDate(settlement.getCompletionDate())
                 .taskTitle(settlement.getTask().getTitle())
-                .workerName(settlement.getWorker().getFirstName() + " " + settlement.getWorker().getLastName())
+                .userName(settlement.getUser().getFirstName() + " " + settlement.getUser().getLastName())
                 .statusId(settlement.getStatus() != null ? settlement.getStatus().getId() : null)
                 .statusName(settlement.getStatus() != null ? settlement.getStatus().getName() : null)
                 .build();

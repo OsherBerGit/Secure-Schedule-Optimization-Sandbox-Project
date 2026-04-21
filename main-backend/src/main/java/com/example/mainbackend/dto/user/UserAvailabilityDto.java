@@ -12,7 +12,7 @@ import java.time.LocalTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WorkerAvailabilityDto {
+public class UserAvailabilityDto {
     private Long      id;
     private DayOfWeek dayOfWeek;
     private LocalTime startTime;

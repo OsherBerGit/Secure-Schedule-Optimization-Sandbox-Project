@@ -121,8 +121,8 @@ export const taskApi = {
   delete: (id: number) =>
     axiosInstance.delete(`/tasks/${id}`),
 
-  getByWorker: (workerId: number) =>
-    axiosInstance.get<Task[]>(`/tasks/worker/${workerId}`),
+  getByUser: (userId: number) =>
+    axiosInstance.get<Task[]>(`/tasks/user/${userId}`),
 
   getValidPrerequisites: (taskId: number) =>
     axiosInstance.get<Task[]>(`/tasks/${taskId}/valid-prerequisites`),
@@ -209,14 +209,14 @@ export const settlementApi = {
   delete: (id: number) =>
     axiosInstance.delete(`/settlements/${id}`),
 
-  getByWorker: (workerId: number) =>
-    axiosInstance.get<Settlement[]>(`/settlements/worker/${workerId}`),
+  getByUser: (userId: number) =>
+    axiosInstance.get<Settlement[]>(`/settlements/user/${userId}`),
 
-  /** Returns settlements for the currently authenticated worker (JWT-based). */
+  /** Returns settlements for the currently authenticated user (JWT-based). */
   getMySettlements: () =>
-    axiosInstance.get<Settlement[]>('/settlements/worker/me'),
+    axiosInstance.get<Settlement[]>('/settlements/user/me'),
 
-  /** Marks a settlement as COMPLETED. Worker must own the settlement. */
+  /** Marks a settlement as COMPLETED. User must own the settlement. */
   completeSettlement: (id: number) =>
     axiosInstance.patch<Settlement>(`/settlements/${id}/complete`),
 
@@ -250,8 +250,8 @@ export const vacationApi = {
   delete: (id: number) =>
     axiosInstance.delete(`/vacations/${id}`),
 
-  getByWorker: (workerId: number) =>
-    axiosInstance.get<Vacation[]>(`/vacations/worker/${workerId}`),
+  getByUser: (userId: number) =>
+    axiosInstance.get<Vacation[]>(`/vacations/user/${userId}`),
 
   getByDateRange: (startDate: string, endDate: string) =>
     axiosInstance.get<Vacation[]>('/vacations/date-range', {

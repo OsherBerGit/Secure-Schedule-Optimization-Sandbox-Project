@@ -39,19 +39,19 @@ public class VacationService {
         if (request.getStartDate().isBefore(LocalDate.now()))
             throw new IllegalArgumentException("Start date cannot be in the past");
 
-        User worker = userRepository.findById(request.getWorkerId())
-                .orElseThrow(() -> new IllegalArgumentException("Worker not found with ID: " + request.getWorkerId()));
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + request.getUserId()));
 
-        List<Vacation> existing = vacationRepository.findByWorkerId(request.getWorkerId());
+        List<Vacation> existing = vacationRepository.findByUserId(request.getUserId());
         for (Vacation v : existing)
-            if (datesOverlap(v.getStartDate(), v.getEndDate(), request.getStartDate(), request.getEndDate()))
+            if (!VacationStatusLevel.REJECTED.name().equals(v.getStatus().getName()) && datesOverlap(v.getStartDate(), v.getEndDate(), request.getStartDate(), request.getEndDate()))
                 throw new IllegalArgumentException("Vacation period overlaps with an existing vacation");
 
         VacationStatus approved = vacationStatusRepository.findByName(VacationStatusLevel.APPROVED.name())
                 .orElseThrow(() -> new IllegalStateException("APPROVED vacation status not found in database"));
 
         Vacation vacation = Vacation.builder()
-                .worker(worker)
+                .user(user)
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .status(approved)
@@ -65,19 +65,19 @@ public class VacationService {
         if (request.getStartDate().isAfter(request.getEndDate()))
             throw new IllegalArgumentException("Start date must be before or equal to end date");
 
-        User worker = userRepository.findById(request.getWorkerId())
-                .orElseThrow(() -> new IllegalArgumentException("Worker not found with ID: " + request.getWorkerId()));
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + request.getUserId()));
 
-        List<Vacation> existing = vacationRepository.findByWorkerId(worker.getId());
+        List<Vacation> existing = vacationRepository.findByUserId(user.getId());
         for (Vacation v : existing)
-            if (datesOverlap(v.getStartDate(), v.getEndDate(), request.getStartDate(), request.getEndDate()))
+            if (!VacationStatusLevel.REJECTED.name().equals(v.getStatus().getName()) && datesOverlap(v.getStartDate(), v.getEndDate(), request.getStartDate(), request.getEndDate()))
                 throw new IllegalArgumentException("Vacation period overlaps with an existing vacation");
 
         VacationStatus pending = vacationStatusRepository.findByName(VacationStatusLevel.PENDING.name())
                 .orElseThrow(() -> new IllegalStateException("PENDING vacation status not found in database"));
 
         Vacation vacation = Vacation.builder()
-                .worker(worker)
+                .user(user)
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .status(pending)
@@ -94,7 +94,7 @@ public class VacationService {
         // RBAC Check for MANAGER
         if (securityHelper.isManager()) {
             Long deptId = securityHelper.getCurrentUserDepartmentId();
-            if (vacation.getWorker().getDepartment() == null || !vacation.getWorker().getDepartment().getId().equals(deptId))
+            if (vacation.getUser().getDepartment() == null || !vacation.getUser().getDepartment().getId().equals(deptId))
                 throw new AccessDeniedException("Managers can only manage vacations for their own department.");
         }
 
@@ -112,7 +112,7 @@ public class VacationService {
     public List<VacationResponseDto> getPendingVacations() {
         if (securityHelper.isManager()) {
             Long deptId = securityHelper.getCurrentUserDepartmentId();
-            return vacationRepository.findAllByWorker_Department_IdAndStatus_Name(deptId, VacationStatusLevel.PENDING.name()).stream()
+            return vacationRepository.findAllByUser_Department_IdAndStatus_Name(deptId, VacationStatusLevel.PENDING.name()).stream()
                     .map(mapper::toDto)
                     .toList();
         }
@@ -133,7 +133,7 @@ public class VacationService {
     public List<VacationResponseDto> getAllVacations() {
         if (securityHelper.isManager()) {
             Long deptId = securityHelper.getCurrentUserDepartmentId();
-            return vacationRepository.findAllByWorker_Department_Id(deptId).stream()
+            return vacationRepository.findAllByUser_Department_Id(deptId).stream()
                     .map(mapper::toDto)
                     .toList();
         }
@@ -142,7 +142,7 @@ public class VacationService {
 
     @Transactional(readOnly = true)
     public List<VacationResponseDto> getVacationsByWorker(Long workerId) {
-        return vacationRepository.findByWorkerId(workerId).stream().map(mapper::toDto).toList();
+        return vacationRepository.findByUserId(workerId).stream().map(mapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
@@ -158,17 +158,18 @@ public class VacationService {
         if (request.getStartDate().isAfter(request.getEndDate()))
             throw new IllegalArgumentException("Start date must be before or equal to end date");
 
-        List<Vacation> others = vacationRepository.findByWorkerId(request.getWorkerId());
+        List<Vacation> others = vacationRepository.findByUserId(request.getUserId());
         for (Vacation other : others) {
             if (!other.getId().equals(id) &&
+                    !VacationStatusLevel.REJECTED.name().equals(other.getStatus().getName()) &&
                     datesOverlap(other.getStartDate(), other.getEndDate(), request.getStartDate(), request.getEndDate()))
                 throw new IllegalArgumentException("Vacation period overlaps with an existing vacation");
         }
 
-        if (!existing.getWorker().getId().equals(request.getWorkerId())) {
-            User worker = userRepository.findById(request.getWorkerId())
-                    .orElseThrow(() -> new IllegalArgumentException("Worker not found with ID: " + request.getWorkerId()));
-            existing.setWorker(worker);
+        if (!existing.getUser().getId().equals(request.getUserId())) {
+            User user = userRepository.findById(request.getUserId())
+                    .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + request.getUserId()));
+            existing.setUser(user);
         }
 
         existing.setStartDate(request.getStartDate());

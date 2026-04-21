@@ -22,8 +22,8 @@ public class Settlement {
     private Task task;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "worker_id", nullable = false)
-    private User worker;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "settlement_status_id", nullable = false)

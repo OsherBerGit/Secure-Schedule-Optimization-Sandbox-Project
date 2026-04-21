@@ -14,16 +14,15 @@ import java.time.LocalDateTime;
 public class SettlementResponseDto {
     private Long id;
     private Long taskId;
-    private Long workerId;
+    private Long userId;
     private LocalDateTime settlementDate;
     private LocalDateTime completionDate;
 
     // Display names for UI
     private String taskTitle;
-    private String workerName;
+    private String userName;
 
     // Settlement execution status (PENDING, IN_PROGRESS, COMPLETED, FAILED) — from settlement_statuses table
     private Long statusId;
     private String statusName;
-    private String statusColorCode;
 }

@@ -33,10 +33,10 @@ public class User {
 
     @Column(unique = true)
     private String email;
-
     private String phoneNumber;
-    private Double salary;
-    private String address;
+    // private Double salary;
+    // private String address;
+
     private Integer maxTasks;
 
     /**
@@ -47,10 +47,10 @@ public class User {
     @JoinColumn(name = "department_id")
     private Department department;
 
-    /** Weekly availability windows (shifts) that define when this worker can be scheduled. */
+    /** Weekly availability windows (shifts) that define when this user can be scheduled. */
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<WorkerAvailability> availabilities = new ArrayList<>();
+    private List<UserAvailability> availabilities = new ArrayList<>();
 
     // Access Level: Each user has exactly one security Role (ADMIN, MANAGER, WORKER)
     @ManyToOne(fetch = FetchType.EAGER)
@@ -69,12 +69,12 @@ public class User {
     private Set<Skill> skills = new HashSet<>();
 
     // Relationship Settlements - mappedBy establishes bidirectional relationship
-    @OneToMany(mappedBy = "worker", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Settlement> settlements = new ArrayList<>();
 
     // Relationship Vacations
-    @OneToMany(mappedBy = "worker", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Vacation> vacations = new ArrayList<>();
 }

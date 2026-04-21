@@ -10,54 +10,54 @@ import './SettlementModal.css'
 
 interface SettlementModalProps {
     tasks: Task[]
-    workers: User[]
+    users: User[]
     settlements: Settlement[]
     onSuccess: () => void
     onClose: () => void
 }
 
-const SettlementModal = ({ tasks: initialTasks, workers: initialWorkers, settlements, onSuccess, onClose }: SettlementModalProps) => {
+const SettlementModal = ({ tasks: initialTasks, users: initialUsers, settlements, onSuccess, onClose }: SettlementModalProps) => {
     const [taskId, setTaskId] = useState<number | ''>('')
-    const [workerId, setWorkerId] = useState<number | ''>('')
+    const [userId, setUserId] = useState<number | ''>('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
 
-    const filteredWorkers = initialWorkers.filter(w => {
-        const activeAssignmentsCount = settlements.filter(s => s.workerId === w.id && s.statusName !== 'COMPLETED').length;
+    const filteredUsers = initialUsers.filter(w => {
+        const activeAssignmentsCount = settlements.filter(s => s.userId === w.id && s.statusName !== 'COMPLETED').length;
         if (w.maxTasks !== null && w.maxTasks !== undefined && activeAssignmentsCount >= w.maxTasks) return false;
 
         if (!taskId) return true
         const selectedTask = initialTasks.find(t => t.id === taskId)
         if (!selectedTask || !selectedTask.requiredSkills) return true
-        const workerSkillIds = w.skills?.map(s => s.id) || []
-        return selectedTask.requiredSkills.every(skill => workerSkillIds.includes(skill.id))
+        const userSkillIds = w.skills?.map(s => s.id) || []
+        return selectedTask.requiredSkills.every(skill => userSkillIds.includes(skill.id))
     })
 
     const filteredTasks = initialTasks.filter(t => {
         const hasActiveSettlement = settlements.some(s => s.taskId === t.id && s.statusName !== 'COMPLETED');
         if (hasActiveSettlement || (t.taskStatusName && t.taskStatusName !== 'OPEN')) return false;
 
-        if (!workerId) return true
-        const selectedWorker = initialWorkers.find(w => w.id === workerId)
-        if (!selectedWorker || !selectedWorker.skills) return true
+        if (!userId) return true
+        const selectedUser = initialUsers.find(w => w.id === userId)
+        if (!selectedUser || !selectedUser.skills) return true
         if (!t.requiredSkills) return true
-        const workerSkillIds = selectedWorker.skills.map(s => s.id) || []
-        return t.requiredSkills.every(skill => workerSkillIds.includes(skill.id))
+        const userSkillIds = selectedUser.skills.map(s => s.id) || []
+        return t.requiredSkills.every(skill => userSkillIds.includes(skill.id))
     })
 
     // Auto-clear invalid selections
     if (taskId && !filteredTasks.some(t => t.id === taskId))
         setTaskId('')
 
-    if (workerId && !filteredWorkers.some(w => w.id === workerId))
-        setWorkerId('')
+    if (userId && !filteredUsers.some(w => w.id === userId))
+        setUserId('')
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault()
-        if (!taskId || !workerId || !selectedDate) return
+        if (!taskId || !userId || !selectedDate) return
 
         setIsSubmitting(true)
         setError(null)
@@ -68,7 +68,7 @@ const SettlementModal = ({ tasks: initialTasks, workers: initialWorkers, settlem
 
             const data: CreateSettlementRequest = {
                 taskId: Number(taskId),
-                workerId: Number(workerId),
+                userId: Number(userId),
                 settlementDate: combinedIso,
                 completionDate: undefined,
             }
@@ -129,16 +129,16 @@ const SettlementModal = ({ tasks: initialTasks, workers: initialWorkers, settlem
                             </div>
 
                             <div className="modern-form-group">
-                                <label>Worker *</label>
+                                <label>User *</label>
                                 <select
                                     className="modern-input"
-                                    value={workerId}
-                                    onChange={e => setWorkerId(Number(e.target.value) || '')}
+                                    value={userId}
+                                    onChange={e => setUserId(Number(e.target.value) || '')}
                                     required
                                     disabled={isSubmitting || !!successMessage}
                                 >
-                                    <option value="">-- Select Worker --</option>
-                                    {filteredWorkers.map(w => (
+                                    <option value="">-- Select User --</option>
+                                    {filteredUsers.map(w => (
                                         <option key={w.id} value={w.id}>{w.firstName} {w.lastName}</option>
                                     ))}
                                 </select>

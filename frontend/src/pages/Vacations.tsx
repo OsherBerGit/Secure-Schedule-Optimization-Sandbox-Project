@@ -11,7 +11,7 @@ const Vacations = () => {
     const { user: currentUser } = useAuth()
     const location = useLocation()
     const [searchParams, setSearchParams] = useSearchParams()
-    const queryWorkerId = searchParams.get('workerId')
+    const queryUserId = searchParams.get('userId')
 
     const isAdmin = currentUser?.role === 'ADMIN'
     const isManager = currentUser?.role === 'MANAGER'
@@ -25,19 +25,19 @@ const Vacations = () => {
     const [users, setUsers] = useState<User[]>([])
 
     const [filterDepartment, setFilterDepartment] = useState<string>('')
-    const [filterWorker, setFilterWorker] = useState<string>('')
+    const [filterUser, setFilterUser] = useState<string>('')
 
     useEffect(() => {
-        if (location.state?.filterWorkerName)
-            setFilterWorker(location.state.filterWorkerName)
+        if (location.state?.filterUserName)
+            setFilterUser(location.state.filterUserName)
     }, [location.state])
 
     useEffect(() => {
-        const workerId = searchParams.get('workerId')
-        if (workerId && users.length > 0) {
-            const user = users.find(u => u.id === Number(workerId))
+        const userId = searchParams.get('userId')
+        if (userId && users.length > 0) {
+            const user = users.find(u => u.id === Number(userId))
             if (user)
-                setFilterWorker(`${user.firstName} ${user.lastName}`)
+                setFilterUser(`${user.firstName} ${user.lastName}`)
         }
     }, [searchParams, users])
 
@@ -95,7 +95,7 @@ const Vacations = () => {
                 .catch(err => setError(err.message))
         } else {
             const requestData = {
-                workerId: Number(currentUser?.id),
+                userId: Number(currentUser?.id),
                 startDate: new Date(formData.startDate).toISOString().split('T')[0],
                 endDate: new Date(formData.endDate).toISOString().split('T')[0],
                 status: 'PENDING'
@@ -113,7 +113,7 @@ const Vacations = () => {
     }
 
     const getDepartmentName = useCallback((v: Vacation) => {
-        const u = users.find(user => user.id === v.workerId)
+        const u = users.find(user => user.id === v.userId)
         return u?.departmentName || ''
     }, [users])
 
@@ -124,16 +124,16 @@ const Vacations = () => {
     const displayedVacations = useMemo(() => {
         let list = vacations;
         if (currentUser?.role === 'WORKER')
-            list = list.filter(v => v.workerId === currentUser.id);
+            list = list.filter(v => v.userId === currentUser.id);
         else {
             list = list.filter(v => {
                 if (filterDepartment && getDepartmentName(v) !== filterDepartment) return false
-                if (filterWorker && !v.workerName.toLowerCase().includes(filterWorker.toLowerCase())) return false
+                if (filterUser && !v.userName.toLowerCase().includes(filterUser.toLowerCase())) return false
                 return true
             });
         }
         return list.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
-    }, [vacations, currentUser, filterDepartment, filterWorker, getDepartmentName])
+    }, [vacations, currentUser, filterDepartment, filterUser, getDepartmentName])
 
     return (
         <div className="vacations-page">
@@ -143,7 +143,7 @@ const Vacations = () => {
                     <h1>Vacations Management</h1>
                 </div>
                 <button className="btn-add-primary" onClick={handleAddVacation}>
-                    <Plus size={18} /> {canManage ? 'Add Vacation' : 'Request Vacation'}
+                     {canManage ? 'Add Vacation' : 'Request Vacation'}
                 </button>
             </div>
 
@@ -155,12 +155,12 @@ const Vacations = () => {
                             <input
                                 type="text"
                                 className="modern-input search-input"
-                                placeholder="Search by worker name..."
-                                value={filterWorker}
+                                placeholder="Search by user name..."
+                                value={filterUser}
                                 onChange={e => {
-                                    setFilterWorker(e.target.value)
-                                    if (searchParams.has('workerId')) {
-                                        searchParams.delete('workerId')
+                                    setFilterUser(e.target.value)
+                                    if (searchParams.has('userId')) {
+                                        searchParams.delete('userId')
                                         setSearchParams(searchParams)
                                     }
                                 }}
@@ -171,7 +171,7 @@ const Vacations = () => {
                             className="modern-input"
                             style={{ flex: '0 0 200px' }}
                             value={filterDepartment}
-                            onChange={e => { setFilterDepartment(e.target.value); setFilterWorker(''); }}
+                            onChange={e => { setFilterDepartment(e.target.value); setFilterUser(''); }}
                         >
                             <option value="">All Departments</option>
                             {availableDepartments.map(d => (
@@ -194,7 +194,7 @@ const Vacations = () => {
                     <table className="modern-table vacations-table">
                         <thead>
                         <tr>
-                            <th>Worker</th>
+                            <th>User</th>
                             <th>Start Date</th>
                             <th>End Date</th>
                             <th>Duration</th>
@@ -211,7 +211,7 @@ const Vacations = () => {
 
                             return (
                                 <tr key={vacation.id}>
-                                    <td style={{ fontWeight: 500 }}>{vacation.workerName}</td>
+                                    <td style={{ fontWeight: 500 }}>{vacation.userName}</td>
                                     <td>
                                         <div className="date-cell">
                                             <Calendar size={14} style={{ opacity: 0.5 }} />
@@ -268,7 +268,7 @@ const Vacations = () => {
                 <VacationModal
                     vacation={selectedVacation}
                     isAdmin={!!canManage}
-                    workers={users}
+                    users={users}
                     onSubmit={handleSubmit}
                     onClose={() => { setShowModal(false); setSelectedVacation(null) }}
                 />
