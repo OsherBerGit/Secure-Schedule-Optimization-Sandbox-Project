@@ -2,11 +2,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { CheckCircle, Search, Trash2, CalendarDays, Plus } from 'lucide-react'
 import type { Settlement, Task, User, Status } from '../types'
 import { settlementApi, taskApi, userApi, statusApi } from '../api'
-import { useAuth } from '../context/useAuth'
 import SettlementModal from '../components/SettlementModal'
 import { useLocation, useSearchParams } from 'react-router-dom'
+import { usePermissions } from '../hooks/usePermissions'
 import './Settlements.css'
-import {usePermissions} from "../hooks/usePermissions.ts";
 
 function formatDate(value: string | number[] | null | undefined): string {
     if (!value) return '-'
@@ -19,9 +18,8 @@ function formatDate(value: string | number[] | null | undefined): string {
 }
 
 const Settlements = () => {
-    const { user: currentUser } = useAuth()
     const location = useLocation()
-    const { canAdd, isAdmin } = usePermissions()
+    const { canAdd, canEdit, isAdmin } = usePermissions()
 
     const [settlements, setSettlements] = useState<Settlement[]>([])
     const [tasks, setTasks] = useState<Task[]>([])
@@ -46,9 +44,9 @@ const Settlements = () => {
     };
 
     useEffect(() => {
-        if (location.state?.filterUserName) {
-            setFilterUserName(location.state.filterUserName)
-        }
+        if (location.state?.filterUserName)
+            setFilterUserName(location.state.filterUserName);
+
     }, [location.state])
 
     useEffect(() => {
@@ -64,7 +62,7 @@ const Settlements = () => {
         setIsLoading(true)
         setError(null)
         try {
-            const res = (isAdmin || currentUser?.role === 'MANAGER')
+            const res = canEdit
                 ? await settlementApi.getAll()
                 : await settlementApi.getMySettlements()
             setSettlements(res.data)
@@ -73,7 +71,7 @@ const Settlements = () => {
         } finally {
             setIsLoading(false)
         }
-    }, [isAdmin, currentUser?.role])
+    }, [canEdit])
 
     useEffect(() => {
         void fetchSettlements()
@@ -105,12 +103,12 @@ const Settlements = () => {
 
     const displayedSettlements = useMemo(() => {
         return settlements.filter(s => {
-            const matchesUser = !(isAdmin || currentUser?.role === 'MANAGER') || !filterUserName || s.userName.toLowerCase().includes(filterUserName.toLowerCase())
+            const matchesUser = !canEdit || !filterUserName || s.userName.toLowerCase().includes(filterUserName.toLowerCase())
             const matchesTask = !filterTaskName || (s.taskTitle && s.taskTitle.toLowerCase().includes(filterTaskName.toLowerCase()))
             const matchesStatus = !filterStatus || s.statusName === filterStatus
             return matchesUser && matchesTask && matchesStatus
         })
-    }, [settlements, filterUserName, filterTaskName, filterStatus, isAdmin, currentUser?.role])
+    }, [settlements, filterUserName, filterTaskName, filterStatus, canEdit])
 
     return (
         <div className="settlements-page">
@@ -127,7 +125,7 @@ const Settlements = () => {
             </div>
 
             <div className="filters-container">
-                {(isAdmin || currentUser?.role === 'MANAGER') ? (
+                {canEdit ? (
                     <div className="search-wrapper" style={{ flex: 1 }}>
                         <Search className="search-icon" size={18} />
                         <input
@@ -194,17 +192,13 @@ const Settlements = () => {
                         <tbody>
                         {displayedSettlements.map(s => {
                             const isCompleted = s.statusName === 'COMPLETED'
-                            const colorCode = s.statusName ? settlementStatusColors[s.statusName] : undefined;
                             return (
                                 <tr key={s.id}>
                                     <td style={{ fontWeight: 500 }}>{s.userName}</td>
                                     <td style={{ color: 'var(--text-primary)' }}>{s.taskTitle}</td>
                                     <td>
-                                            <span
-                                                className="status-badge"
-                                                style={colorCode ? { background: colorCode + '22', color: colorCode, border: `1px solid ${colorCode}44` } : undefined}
-                                            >
-                                                {s.statusName ?? '-'}
+                                            <span className={`status-badge status-${s.statusName?.toLowerCase()}`}>
+                                                {s.statusName}
                                             </span>
                                     </td>
                                     <td>{formatDate(s.settlementDate)}</td>

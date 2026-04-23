@@ -1,216 +1,96 @@
 @import './components/Modal.css';
 
-:root { --text-primary: #1e293b; --text-secondary: #64748b; --bg-main: #f1f5f9; --bg-card: #ffffff; --card-bg: #ffffff; --primary-gradient: linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%); --primary-color: #4f46e5; --border-light: #e2e8f0; --border-color: #e2e8f0; --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05); --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); --select-bg: white; --input-bg: white; --input-text: #1a202c; }
+:root {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --bg-main: #f1f5f9;
+    --bg-card: #ffffff;
+    --card-bg: #ffffff;
+    --primary-gradient: linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%);
+    --primary-color: #4f46e5;
+    --border-light: #e2e8f0;
+    --border-color: #e2e8f0;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --select-bg: white;
+    --input-bg: white;
+    --input-text: #1a202c;
+    --accent-hover: #4338ca;
+}
 
-.dark { --text-primary: #f8fafc; --text-secondary: #94a3b8; --bg-main: #0f172a; --bg-card: #1e293b; --card-bg: #1e293b; --primary-gradient: linear-gradient(135deg, #312e81 0%, #6366f1 100%); --primary-color: #818cf8; --border-light: #334155; --border-color: #334155; --shadow-sm: 0 1px 2px 0 rgba(255, 255, 255, 0.03); --shadow-md: 0 4px 6px -1px rgba(255, 255, 255, 0.05), 0 2px 4px -2px rgba(255, 255, 255, 0.05); --card-shadow: none; --select-bg: #1e293b; --input-bg: #334155; --input-text: #f8fafc; }
+.dark, html.dark {
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --bg-main: #0f172a;
+    --bg-card: #1e293b;
+    --card-bg: #1e293b;
+    --primary-gradient: linear-gradient(135deg, #312e81 0%, #6366f1 100%);
+    --primary-color: #818cf8;
+    --border-light: #334155;
+    --border-color: #334155;
+    --shadow-sm: 0 1px 2px 0 rgba(255, 255, 255, 0.03);
+    --shadow-md: 0 4px 6px -1px rgba(255, 255, 255, 0.05), 0 2px 4px -2px rgba(255, 255, 255, 0.05);
+    --card-shadow: none;
+    --select-bg: #1e293b;
+    --input-bg: #334155;
+    --input-text: #f8fafc;
+    --success-light: #fef08a;
+    --accent-hover: #a3bffa;
+}
 
-/* --- DARK MODE OVERRIDES REPAIR BLOCK --- */
-html.dark body .schedule-header,
-html.dark body .schedule-header .header-left,
-html.dark body .schedule-header .header-right,
-html.dark body .header-title-wrapper,
-html.dark body .header-icon-wrapper,
-html.dark body .header-subtitle,
-html.dark body .ex-header-title-row,
-html.dark body .card-header,
-html.dark body .header-title-row,
-html.dark body .fitness-header { background: transparent !important; background-color: transparent !important; border: none !important; box-shadow: none !important; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-html.dark body .config-tag { background-color: transparent !important; background: transparent !important; border: none !important; }
+body { margin: 0; min-height: 100vh; background-color: var(--bg-main); color: var(--text-primary); font-family: inherit; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 
-html.dark body .btn-generate-main { border: none !important; }
+.header-icon-purple, .page-header svg, .page-header-title svg, .header-title-row svg, .title-with-icon svg, html .page-header svg, html .page-header-title svg, html .header-title-row svg, html .title-with-icon svg { color: #4f46e5 !important; fill: none !important; background: transparent !important; background-color: transparent !important; }
+.dark .header-icon-purple, .dark .page-header svg, .dark .page-header-title svg, .dark .header-title-row svg, .dark .title-with-icon svg, html.dark .page-header svg, html.dark .page-header-title svg, html.dark .header-title-row svg, html.dark .title-with-icon svg { color: #4f46e5 !important; background: transparent !important; background-color: transparent !important; }
 
-html.dark body .recharts-line-curve,
-html.dark body .recharts-line path,
-html.dark body .recharts-surface .recharts-line path { stroke: #818cf8 !important; stroke-width: 4px !important; stroke-opacity: 1 !important; visibility: visible !important; opacity: 1 !important; display: block !important; }
-
-html.dark body .recharts-layer.recharts-line { display: block !important; visibility: visible !important; }
-
-html.dark body .recharts-reference-line line { stroke: #10b981 !important; stroke-width: 2px !important; stroke-dasharray: 3 3 !important; visibility: visible !important; opacity: 1 !important; display: block !important; }
-
-html.dark body .recharts-reference-line text { fill: #10b981 !important; }
-
-html.dark body .strategy-info-box { background: rgba(59, 130, 246, 0.15) !important; }
-
-html.dark body .ex-header { background: rgba(245, 158, 11, 0.15) !important; }
-
-html.dark body .gn-tick-date { fill: var(--text-primary) !important; }
-
-html.dark body .gn-user-label-header { background-color: transparent !important; }
-
-html.dark body .gn-user-label { background-color: transparent !important; }
-
-body { margin: 0; min-height: 100vh; background-color: var(--bg-main); color: var(--text-primary); }
+#root { width: 100%; min-height: 100vh; display: flex; flex-direction: column; }
 
 .modern-select { appearance: none; background-color: var(--select-bg); background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em; padding: 0.6rem 2.5rem 0.6rem 1rem; border: 1px solid var(--border-light); border-radius: 0.5rem; font-size: 0.95rem; color: var(--input-text); line-height: 1.5; box-shadow: var(--shadow-sm); transition: all 0.2s ease-in-out; cursor: pointer; min-width: 180px; }
-
-.modern-select:hover { border-color: var(--primary-color); }
-
-.modern-select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-
 .modern-input { appearance: none; background-color: var(--input-bg); padding: 0.6rem 1rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-size: 0.95rem; color: var(--input-text); line-height: 1.5; box-shadow: var(--shadow-sm); transition: all 0.2s ease-in-out; }
+.modern-input:focus, .modern-select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
 
-.modern-input::placeholder { color: var(--text-secondary); }
-
-.modern-input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-
-.dark input:-webkit-autofill,
-.dark input:-webkit-autofill:hover,
-.dark input:-webkit-autofill:focus,
-.dark input:-webkit-autofill:active { -webkit-box-shadow: 0 0 0 30px var(--input-bg) inset !important; -webkit-text-fill-color: var(--text-primary) !important; transition: background-color 5000s ease-in-out 0s; }
-
-.dark input[type="checkbox"] { -webkit-appearance: checkbox !important; appearance: checkbox !important; width: 18px !important; height: 18px !important; accent-color: var(--primary-color) !important; cursor: pointer !important; filter: invert(0.8) hue-rotate(180deg) brightness(1.2); }
-
-.filter-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
-
-.react-datepicker-wrapper { width: 100%; }
-
-.react-datepicker__input-container input { background: var(--input-bg); color: var(--text-primary); border: 1px solid var(--border-color); padding-right: 40px !important; }
-
-.react-datepicker__input-container .react-datepicker__calendar-icon { right: 12px !important; left: auto !important; padding: 0 !important; top: 50% !important; transform: translateY(-50%) !important; }
-
-.dark .react-datepicker__input-container .react-datepicker__calendar-icon { fill: var(--text-secondary) !important; filter: invert(1) brightness(1.5) !important; opacity: 0.8 !important; }
+.dark input:-webkit-autofill { -webkit-box-shadow: 0 0 0 30px var(--input-bg) inset !important; -webkit-text-fill-color: var(--text-primary) !important; }
 
 .react-datepicker-popper { z-index: 1000 !important; box-shadow: var(--shadow-md) !important; }
-
 .react-datepicker { background-color: var(--card-bg) !important; border-color: var(--border-color) !important; color: var(--text-primary) !important; font-family: inherit !important; }
-
-.react-datepicker__navigation { top: 5px !important; }
-
-.react-datepicker__navigation--previous { left: 0px !important; top: 3px !important; }
-
-.vacation-calendar .react-datepicker__navigation--next { right: 10px !important; top: 3px !important; }
-
-.task-calendar .react-datepicker__navigation--next,
-.shift-calendar .react-datepicker__navigation--next { right: 100px !important; top: 3px !important; }
-
-.task-calendar .react-datepicker__navigation--previous,
-.shift-calendar .react-datepicker__navigation--previous { left: 0px !important; top: 3px !important; }
-
-.react-datepicker__month-container { background-color: var(--card-bg) !important; }
-
 .react-datepicker__header { background-color: var(--card-bg) !important; border-bottom: 1px solid var(--border-color) !important; }
-
-.react-datepicker__current-month,
-.react-datepicker-time__header,
-.react-datepicker-year-header,
-.react-datepicker__day-name,
-.react-datepicker__day,
-.react-datepicker__time-name { color: var(--text-primary) !important; }
-
-.react-datepicker__current-month { padding-bottom: 5px; }
-
-.react-datepicker__day:hover,
-.react-datepicker__month-text:hover,
-.react-datepicker__quarter-text:hover,
-.react-datepicker__year-text:hover { background-color: var(--border-color) !important; }
-
-.react-datepicker__day--selected,
-.react-datepicker__day--in-selecting-range,
-.react-datepicker__day--in-range,
-.react-datepicker__month-text--selected,
-.react-datepicker__quarter-text--selected,
-.react-datepicker__year-text--selected { background-color: var(--primary-color) !important; color: #fff !important; }
-
-.react-datepicker__day--keyboard-selected,
-.react-datepicker__month-text--keyboard-selected,
-.react-datepicker__quarter-text--keyboard-selected,
-.react-datepicker__year-text--keyboard-selected { background-color: var(--primary-color) !important; color: #fff !important; }
-
+.react-datepicker__current-month, .react-datepicker-time__header, .react-datepicker-year-header, .react-datepicker__day-name, .react-datepicker__day, .react-datepicker__time-name { color: var(--text-primary) !important; }
+.react-datepicker__day:hover, .react-datepicker__month-text:hover, .react-datepicker__quarter-text:hover, .react-datepicker__year-text:hover { background-color: var(--border-color) !important; }
+.react-datepicker__day--selected, .react-datepicker__day--in-selecting-range, .react-datepicker__day--in-range, .react-datepicker__month-text--selected, .react-datepicker__quarter-text--selected, .react-datepicker__year-text--selected { background-color: var(--primary-color) !important; color: #fff !important; }
+.react-datepicker__day--keyboard-selected, .react-datepicker__month-text--keyboard-selected, .react-datepicker__quarter-text--keyboard-selected, .react-datepicker__year-text--keyboard-selected { background-color: var(--primary-color) !important; color: #fff !important; }
 .react-datepicker__day--disabled { opacity: 0.25 !important; cursor: not-allowed !important; background: transparent !important; }
-
-.dark .react-datepicker__day,
-.dark .react-datepicker__day-name,
-.dark .react-datepicker__current-month { color: var(--text-primary) !important; }
-
-.dark .react-datepicker__day:hover { background-color: var(--border-color) !important; }
-
-.dark .react-datepicker__day--selected { background-color: var(--primary-color) !important; color: white !important; }
-
-.dark .react-datepicker__day--outside-month { color: var(--text-secondary) !important; opacity: 0.3 !important; }
-
-.dark .react-datepicker__day--disabled { opacity: 0.2 !important; }
-
-.dark .react-datepicker__header { background-color: var(--card-bg) !important; }
-
-.dark .react-datepicker__time-container,
-.dark .react-datepicker__time-list-item { background-color: var(--card-bg) !important; color: var(--text-primary) !important; }
-
-.react-datepicker__input-time-container { margin: 0 !important; padding: 10px !important; background-color: var(--card-bg) !important; color: var(--text-primary) !important; border-top: 1px solid var(--border-color) !important; }
-
-.react-datepicker-time__input input { background-color: var(--input-bg) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; border-radius: 4px; }
-
 .react-datepicker__time-container { border-left: 1px solid var(--border-color) !important; width: 100px !important; }
-
-.react-datepicker__time-box { width: 100% !important; }
-
 .react-datepicker__time { background-color: var(--card-bg) !important; color: var(--text-primary) !important; }
-
-.react-datepicker__time-list-item { padding: 10px 5px !important; }
-
 .react-datepicker__time-list-item:hover { background-color: var(--border-color) !important; }
-
 .react-datepicker__time-list-item--selected { background-color: var(--primary-color) !important; color: #fff !important; }
+.react-datepicker__navigation--next { right: 8px !important; }
 
+.dark .react-datepicker__day, .dark .react-datepicker__day-name, .dark .react-datepicker__current-month { color: var(--text-primary) !important; }
+.dark .react-datepicker__day:hover { background-color: var(--border-color) !important; }
+.dark .react-datepicker__day--selected { background-color: var(--primary-color) !important; color: white !important; }
+.dark .react-datepicker__day--outside-month { color: var(--text-secondary) !important; opacity: 0.3 !important; }
+.dark .react-datepicker__day--disabled { opacity: 0.2 !important; }
+.dark .react-datepicker__header { background-color: var(--card-bg) !important; }
+.dark .react-datepicker__time-container, .dark .react-datepicker__time-list-item { background-color: var(--card-bg) !important; color: var(--text-primary) !important; }
 .dark .react-datepicker__time-list-item--selected { background-color: var(--primary-color) !important; color: #fff !important; }
 
-.dark .inline-edit-input,
-.dark td input { background-color: var(--input-bg) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; display: inline-block !important; visibility: visible !important; opacity: 1 !important; height: 38px !important; padding: 0 10px !important; }
+.btn-icon { transition: all 0.2s ease; background-color: transparent; border: none; }
+.edit-btn:hover { background-color: rgba(22, 163, 74, 0.15) !important; color: #16a34a !important; }
+.approve-btn:hover, .btn-complete-dash:hover { background-color: rgba(22, 163, 74, 0.15) !important; color: #16a34a !important; }
+.delete-btn:hover, .reject-btn:hover { background-color: rgba(239, 68, 68, 0.15) !important; color: #dc2626 !important; }
+.vacation-btn:hover, .constraint-btn:hover { background-color: rgba(2, 132, 199, 0.15) !important; color: #0284c7 !important; }
+.settlement-btn:hover { background-color: rgba(147, 51, 234, 0.15) !important; color: #9333ea !important; }
 
-.dark .page-header,
-.dark .page-header-title,
-.dark .page-header-title *,
-.dark .page-header h1 { background-color: transparent !important; background: transparent !important; box-shadow: none !important; border: none !important; }
-
-.dark [class*="header"]:not(.page-header):not(.page-header-title):not(.header-actions) { background-color: var(--card-bg) !important; }
-
-.dark .table-container { background-color: var(--card-bg) !important; border: 1px solid var(--border-color) !important; }
-
-.dark .modern-table th { background-color: rgba(0, 0, 0, 0.2) !important; color: var(--text-secondary) !important; }
-
-.modern-table td { height: 60px !important; vertical-align: middle !important; padding: 0 1rem !important; }
-
-.inline-edit-input,
-td input[type="text"] { box-sizing: border-box !important; margin: 0 !important; vertical-align: middle !important; line-height: normal !important; height: 38px !important; }
-
-html.dark .schedule-header,
-html.dark .header-left,
-html.dark .header-right,
-html.dark .algo-controls { background: transparent !important; background-color: transparent !important; border: none !important; box-shadow: none !important; }
-
-html.dark div.ex-header { background-color: rgba(245, 158, 11, 0.15) !important; border: 1px solid rgba(245, 158, 11, 0.3) !important; }
-
-html.dark div.strategy-info-box { background-color: rgba(59, 130, 246, 0.15) !important; border: 1px solid rgba(59, 130, 246, 0.3) !important; }
-
-html.dark div.strategy-info-box strong,
-html.dark div.strategy-info-box span,
-html.dark div.strategy-info-box svg { color: #60a5fa !important; }
-
-html.dark .recharts-wrapper path.recharts-line-curve,
-html.dark .recharts-line path { stroke: #818cf8 !important; stroke-opacity: 1 !important; stroke-width: 3px !important; visibility: visible !important; display: block !important; opacity: 1 !important; }
-
-html.dark .recharts-wrapper circle.recharts-dot,
-html.dark .recharts-line circle.recharts-dot { display: block !important; visibility: visible !important; opacity: 1 !important; fill: #818cf8 !important; }
-
-html.dark .recharts-cartesian-axis-tick text,
-html.dark .recharts-label { fill: var(--text-secondary) !important; }
-
-html.dark .gn-timeline-header,
-html.dark .gn-user-label-header { background-color: var(--bg-main) !important; color: var(--text-primary) !important; }
-
-html.dark .gn-tick-cell,
-html.dark .gn-tick-day,
-html.dark .gn-tick-date { color: var(--text-primary) !important; }
-
-html.dark .gn-user-name-main,
-html.dark .gn-user-task-count { color: var(--text-primary) !important; }
-
-html.dark .gn-row { border-bottom-color: var(--border-color) !important; }
-
-html.dark .gn-grid-line { border-right-color: var(--border-color) !important; }
-
-html.dark { --text-primary: #f8fafc; --text-secondary: #94a3b8; --bg-main: #0f172a; --bg-card: #1e293b; --card-bg: #1e293b; --primary-gradient: linear-gradient(135deg, #312e81 0%, #6366f1 100%); --primary-color: #818cf8; --border-light: #334155; --border-color: #334155; --shadow-sm: 0 1px 2px 0 rgba(255, 255, 255, 0.03); --shadow-md: 0 4px 6px -1px rgba(255, 255, 255, 0.05), 0 2px 4px -2px rgba(255, 255, 255, 0.05); --card-shadow: none; --select-bg: #1e293b; --input-bg: #334155; --input-text: #f8fafc; --success-light: #fef08a; /* Adding a light success color just in case */ }
-
-html.dark .schedule-page .config-tag { background-color: transparent !important; border: none !important; color: var(--text-secondary) !important; }
-
-.dark .strategy-info-box { background-color: rgba(59, 130, 246, 0.15) !important; border: 1px solid rgba(59, 130, 246, 0.3) !important; }
+.dark .btn-icon { transition: all 0.2s ease; }
+.dark button.btn-icon:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
+.dark .btn-icon:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
+.dark button.edit-btn:hover, .dark button.approve-btn:hover, .dark button.btn-complete-dash:hover { background-color: rgba(34, 197, 94, 0.15) !important; color: #4ade80 !important; }
+.dark button.delete-btn:hover, .dark button.reject-btn:hover { background-color: rgba(248, 113, 113, 0.15) !important; color: #f87171 !important; }
+.dark button.vacation-btn:hover, .dark button.constraint-btn:hover { background-color: rgba(56, 189, 248, 0.15) !important; color: #38bdf8 !important; }
+.dark button.settlement-btn:hover { background-color: rgba(192, 132, 252, 0.15) !important; color: #c084fc !important; }
+.dark .recharts-reference-line line, .dark .recharts-reference-line > line, .dark svg .recharts-reference-line line { stroke: #22c55e !important; visibility: visible !important; opacity: 1 !important; stroke-dasharray: 5 3 !important; }
+.dark .recharts-reference-line text, .dark svg .recharts-reference-line text { fill: #22c55e !important; visibility: visible !important; display: block !important; opacity: 1 !important; }

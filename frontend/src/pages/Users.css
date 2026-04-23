@@ -1,112 +1,31 @@
 .users-page { padding: 1rem; }
-
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: none; box-shadow: none; }
-
 .page-header-title { display: flex; align-items: center; gap: 0.75rem; }
-
 .page-header-title h1 { font-size: 1.8rem; font-weight: 700; color: var(--text-primary); margin: 0; }
-
-.dark .page-header-title h1,
-.dark .page-header-title h2,
-.dark .page-title { text-decoration: none !important; border-bottom: none !important; box-shadow: none !important; background-image: none !important; }
-.dark .page-header-title h1::after,
-.dark .page-header-title h2::after,
-.dark .page-title::after,
-.dark .page-header-title h1::before,
-.dark .page-header-title h2::before,
-.dark .page-title::before { display: none !important; content: none !important; height: 0 !important; width: 0 !important; }
-
-.dark h1,
-.dark h2,
-.dark .page-title,
-.dark .title,
-.dark .title-container h2 { border-bottom: none !important; text-decoration: none !important; background-image: none !important; box-shadow: none !important; }
-
-.dark h1::after,
-.dark h1::before,
-.dark h2::after,
-.dark .page-title::after,
-.dark h2::before,
-.dark .page-title::before,
-.dark .title::after,
-.dark .title::before { content: none !important; display: none !important; height: 0 !important; width: 0 !important; }
-
-.dark .title-underline,
-.dark .header-divider,
-.dark hr,
-.dark [class*="divider"],
-.dark [class*="line"] { display: none !important; }
-
+.page-header-title svg, .header-icon-purple { color: #4f46e5 !important; background: transparent !important; fill: none !important; }
+.dark .page-header-title svg, html.dark .page-header-title svg, .dark .header-icon-purple { color: #818cf8 !important; background: transparent !important; }
 .btn-add-primary { background: var(--primary-gradient); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 600; transition: transform 0.1s, box-shadow 0.2s; cursor: pointer; }
-
 .btn-add-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
-
 .filters-container { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
-
 .modern-input { height: 42px; border-radius: 0.5rem; border: 1px solid var(--border-color); padding: 0 1rem; width: auto; min-width: 180px; font-family: inherit; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box; background-color: var(--input-bg); }
-
-.dark .modern-input,
-.dark .search-bar,
-.dark .search-container,
-.dark .search-input { background-color: var(--input-bg) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; }
-
 select.modern-input { background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto; padding-right: 2.5rem; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-color: var(--input-bg); }
-
-.dark select.modern-input { background-color: var(--input-bg) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; }
-
-.dark .page-header,
-.dark .header-container,
-.dark .navbar,
-.dark .top-bar { border-bottom: none !important; box-shadow: none !important; background-color: transparent !important; }
-
-.table-container { background: var(--card-bg); border-radius: 1rem; box-shadow: var(--card-shadow); border: 1px solid var(--border-color); overflow-x: auto; }
-
+.table-container { background: var(--card-bg); border-radius: 1rem; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); overflow-x: auto; }
 .modern-table { width: 100%; min-width: 1100px; border-collapse: collapse; text-align: left; }
-
 .modern-table th, .modern-table td { padding: 1rem 1.5rem; height: 60px; box-sizing: border-box; vertical-align: middle; white-space: nowrap; }
-
 .modern-table th { background-color: var(--bg-main); color: var(--text-secondary); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; border-bottom: 1px solid var(--border-color); }
-
 .modern-table td { color: var(--text-primary); border-bottom: 1px solid var(--border-color); font-size: 0.95rem; }
-
 .modern-table tr:hover { background-color: var(--bg-main); transition: background-color 0.2s ease; }
-
-.dark .modern-table tr:hover { background-color: rgba(255, 255, 255, 0.03) !important; }
-
 .actions-cell { display: flex; gap: 0.5rem; align-items: center; }
-
 .btn-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; margin: 0; border: none; background: transparent; border-radius: 0.375rem; transition: all 0.2s ease; cursor: pointer; color: var(--text-secondary); }
-
-.dark .btn-icon { color: var(--text-secondary) !important; }
-
-.dark .btn-icon:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
-
-.edit-btn:hover { background-color: #dcfce7 !important; color: #16a34a !important; }
-.vacation-btn:hover { background-color: #e0f2fe !important; color: #0284c7 !important; }
-.settlement-btn:hover { background-color: #f3e8ff !important; color: #9333ea !important; }
-.delete-btn:hover { background-color: #fee2e2 !important; color: #dc2626 !important; }
-
+.edit-btn:hover { background-color: rgba(22, 163, 74, 0.15) !important; color: #22c55e !important; }
+.vacation-btn:hover { background-color: rgba(2, 132, 199, 0.15) !important; color: #0284c7 !important; }
+.settlement-btn:hover { background-color: rgba(147, 51, 234, 0.15) !important; color: #9333ea !important; }
+.delete-btn:hover { background-color: rgba(239, 68, 68, 0.15) !important; color: #ef4444 !important; }
 .role-badge, .department-badge, .skill-badge { font-size: 0.75rem; white-space: nowrap !important; overflow: visible !important; text-align: center; height: auto !important; min-height: 26px; display: inline-flex; justify-content: center; align-items: center; padding: 0.25rem 0.8rem; border-radius: 999px; line-height: 1; font-weight: 600; }
-
 .skills-container-table { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-
-.skill-badge { background: #e2e8f0; color: #475569; }
-
-.department-badge { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
-
-.role-admin { background-color: #fce7f3 !important; color: #9d174d !important; }
-.role-manager { background-color: #fef3c7 !important; color: #b45309 !important; }
-.role-worker { background-color: #e0f2fe !important; color: #0369a1 !important; }
-
-/* Dark mode variations for badges */
-.dark .skill-badge { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
-
-.dark .department-badge { background: rgba(129, 140, 248, 0.1); color: #818cf8; border: 1px solid rgba(129, 140, 248, 0.3); }
-
-.dark .role-admin { background-color: rgba(244, 114, 182, 0.1) !important; color: #f472b6 !important; border: 1px solid rgba(244, 114, 182, 0.3); }
-
-.dark .role-manager { background-color: rgba(251, 146, 60, 0.1) !important; color: #fb923c !important; border: 1px solid rgba(251, 146, 60, 0.3); }
-
-.dark .role-worker { background-color: rgba(56, 189, 248, 0.1) !important; color: #38bdf8 !important; border: 1px solid rgba(56, 189, 248, 0.3); }
-
-.error-message { background: #fef2f2; color: #ef4444; padding: 0.8rem 1rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid #fecaca; font-size: 0.9rem; }
+.skill-badge { background: var(--bg-main); color: var(--text-secondary); border: 1px solid var(--border-color); }
+.department-badge { background: rgba(99, 102, 241, 0.1); color: var(--primary-color); border: 1px solid rgba(99, 102, 241, 0.2); }
+.role-admin { background-color: rgba(236, 72, 153, 0.1) !important; color: #ec4899 !important; border: 1px solid rgba(236, 72, 153, 0.2); }
+.role-manager { background-color: rgba(245, 158, 11, 0.1) !important; color: #f59e0b !important; border: 1px solid rgba(245, 158, 11, 0.2); }
+.role-worker { background-color: rgba(14, 165, 233, 0.1) !important; color: #0ea5e9 !important; border: 1px solid rgba(14, 165, 233, 0.2); }
+.error-message { background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 0.8rem 1rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid rgba(239, 68, 68, 0.2); font-size: 0.9rem; }

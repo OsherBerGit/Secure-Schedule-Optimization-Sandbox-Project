@@ -1,12 +1,6 @@
 .unauthorized-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: var(--bg-main); color: var(--text-primary); }
-
-.unauthorized-card { background: var(--card-bg); padding: 3rem; border-radius: 10px; box-shadow: var(--shadow-md); border: 1px solid var(--border-light); text-align: center; max-width: 400px; }
-
+.unauthorized-card { background: var(--card-bg); padding: 3rem; border-radius: 10px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); text-align: center; max-width: 400px; }
 .unauthorized-card h1 { color: var(--primary-color); margin: 0 0 1rem 0; font-size: 2rem; }
-
 .unauthorized-card p { color: var(--text-secondary); margin: 0 0 2rem 0; font-size: 1.1rem; }
-
 .back-button { background: var(--primary-gradient); color: white; padding: 0.875rem 1.5rem; border: none; border-radius: 5px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
-
 .back-button:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-

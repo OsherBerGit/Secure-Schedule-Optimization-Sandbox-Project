@@ -4,7 +4,7 @@
 .gn-legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 11px; font-weight: 800; color: #64748b; }
 .gn-dot { width: 10px; height: 10px; border-radius: 50%; }
 .gn-scroll-area { overflow: auto; height: 450px; }
-.gn-user-label-header { width: 180px; min-width: 180px; background: #f8fafc; border-right: 1px solid #e2e8f0; padding: 0.75rem 1.25rem; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #64748b; position: sticky; left: 0; z-index: 20; }
+.gn-user-label-header { width: 180px; min-width: 180px; background: #f8fafc; border-right: 1px solid #e2e8f0; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #64748b; position: sticky; left: 0; z-index: 20; display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: 700; padding: 1rem; }
 .gn-tick-cell { flex: 1; min-width: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.5rem 0; border-right: 1px solid #f1f5f9; background: #f8fafc; }
 .gn-user-side-info { width: 180px; min-width: 180px; padding: 0.75rem 1.25rem; border-right: 1px solid #e2e8f0; background: white; position: sticky; left: 0; z-index: 20; }
 .gn-task-bar { height: 32px; border-radius: 6px; display: flex; align-items: center; padding: 0 10px; color: white; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); }

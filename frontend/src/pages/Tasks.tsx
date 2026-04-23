@@ -4,14 +4,11 @@ import type { Task, Department, Skill, Status, Priority } from '../types';
 import TaskModal from '../components/TaskModal';
 import { useNavigate } from 'react-router-dom';
 import { Search, Pencil, Trash2, ShieldAlert, ClipboardList } from 'lucide-react';
-import { useAuth } from '../context/useAuth';
+import { usePermissions } from '../hooks/usePermissions';
 import './Tasks.css';
 
 const Tasks: React.FC = () => {
-    const { user: currentUser } = useAuth();
-    const isAdmin = currentUser?.role === 'ADMIN';
-    const isManager = currentUser?.role === 'MANAGER';
-    const canManage = isAdmin || isManager;
+    const { canEdit: canManage } = usePermissions();
 
     const [tasks, setTasks] = useState<Task[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
@@ -124,7 +121,7 @@ const Tasks: React.FC = () => {
                 </div>
                 {canManage && (
                     <button className="btn-add-primary" onClick={() => handleOpenModal()}>
-                         Add New Task
+                        Add New Task
                     </button>
                 )}
             </div>

@@ -1,61 +1,15 @@
-.modern-modal-card,
-.modern-modal-form,
-.modal-body,
-.dates-grid { overflow: visible !important; }
-
-.modal-header { border-top-left-radius: 1rem; border-top-right-radius: 1rem; background: white; }
-
+.modern-modal-card, .modern-modal-form, .modal-body, .dates-grid { overflow: visible !important; }
+.modal-header { border-top-left-radius: 1rem; border-top-right-radius: 1rem; }
 .dates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-
 .modal-body { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
-
-.modern-modal-card { background: white; border-radius: 1rem; box-shadow: var(--shadow-xl); position: relative; max-width: 500px; width: 100%; }
-
+.modern-modal-card { border-radius: 1rem; box-shadow: var(--shadow-md); position: relative; max-width: 500px; width: 100%; background-color: var(--card-bg); border: 1px solid var(--border-color); }
 .modern-form-group { display: flex; flex-direction: column; gap: 0.5rem; }
-
 .modern-form-group label { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); }
-
-.modern-input { height: 48px; border-radius: 0.5rem; border: 1px solid var(--border-light); padding: 0 1rem; font-family: inherit; font-size: 0.95rem; color: var(--text-primary); box-sizing: border-box; width: 100%; outline: none; background-color: var(--input-bg, white); }
-
+.modern-input { height: 48px; border-radius: 0.5rem; border: 1px solid var(--border-color); padding: 0 1rem; font-family: inherit; font-size: 0.95rem; color: var(--text-primary); box-sizing: border-box; width: 100%; outline: none; background-color: var(--input-bg); transition: border-color 0.2s; }
 .modern-input:focus { border-color: var(--primary-color); }
-
-.modal-actions { padding: 1.5rem 2rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 1rem; border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem; }
-
-.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; background: #cbd5e1; }
-
-.btn-cancel { background: white; border: 1px solid var(--border-light); color: var(--text-primary); padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-weight: 500; transition: all 0.2s; }
-
-.btn-cancel:hover { background: #f1f5f9; }
-
-/* Force Dark Mode Overrides */
-.dark .modern-modal-card { background-color: var(--card-bg) !important; color: var(--text-primary) !important; }
-
-.dark .modern-modal-card input,
-.dark .modern-modal-card select,
-.dark .modern-modal-card textarea { background-color: var(--input-bg) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; }
-
-.dark .modern-modal-card label { color: var(--text-secondary) !important; }
-
-.dark .modal-header h2,
-.dark .modern-close-btn { color: var(--text-primary) !important; }
-
-.dark .modal-header { border-bottom: 1px solid var(--border-color) !important; background-color: var(--card-bg) !important; }
-
-.dark .modal-actions { border-top: 1px solid var(--border-color) !important; background-color: var(--card-bg) !important; }
-
-.dark .modern-close-btn { background: transparent !important; border: none !important; color: var(--text-secondary) !important; box-shadow: none !important; }
-
-.dark .modern-close-btn:hover { color: var(--text-primary) !important; background-color: rgba(255, 255, 255, 0.1) !important; }
-
-.dark .btn-cancel,
-.dark .cancel-btn { background: transparent !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; }
-
-.dark .modern-modal-card button:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
-
-.vacation-calendar .react-datepicker__navigation { top: 5px !important; }
-
-.vacation-calendar .react-datepicker__navigation--next { right: 10px !important; top: 3px !important; }
-
-.vacation-calendar .react-datepicker__navigation--previous { left: 0px !important; top: 3px !important; }
-
-.dark .react-datepicker__day--disabled { opacity: 0.2 !important; }
+.modal-actions { padding: 1.5rem 2rem; border-top: 1px solid var(--border-color); background-color: var(--bg-main); display: flex; justify-content: flex-end; gap: 1rem; border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem; }
+.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-cancel { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+.btn-cancel:hover { background: var(--border-color); }
+.vacation-calendar .react-datepicker__navigation--next, .vacation-datepicker-popper .react-datepicker__navigation--next { right: 2px !important; top: 3px !important; }
+.vacation-calendar .react-datepicker__navigation--previous, .vacation-datepicker-popper .react-datepicker__navigation--previous { left: 2px !important; }

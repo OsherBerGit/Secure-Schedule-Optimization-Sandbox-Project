@@ -2,20 +2,18 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Vacation, CreateVacationRequest, UpdateVacationRequest, VacationRequestDto, User } from '../types'
 import { vacationApi, userApi } from '../api'
 import { useAuth } from '../context/useAuth'
+import { usePermissions } from '../hooks/usePermissions'
 import VacationModal from '../components/VacationModal'
 import { useLocation, useSearchParams } from 'react-router-dom'
-import { Plane, Plus, Check, X, Pencil, Trash2, Calendar, Search } from 'lucide-react'
+import { Plane, Check, X, Pencil, Trash2, Calendar, Search } from 'lucide-react'
 import './Vacations.css'
 
 const Vacations = () => {
     const { user: currentUser } = useAuth()
+    const { isAdmin, isManager, isWorker, canEdit: canManage } = usePermissions()
     const location = useLocation()
     const [searchParams, setSearchParams] = useSearchParams()
     const queryUserId = searchParams.get('userId')
-
-    const isAdmin = currentUser?.role === 'ADMIN'
-    const isManager = currentUser?.role === 'MANAGER'
-    const canManage = isAdmin || isManager
 
     const [vacations, setVacations] = useState<Vacation[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -123,8 +121,8 @@ const Vacations = () => {
 
     const displayedVacations = useMemo(() => {
         let list = vacations;
-        if (currentUser?.role === 'WORKER')
-            list = list.filter(v => v.userId === currentUser.id);
+        if (isWorker)
+            list = list.filter(v => v.userId === currentUser?.id);
         else {
             list = list.filter(v => {
                 if (filterDepartment && getDepartmentName(v) !== filterDepartment) return false
@@ -133,7 +131,7 @@ const Vacations = () => {
             });
         }
         return list.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
-    }, [vacations, currentUser, filterDepartment, filterUser, getDepartmentName])
+    }, [vacations, isWorker, currentUser?.id, filterDepartment, filterUser, getDepartmentName])
 
     return (
         <div className="vacations-page">
@@ -143,7 +141,7 @@ const Vacations = () => {
                     <h1>Vacations Management</h1>
                 </div>
                 <button className="btn-add-primary" onClick={handleAddVacation}>
-                     {canManage ? 'Add Vacation' : 'Request Vacation'}
+                    {canManage ? 'Add Vacation' : 'Request Vacation'}
                 </button>
             </div>
 

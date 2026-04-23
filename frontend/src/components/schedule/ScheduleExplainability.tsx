@@ -1,35 +1,20 @@
-import React, { useState, useEffect } from 'react'
 import type { UnscheduledTaskResult } from '../../types'
 import { formatReason } from '../../utils/scheduleUtils'
 import { AlertCircle, ChevronRight } from 'lucide-react'
 import './ScheduleExplainability.css'
 
 const ScheduleExplainability = ({ failures }: { failures: UnscheduledTaskResult[] }) => {
-    const [isDarkMode, setIsDarkMode] = useState(false)
-
-    useEffect(() => {
-        const checkDarkMode = () => setIsDarkMode(document.documentElement.classList.contains('dark'))
-        checkDarkMode()
-        const observer = new MutationObserver(checkDarkMode)
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-        return () => observer.disconnect()
-    }, [])
-
     if (!failures?.length) return null
 
     return (
         <div className="ex-container">
-            <div
-                className="ex-header"
-                style={isDarkMode ? { backgroundColor: 'rgba(245, 158, 11, 0.15)', borderColor: 'rgba(245, 158, 11, 0.3)' } : {}}
-            >
+            <div className="ex-header">
                 <div className="ex-header-title-row">
-                    <AlertCircle className="ex-icon" size={20} />
+                    <AlertCircle className="header-icon-purple" size={20} />
                     <h3>Optimization Insights</h3>
                 </div>
                 <p className="ex-subtitle">Resource conflicts or constraints prevented these tasks from being scheduled.</p>
             </div>
-
             <div className="ex-table-wrapper">
                 <table className="ex-table">
                     <thead>

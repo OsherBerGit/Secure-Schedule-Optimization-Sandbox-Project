@@ -1,35 +1,8 @@
-.modern-modal-card,
-.modern-modal-form,
-.modal-body { overflow: visible !important; }
-
-.modal-header { border-top-left-radius: 1rem; border-top-right-radius: 1rem; background: white; }
-
+.modern-modal-card, .modern-modal-form, .modal-body { overflow: visible !important; }
+.modern-modal-card { background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); border-radius: 1rem; }
+.modal-header { border-top-left-radius: 1rem; border-top-right-radius: 1rem; }
 .modern-form-group label { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; }
-
-.modern-input { font-size: 0.95rem; color: var(--text-primary); background-color: white; width: 100%; height: 48px; border-radius: 0.5rem; border: 1px solid var(--border-light); padding: 0 1rem; font-family: inherit; box-sizing: border-box; }
-
+.modern-input { font-size: 0.95rem; color: var(--text-primary); background-color: var(--input-bg); width: 100%; height: 48px; border-radius: 0.5rem; border: 1px solid var(--border-color); padding: 0 1rem; font-family: inherit; box-sizing: border-box; transition: border-color 0.2s; }
 .modern-input:focus { outline: none; border-color: var(--primary-color); }
-
-.dark .modern-modal-card { background-color: var(--card-bg) !important; color: var(--text-primary) !important; }
-
-.dark .modern-modal-card input,
-.dark .modern-modal-card select,
-.dark .modern-modal-card textarea { background-color: var(--input-bg) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; }
-
-.dark .modern-modal-card label { color: var(--text-secondary) !important; }
-
-.dark .modal-header h2,
-.dark .modern-close-btn { color: var(--text-primary) !important; }
-
-.dark .modal-header { border-bottom: 1px solid var(--border-color) !important; background-color: var(--card-bg) !important; }
-
-.dark .modal-actions { border-top: 1px solid var(--border-color) !important; background-color: var(--card-bg) !important; }
-
-.dark .modern-close-btn { background: transparent !important; border: none !important; color: var(--text-secondary) !important; box-shadow: none !important; }
-
-.dark .modern-close-btn:hover { color: var(--text-primary) !important; background-color: rgba(255, 255, 255, 0.1) !important; }
-
-.dark .btn-cancel,
-.dark .cancel-btn { background: transparent !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; }
-
-.dark .modern-modal-card button:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
+.settlement-datepicker-popper .react-datepicker__navigation--next { right: 100px !important; top: 3px !important; }
+.settlement-datepicker-popper .react-datepicker__navigation--previous { left: 2px !important; }
