@@ -11,10 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Service for managing task priorities (lookup table).
- * Priorities define the importance level of tasks (e.g., LOW, MEDIUM, HIGH, CRITICAL).
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j

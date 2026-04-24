@@ -3,32 +3,22 @@ package com.example.mainbackend.service;
 import com.example.mainbackend.constants.RoleType;
 import com.example.mainbackend.constants.SettlementStatusLevel;
 import com.example.mainbackend.constants.TaskStatusLevel;
+import com.example.mainbackend.constants.VacationStatusLevel;
 import com.example.mainbackend.dto.settlement.SettlementCreateRequest;
 import com.example.mainbackend.dto.settlement.SettlementResponseDto;
-import com.example.mainbackend.entity.Settlement;
-import com.example.mainbackend.entity.SettlementStatus;
-import com.example.mainbackend.entity.Task;
-import com.example.mainbackend.entity.TaskStatus;
-import com.example.mainbackend.entity.User;
+import com.example.mainbackend.entity.*;
 import com.example.mainbackend.mapper.SettlementMapper;
-import com.example.mainbackend.repository.SettlementRepository;
-import com.example.mainbackend.repository.SettlementStatusRepository;
-import com.example.mainbackend.repository.TaskRepository;
-import com.example.mainbackend.repository.TaskStatusRepository;
-import com.example.mainbackend.repository.UserRepository;
+import com.example.mainbackend.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Service for managing settlements (final schedule assignments).
- * A settlement represents the assignment of a user to a task with dates.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -39,6 +29,7 @@ public class SettlementService {
     private final UserRepository userRepository;
     private final SettlementStatusRepository settlementStatusRepository;
     private final TaskStatusRepository taskStatusRepository;
+    private final VacationRepository vacationRepository;
     private final SettlementMapper mapper;
 
     @Transactional
@@ -50,6 +41,23 @@ public class SettlementService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + request.getUserId()));
 
+        LocalDateTime startDT = request.getSettlementDate();
+        LocalDateTime endDT = request.getCompletionDate() != null ? request.getCompletionDate() : startDT;
+        LocalDate startD = startDT.toLocalDate();
+        LocalDate endD = endDT.toLocalDate();
+
+        if (vacationRepository.hasApprovedVacationOverlap(user.getId(), VacationStatusLevel.APPROVED.name(), startD, endD))
+            throw new IllegalArgumentException("User is on an approved vacation.");
+
+        if (settlementRepository.hasActiveSettlementOverlap(user.getId(), startDT, endDT))
+            throw new IllegalArgumentException("User is already assigned to another task during this time.");
+
+        if (user.getMaxTasks() != null) {
+            long activeCount = settlementRepository.countByUserIdAndStatus_NameNotIn(user.getId(), List.of(SettlementStatusLevel.COMPLETED.name(), SettlementStatusLevel.FAILED.name()));
+            if (activeCount >= user.getMaxTasks())
+                throw new IllegalArgumentException("User has reached the maximum allowed active tasks (" + user.getMaxTasks() + ").");
+        }
+
         // Resolve settlement status — default to PENDING
         SettlementStatus status;
         if (request.getStatusId() != null)
@@ -57,7 +65,7 @@ public class SettlementService {
                     .orElseThrow(() -> new IllegalArgumentException("Settlement status not found: " + request.getStatusId()));
         else
             status = settlementStatusRepository.findByName(SettlementStatusLevel.PENDING.name())
-                    .orElseThrow(() -> new IllegalStateException("PENDING status not seeded in settlement_statuses"));
+                    .orElseThrow(() -> new IllegalStateException(SettlementStatusLevel.PENDING.name() + " status not seeded in settlement_statuses"));
 
         Settlement settlement = Settlement.builder()
                 .task(task)

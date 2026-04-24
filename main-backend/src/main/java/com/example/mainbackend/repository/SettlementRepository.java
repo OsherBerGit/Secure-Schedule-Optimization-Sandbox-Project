@@ -40,4 +40,11 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
 
     @Query("SELECT s.user.id, COUNT(s) FROM Settlement s WHERE s.user.id IN :userIds AND s.status.name IN :statusNames GROUP BY s.user.id")
     List<Object[]> countActiveSettlementsUserIds(@Param("userIds") Collection<Long> userIds, @Param("statusNames") Collection<String> statusNames);
+
+    @Query("SELECT COUNT(s) > 0 FROM Settlement s WHERE s.user.id = :userId " +
+            "AND s.status.name NOT IN ('COMPLETED', 'FAILED') " +
+            "AND s.settlementDate <= :endDate AND s.completionDate >= :startDate")
+    boolean hasActiveSettlementOverlap(@Param("userId") Long userId, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    long countByUserIdAndStatus_NameNotIn(Long userId, List<String> finishedStatuses);
 }
