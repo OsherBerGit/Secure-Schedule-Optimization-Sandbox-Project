@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # 1. Database (MySQL)
+  # ==========================================
+  db:
+    image: mysql:8.0
+    container_name: secure_schedule_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-SecurePass123!}
+      MYSQL_DATABASE: main_backend_db
+    ports:
+      - "3306:3306" # Allows you to connect with DataGrip/Workbench for debugging purposes
+    networks:
+      - db_network
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # ==========================================
+  # 2. Main Backend (Spring Boot)
+  # ==========================================
+  main-backend:
+    build:
+      context: ./main-backend
+      dockerfile: Dockerfile
+    container_name: secure_schedule_main
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      # Using the container name 'db' instead of localhost for internal routing
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/main_backend_db?createDatabaseIfNotExist=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-SecurePass123!}
+      # Using the container name 'side-backend' instead of localhost for internal routing
+      - ALGO_SERVICE_URL=http://side-backend:8081
+      - JWT_SECRET=${JWT_SECRET:-super-secret-key-for-dev-environment-only-min-32-chars}
+    networks:
+      - frontend_network
+      - db_network
+      - algo_network
+
+  # ==========================================
+  # 3. Algorithm Sandbox (Isolated Side-Backend)
+  # ==========================================
+  side-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.side-backend
+    container_name: secure_schedule_algo
+    restart: always
+    # Strict Security: We are NOT exposing ports to the host machine! (No 'ports:' section)
+    # Only containers in the 'algo_network' can access this service.
+    expose:
+      - "8081"
+    environment:
+      - INTERNAL_KEY=${INTERNAL_KEY:-dev-key}
+    networks:
+      - algo_network
+
+  # ==========================================
+  # 4. Frontend (React + Nginx)
+  # ==========================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: secure_schedule_frontend
+    restart: always
+    ports:
+      - "80:80" # Access to the application will be via http://localhost
+    depends_on:
+      - main-backend
+    networks:
+      - frontend_network
+
+# ==========================================
+# Security Networks (Zero-Trust Segmentation)
+# ==========================================
+networks:
+  frontend_network:
+    driver: bridge
+  db_network:
+    driver: bridge
+    internal: true # Completely blocks the container's access to the external internet
+  algo_network:
+    driver: bridge
+    internal: true # Completely closed Sandbox environment for the algorithm engine
+
+# ==========================================
+# Persistent Volumes
+# ==========================================
+volumes:
+  db_data: # Ensures DB data is not deleted when Docker containers are stopped/removed

@@ -1,0 +1,39 @@
+# ==========================================
+# Stage 1: Build the application (Builder)
+# ==========================================
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
+WORKDIR /build
+
+# Step 1: Copy and install the 'algorithm' pure library locally
+COPY algorithm/pom.xml algorithm/
+COPY algorithm/src algorithm/src/
+RUN mvn -f algorithm/pom.xml clean install -DskipTests
+
+# Step 2: Copy and build the 'side-backend' which depends on 'algorithm'
+COPY side-backend/pom.xml side-backend/
+COPY side-backend/src side-backend/src/
+RUN mvn -f side-backend/pom.xml clean package -DskipTests
+
+# ==========================================
+# Stage 2: Create the secure Sandbox Gatekeeper image
+# ==========================================
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+
+# SECURITY: Create a non-root user for the isolated process
+RUN addgroup -S algo && adduser -S algo -G algo
+USER algo:algo
+
+# Copy the compiled JAR from the builder stage
+COPY --from=builder /build/side-backend/target/side-backend-0.0.1-SNAPSHOT.jar ./app.jar
+
+# Expose the algorithm port
+EXPOSE 8081
+
+# SECURITY: Override 127.0.0.1 to 0.0.0.0 so it can receive traffic from the
+# isolated Docker internal network (from main-backend ONLY).
+# We also expect INTERNAL_KEY to be injected via docker-compose.
+ENV SERVER_ADDRESS=0.0.0.0
+
+# Run the stateless algorithm service
+ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
