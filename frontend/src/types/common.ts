@@ -94,7 +94,14 @@ export interface ScheduleResult {
     assignedTasks: number;
     unassignedTasks: number;
     assignments: TaskAssignmentResult[];
-    /** Best fitness score recorded at each generation (Memetic algorithm only). */
-    fitnessHistory?: number[];
     unscheduledTasks?: UnscheduledTaskResult[];
+}
+
+export interface MemeticScheduleResult extends ScheduleResult {
+    strategyUsed: 'MEMETIC';
+    fitnessHistory: number[];
+}
+
+export function isMemeticResult(result: ScheduleResult | null | undefined): result is MemeticScheduleResult {
+    return !!result && result.strategyUsed === 'MEMETIC' && 'fitnessHistory' in result;
 }

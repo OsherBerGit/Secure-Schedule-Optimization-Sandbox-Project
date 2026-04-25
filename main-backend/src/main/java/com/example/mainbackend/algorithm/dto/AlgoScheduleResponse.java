@@ -1,5 +1,7 @@
 package com.example.mainbackend.algorithm.dto;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -12,6 +14,14 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.EXISTING_PROPERTY,
+        property = "strategyUsed",
+        visible = true,
+        defaultImpl = AlgoScheduleResponse.class
+)
+@JsonSubTypes({ @JsonSubTypes.Type(value = MemeticScheduleResponse.class, name = "MEMETIC") })
 public class AlgoScheduleResponse {
     @NotBlank(message = "Strategy used must be reported")
     private String strategyUsed;
@@ -29,7 +39,4 @@ public class AlgoScheduleResponse {
     @Valid
     private List<AlgoTaskAssignmentResponse> assignments;
     private List<AlgoUnscheduledTaskResponse> unscheduledTasks;
-
-    /** Best fitness score per generation (Memetic algorithm only). */
-    private List<Double> fitnessHistory;
 }

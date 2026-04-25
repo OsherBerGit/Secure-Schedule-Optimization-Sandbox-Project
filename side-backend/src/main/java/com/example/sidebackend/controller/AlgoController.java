@@ -31,7 +31,7 @@ public class AlgoController {
         SchedulingResponseDto response = algoService.schedule(request);
 
         log.info("[AlgoController] Scheduling complete — assigned={}/{}, strategy='{}'",
-                response.assignedTasks(), response.totalTasks(), response.strategyUsed());
+                response.getAssignedTasks(), response.getAssignedTasks(), response.getStrategyUsed());
 
         return ResponseEntity.ok(response);
     }

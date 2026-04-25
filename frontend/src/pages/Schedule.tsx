@@ -10,7 +10,11 @@ import SchedulingConfigurationModal from '../components/SchedulingConfigurationM
 import ScheduleGantt from '../components/schedule/ScheduleGantt';
 import ScheduleTable from '../components/schedule/ScheduleTable';
 import ScheduleExplainability from '../components/schedule/ScheduleExplainability';
+
+// התיקון הקריטי מס' 1: הפרדת הייבוא של Type מהייבוא של הפונקציה
 import type { ScheduleStrategy } from '../types';
+import { isMemeticResult } from '../types';
+
 import './Schedule.css';
 
 const STRATEGY_DESCRIPTIONS: Record<ScheduleStrategy, string> = {
@@ -23,7 +27,7 @@ const STRATEGY_DESCRIPTIONS: Record<ScheduleStrategy, string> = {
 const Schedule: React.FC = () => {
     const { canEdit: canManage, isWorker } = usePermissions();
     const { tasks, users, departments, settlements, isLoading: isDataLoading, error: dataError } = useScheduleData();
-    const { scheduleResult, fitnessData, isGenerating, isSaving, error: algoError, validationErrors, successMsg, runAlgorithm, saveSchedule } = useScheduleAlgorithm();
+    const { scheduleResult, isGenerating, isSaving, error: algoError, validationErrors, successMsg, runAlgorithm, saveSchedule } = useScheduleAlgorithm();
     const { configs, isConfigModalOpen, selectedConfigId, isLoading: isConfigLoading, error: configError, openConfigModal, closeConfigModal, selectConfig, createConfig, fetchConfigs } = useSchedulingConfig();
     const [searchParams] = useSearchParams();
     const [viewMode, setViewMode] = useState<'gantt' | 'table'>('gantt');
@@ -35,7 +39,8 @@ const Schedule: React.FC = () => {
     }, [isConfigModalOpen, fetchConfigs]);
 
     const mergedTasks = useMemo(() => tasks.map(t => {
-        const draft = scheduleResult?.assignments.find(a => a.taskId === t.id);
+        // התיקון הקריטי מס' 2: שימוש בסימן שאלה גם אחרי assignments להגנה מקריסה
+        const draft = scheduleResult?.assignments?.find(a => a.taskId === t.id);
         return draft ? { ...t, startTime: draft.scheduledStart ?? t.startTime } : t;
     }), [tasks, scheduleResult]);
 
@@ -44,7 +49,8 @@ const Schedule: React.FC = () => {
         settlements?.forEach(s => {
             if (s.taskId) map.set(s.taskId, s.userId);
         });
-        scheduleResult?.assignments.forEach(a => {
+        // התיקון הקריטי מס' 2 (חלק שני): הגנה בלולאת ה-forEach
+        scheduleResult?.assignments?.forEach(a => {
             map.set(a.taskId, a.assignedUserId);
         });
         return map;
@@ -160,10 +166,10 @@ const Schedule: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                    {scheduleResult.strategyUsed === 'MEMETIC' && fitnessData && fitnessData.length > 0 && (
+                    {isMemeticResult(scheduleResult) && scheduleResult.fitnessHistory && scheduleResult.fitnessHistory.length > 0 && (
                         <div className="fitness-section">
                             <div className="fitness-header"><LayoutDashboard size={18} /><span>Convergence Analysis (Fitness Score)</span></div>
-                            <FitnessChart data={fitnessData} />
+                            <FitnessChart data={scheduleResult.fitnessHistory} />
                         </div>
                     )}
                 </div>

@@ -2,10 +2,12 @@ package com.example.mainbackend.algorithm.service;
 
 import com.example.mainbackend.algorithm.AlgorithmClient;
 import com.example.mainbackend.algorithm.dto.*;
+import com.example.mainbackend.constants.ConstraintTypeLevel;
 import com.example.mainbackend.constants.RoleType;
 import com.example.mainbackend.constants.SettlementStatusLevel;
 import com.example.mainbackend.constants.TaskStatusLevel;
 import com.example.mainbackend.entity.*;
+import com.example.mainbackend.entity.ConstraintType;
 import com.example.mainbackend.exception.BatchValidationException;
 import com.example.mainbackend.mapper.TaskMapper;
 import com.example.mainbackend.mapper.UserMapper;
@@ -204,22 +206,26 @@ public class SchedulingService {
 
                 if (predStart == null || predEnd == null) continue;
 
-                String type = (constraint.getConstraintType() != null) ? constraint.getConstraintType().getName() : "FINISH_TO_START";
+                String typeStr = (constraint.getConstraintType() != null) ? constraint.getConstraintType().getName() : ConstraintTypeLevel.FINISH_TO_START.name();
+                ConstraintTypeLevel typeLevel;
 
-                switch (type) {
-                    case "FINISH_TO_START" -> {
+                try { typeLevel = ConstraintTypeLevel.valueOf(typeStr); }
+                catch (IllegalArgumentException e) { typeLevel = ConstraintTypeLevel.FINISH_TO_START; }
+
+                switch (typeLevel) {
+                    case FINISH_TO_START -> {
                         if (predEnd.isAfter(assignment.getScheduledStart()))
                             errors.add(String.format("Constraint (FS) failed: Task '%s' must start after '%s' ends.", task.getTitle(), predecessor.getTitle()));
                     }
-                    case "START_TO_START" -> {
+                    case START_TO_START -> {
                         if (predStart.isAfter(assignment.getScheduledStart()))
                             errors.add(String.format("Constraint (SS) failed: Task '%s' cannot start before '%s' starts.", task.getTitle(), predecessor.getTitle()));
                     }
-                    case "FINISH_TO_FINISH" -> {
+                    case FINISH_TO_FINISH -> {
                         if (predEnd.isAfter(assignment.getScheduledEnd()))
                             errors.add(String.format("Constraint (FF) failed: Task '%s' cannot finish before '%s' finishes.", task.getTitle(), predecessor.getTitle()));
                     }
-                    case "START_TO_FINISH" -> {
+                    case START_TO_FINISH -> {
                         if (predStart.isAfter(assignment.getScheduledEnd()))
                             errors.add(String.format("Constraint (SF) failed: Task '%s' cannot finish before '%s' starts.", task.getTitle(), predecessor.getTitle()));
                     }

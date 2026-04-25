@@ -5,7 +5,6 @@ import { isAxiosError } from 'axios'
 
 export const useScheduleAlgorithm = () => {
     const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null)
-    const [fitnessData, setFitnessData] = useState<number[]>([])
     const [isGenerating, setIsGenerating] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -20,22 +19,18 @@ export const useScheduleAlgorithm = () => {
         setIsGenerating(true)
         clearMessages()
         setScheduleResult(null)
-        setFitnessData([])
 
         try {
             const res = (strategy === 'MEMETIC' && configId)
                 ? await scheduleApi.runWithConfig(strategy, configId, departmentId)
                 : await scheduleApi.run(strategy, departmentId)
 
-            if (res.data.fitnessHistory)
-                setFitnessData(res.data.fitnessHistory)
-
             setScheduleResult(res.data)
 
             const { assignedTasks, unassignedTasks, strategyUsed } = res.data
 
             setSuccessMsg(
-                `Draft generated using ${res.data.strategyUsed} - ` +
+                `Draft generated using ${strategyUsed} - ` +
                 `${assignedTasks} assigned, ${unassignedTasks} unassigned. ` +
                 `Review below and click "Approve & Save" to persist.`
             )
@@ -80,7 +75,6 @@ export const useScheduleAlgorithm = () => {
             setSuccessMsg(msg)
 
             setScheduleResult(null)
-            setFitnessData([])
 
             return msg
         } catch (err: unknown) {
@@ -112,7 +106,6 @@ export const useScheduleAlgorithm = () => {
 
     return {
         scheduleResult,
-        fitnessData,
         isGenerating,
         isSaving,
         error,

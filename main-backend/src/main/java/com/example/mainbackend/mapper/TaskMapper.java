@@ -3,6 +3,7 @@ package com.example.mainbackend.mapper;
 import com.example.mainbackend.algorithm.dto.AlgoConstraintRequest;
 import com.example.mainbackend.algorithm.dto.AlgoTaskRequest;
 import com.example.mainbackend.algorithm.dto.ConstraintType;
+import com.example.mainbackend.constants.ConstraintTypeLevel;
 import com.example.mainbackend.dto.skill.SkillDto;
 import com.example.mainbackend.dto.task.TaskResponseDto;
 import com.example.mainbackend.entity.Task;
@@ -76,11 +77,17 @@ public class TaskMapper {
     private ConstraintType mapStringToConstraintType(String entityType) {
         if (entityType == null) return ConstraintType.FS;
 
-        return switch (entityType) {
-            case "START_TO_START" -> ConstraintType.SS;
-            case "FINISH_TO_FINISH" -> ConstraintType.FF;
-            case "START_TO_FINISH" -> ConstraintType.SF;
-            default -> ConstraintType.FS; // FINISH_TO_START
-        };
+        try {
+            ConstraintTypeLevel level = ConstraintTypeLevel.valueOf(entityType);
+
+            return switch (level) {
+                case START_TO_START -> ConstraintType.SS;
+                case FINISH_TO_FINISH -> ConstraintType.FF;
+                case START_TO_FINISH -> ConstraintType.SF;
+                case FINISH_TO_START -> ConstraintType.FS;
+            };
+        } catch (IllegalArgumentException e) {
+            return ConstraintType.FS;
+        }
     }
 }

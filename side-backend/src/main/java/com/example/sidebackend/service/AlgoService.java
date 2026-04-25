@@ -56,6 +56,7 @@ public class AlgoService {
     }
 
     // ─── Step 1: Sanitization ─────────────────────────────────────────────────
+
     private void sanitize(SchedulingRequestDto request) {
         List<Long> userIds = request.users().stream().map(UserDto::id).toList();
         if (userIds.stream().distinct().count() != userIds.size())
@@ -85,16 +86,13 @@ public class AlgoService {
 
         for (TaskDto t : request.tasks()) {
             if (t.durationHours() <= 0)
-                throw new IllegalArgumentException(
-                        "Task [id=" + t.id() + "] has non-positive durationHours: " + t.durationHours());
+                throw new IllegalArgumentException("Task [id=" + t.id() + "] has non-positive durationHours: " + t.durationHours());
 
             if (t.durationHours() > 8760)
-                throw new IllegalArgumentException(
-                        "Task [id=" + t.id() + "] durationHours exceeds 8760 (one year): " + t.durationHours());
+                throw new IllegalArgumentException("Task [id=" + t.id() + "] durationHours exceeds 8760 (one year): " + t.durationHours());
 
             if (t.priorityLevel() != null && t.priorityLevel() < 0)
-                throw new IllegalArgumentException(
-                        "Task [id=" + t.id() + "] has a negative priorityLevel: " + t.priorityLevel());
+                throw new IllegalArgumentException("Task [id=" + t.id() + "] has a negative priorityLevel: " + t.priorityLevel());
 
             if (t.constraints() != null) {
                 for (TaskConstraintDto constraint : t.constraints()) {
@@ -103,11 +101,10 @@ public class AlgoService {
                     if (predId == null) continue;
 
                     if (!taskIds.contains(predId))
-                        throw new IllegalArgumentException(
-                                "Task [id=" + t.id() + "] references unknown predecessor task id: " + predId);
+                        throw new IllegalArgumentException("Task [id=" + t.id() + "] references unknown predecessor task id: " + predId);
+
                     if (predId.equals(t.id()))
-                        throw new IllegalArgumentException(
-                                "Task [id=" + t.id() + "] lists itself as a predecessor (circular reference).");
+                        throw new IllegalArgumentException("Task [id=" + t.id() + "] lists itself as a predecessor (circular reference).");
                 }
             }
         }
@@ -122,12 +119,12 @@ public class AlgoService {
                                                com.example.algorithm.model.AlgoSchedulingConfiguration config) {
         String name = (strategyName != null) ? strategyName.toUpperCase().trim() : DEFAULT_STRATEGY;
         return switch (name) {
-            case "MEMETIC"     -> new MemeticSchedulingStrategy(
+            case "MEMETIC" -> new MemeticSchedulingStrategy(
                                       config != null ? config : new com.example.algorithm.model.AlgoSchedulingConfiguration(
                                               1.0, 1.0, 1.0, 50, 100, 0.1, 0.9, 0.2));
             case "ROUND_ROBIN" -> new RoundRobinSchedulingStrategy();
             case "CONSTRAINT_PROGRAMMING" -> new ConstraintProgrammingStrategy();
-            default            -> new GreedySchedulingStrategy();
+            default -> new GreedySchedulingStrategy();
         };
     }
 
@@ -162,12 +159,10 @@ public class AlgoService {
             }
         }
 
-        List<Double> fitnessHistory = (strategy instanceof MemeticSchedulingStrategy memetic)
-                ? new ArrayList<>(memetic.getFitnessHistory())
-                : null;
-
-        return new SchedulingResponseDto(
-                strategy.getName(), totalTasks, assigned, totalTasks - assigned,
-                dtos, unscheduled, fitnessHistory);
+        if (strategy instanceof MemeticSchedulingStrategy memetic) {
+            List<Double> fitnessHistory = new ArrayList<>(memetic.getFitnessHistory());
+            return new MemeticScheduleResponseDto(strategy.getName(), totalTasks, assigned, totalTasks - assigned, dtos, unscheduled, fitnessHistory);
+        } else
+            return new SchedulingResponseDto(strategy.getName(), totalTasks, assigned, totalTasks - assigned, dtos, unscheduled);
     }
 }
