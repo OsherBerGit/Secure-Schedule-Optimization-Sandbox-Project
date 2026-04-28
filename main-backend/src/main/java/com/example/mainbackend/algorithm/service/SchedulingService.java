@@ -30,14 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Orchestrates the secure scheduling flow (Zero-Trust execution).
- * * Architecture Rules Enforced:
- * 1. Zero-Trust: The Algorithm engine is treated as an untrusted external entity.
- * All outputs must be strictly validated against the central DB state before persistence.
- * 2. Data Isolation: Only OPEN tasks are exposed. CLOSED/LOCKED tasks remain hidden.
- * 3. N+1 Prevention: Uses Bulk-fetching patterns to validate assignments efficiently.
- */
 @Service
 @Slf4j
 @RequiredArgsConstructor

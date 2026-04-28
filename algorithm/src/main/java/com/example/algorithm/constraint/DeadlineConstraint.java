@@ -2,15 +2,10 @@ package com.example.algorithm.constraint;
 
 import java.time.LocalDateTime;
 
-/**
- * Deadline Constraint.
- *
- * <p>Rule: The proposed task end time must not exceed the task's hard deadline.
- * If the task has no deadline set, this constraint is skipped (passes automatically).</p>
- *
- * <p>Zero-Trust: operates only on anonymous IDs and timestamps from AlgoTask.
- * No names, descriptions, or status strings are accessed.</p>
- */
+// Deadline Constraint.
+
+// The proposed task end time must not exceed the task's hard deadline.
+// If the task has no deadline set, this constraint is skipped (passes automatically).
 public class DeadlineConstraint implements ConstraintChecker {
 
     @Override

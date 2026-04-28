@@ -11,10 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Service for managing task constraint types (lookup table).
- * Constraint types define relationships between tasks (e.g., FINISH_TO_START, START_TO_START).
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j

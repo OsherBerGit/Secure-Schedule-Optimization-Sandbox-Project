@@ -14,32 +14,16 @@ import com.example.algorithm.model.TaskAssignment;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/**
- * Memetic Algorithm (Hybrid Genetic Algorithm + Local Search).
- *
- * <p>Combines a Genetic Algorithm (population-based global search) with a
- * Hill-Climbing Local Search (individual refinement) to find high-quality
- * task-to-worker assignments.</p>
- *
- * <h3>Algorithm overview</h3>
- * <ol>
- *   <li><b>Initialisation</b> — generate a random population of chromosomes,
- *       where each gene {@code i} holds the worker-list index assigned to task {@code i}.</li>
- *   <li><b>Evolution loop</b> (repeated for {@code maxGenerations} generations):
- *     <ul>
- *       <li>Evaluate fitness of every unevaluated individual.</li>
- *       <li>Sort population best-first.</li>
- *       <li>Preserve the single best individual (elitism).</li>
- *       <li>Fill the rest of the new population via tournament selection →
- *           uniform crossover → mutation → local search.</li>
- *     </ul>
- *   </li>
- *   <li><b>Decode</b> — translate the best chromosome into {@link TaskAssignment} objects
- *       using the same constraint pipeline inherited from {@link BaseSchedulingStrategy}.</li>
- * </ol>
- *
- * <p>Pure Java: no Spring, Jackson, or Lombok annotations.</p>
- */
+// Memetic Algorithm (Hybrid Genetic Algorithm + Local Search).
+// Combines a Genetic Algorithm (population-based global search) with a Hill-Climbing Local Search (individual refinement) to find high-quality task-to-worker assignments.
+
+// Initialisation — generate a random population of chromosomes, where each gene holds the worker-list index assigned to task.
+// Evolution loop (repeated for maxGenerations generations):
+// Evaluate fitness of every unevaluated individual.
+// Sort population best-first.
+// Preserve the single best individual (elitism).
+// Fill the rest of the new population via tournament selection, uniform crossover, mutation, local search.
+// Decode— translate the best chromosome into TaskAssignment objects using the same constraint pipeline inherited from BaseSchedulingStrategy}.
 public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
 
     private static final int TOURNAMENT_SIZE = 3;
@@ -110,12 +94,10 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
         return decodeChromosome(bestSolution, tasks, users);
     }
 
-    /**
-     * Creates an initial population, seeding it with one heuristically-generated
-     * individual (using a greedy method) and filling the rest randomly. This
-     * "Heuristic Start" is crucial for problems with tight constraints, as it
-     * guarantees at least one valid individual exists in the initial population.
-     */
+    // Creates an initial population, seeding it with one heuristically-generated
+    // individual (using a greedy method) and filling the rest randomly.
+    // This "Heuristic Start" is crucial for problems with tight constraints,
+    // as it guarantees at least one valid individual exists in the initial population.
     private List<Individual> initializePopulation(int popSize, List<AlgoTask> tasks, List<AlgoUser> users, ScheduleData data) {
         List<Individual> population = new ArrayList<>();
 
@@ -158,20 +140,15 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
         return population;
     }
 
-    /**
-     * Evaluates fitness for every individual in the population whose score is stale.
-     * Skips individuals whose fitness is already up-to-date to avoid redundant work.
-     */
+    // Evaluates fitness for every individual in the population whose score is stale.
+    // Skips individuals whose fitness is already up-to-date to avoid redundant work.
     private void evaluatePopulation(List<Individual> population, List<AlgoTask> tasks, List<AlgoUser> users) {
         for (Individual ind : population)
             if (!ind.isFitnessCalculated())
                 ind.setFitness(fitnessEvaluator.evaluate(ind, tasks, users));
     }
 
-    /**
-     * Selects one parent using tournament selection. Randomly picks a few individuals
-     * and returns the one with the best fitness.
-     */
+    // Selects one parent using tournament selection. Randomly picks a few individuals and returns the one with the best fitness.
     private Individual tournamentSelection(List<Individual> population) {
         Individual best = population.get(random.nextInt(population.size()));
         for (int i = 1; i < TOURNAMENT_SIZE; i++) {
@@ -182,12 +159,9 @@ public class MemeticSchedulingStrategy extends BaseSchedulingStrategy {
         return best;
     }
 
-    /**
-     * Translates the best chromosome into a list of {@link TaskAssignment} objects.
-     * This is the final, strict decoding step that produces the output schedule.
-     * It uses the exact same constraint validation and time calculation as the
-     * fitness evaluation to ensure consistency.
-     */
+    // Translates the best chromosome into a list of TaskAssignment objects.
+    // This is the final, strict decoding step that produces the output schedule.
+    // It uses the exact same constraint validation and time calculation as the fitness evaluation to ensure consistency.
     private List<TaskAssignment> decodeChromosome(Individual best, List<AlgoTask> tasks, List<AlgoUser> users) {
         List<TaskAssignment> assignments = new ArrayList<>();
         Map<Long, Integer> assignedCount = new HashMap<>();

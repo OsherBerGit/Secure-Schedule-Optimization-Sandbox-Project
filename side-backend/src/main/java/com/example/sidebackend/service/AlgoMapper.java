@@ -124,9 +124,9 @@ public final class AlgoMapper {
     }
 
     public record MappedRequest(
-            List<AlgoUser>                users,
-            List<AlgoTask>                tasks,
-            AlgoSchedulingConfiguration   config
+            List<AlgoUser> users,
+            List<AlgoTask> tasks,
+            AlgoSchedulingConfiguration config
     ) {}
 }
 

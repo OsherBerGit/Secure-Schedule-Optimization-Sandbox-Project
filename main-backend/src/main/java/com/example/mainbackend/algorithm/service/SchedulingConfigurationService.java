@@ -49,16 +49,6 @@ public class SchedulingConfigurationService {
                     .toList();
     }
 
-    /**
-     * Persists a new or updated configuration.
-     *
-     * Concurrency / transaction note:
-     *   deactivateAll() runs an UPDATE inside the same transaction. The subsequent
-     *   save() then writes the new record in the same flush, so there is never a
-     *   window where zero configurations are active within a committed transaction.
-     *   clearAutomatically = true on the @Modifying query clears the 1st-level cache
-     *   so the entity loaded immediately after deactivateAll reflects the DB state.
-     */
     @Transactional
     public SchedulingConfigurationDto saveConfiguration(SchedulingConfigurationDto dto, String nationalId, boolean isAdmin) {
         User creator = userRepository.findByNationalId(nationalId)

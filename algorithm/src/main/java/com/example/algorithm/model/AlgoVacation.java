@@ -2,16 +2,7 @@ package com.example.algorithm.model;
 
 import java.time.LocalDate;
 
-/**
- * Represents an approved vacation window for a worker.
- *
- * <p>Status is intentionally absent — the algorithm treats every vacation in this
- * list as a fully blocked availability window (only APPROVED vacations are ever
- * forwarded by the main-backend).</p>
- *
- * <p>Pure Java: no Spring, Jackson, or Lombok annotations.
- * Immutable: all fields are final.</p>
- */
+// Represents an approved vacation window for a worker.
 public final class AlgoVacation {
 
     private final Long id;
@@ -20,16 +11,16 @@ public final class AlgoVacation {
     private final LocalDate endDate;
 
     public AlgoVacation(Long id, Long userId, LocalDate startDate, LocalDate endDate) {
-        this.id        = id;
-        this.userId    = userId;
+        this.id = id;
+        this.userId = userId;
         this.startDate = startDate;
-        this.endDate   = endDate;
+        this.endDate = endDate;
     }
 
-    public Long getId()            { return id; }
-    public Long getUserId()        { return userId; }
+    public Long getId() { return id; }
+    public Long getUserId() { return userId; }
     public LocalDate getStartDate() { return startDate; }
-    public LocalDate getEndDate()   { return endDate; }
+    public LocalDate getEndDate() { return endDate; }
 
     @Override
     public String toString() {

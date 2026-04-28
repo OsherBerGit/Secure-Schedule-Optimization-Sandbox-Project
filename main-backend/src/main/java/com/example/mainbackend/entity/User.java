@@ -39,15 +39,11 @@ public class User {
 
     private Integer maxTasks;
 
-    /**
-     * The department this user belongs to.
-     * Nullable — users not yet assigned to a department (e.g. a global admin) have no department.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
 
-    /** Weekly availability windows (shifts) that define when this user can be scheduled. */
+    // Weekly availability windows (shifts) that define when this user can be scheduled.
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<UserAvailability> availabilities = new ArrayList<>();

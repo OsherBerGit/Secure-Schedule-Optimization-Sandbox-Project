@@ -16,24 +16,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Evaluates the fitness (quality) of a candidate schedule encoded as an {@link Individual}.
- *
- * <p>Scoring strategy:</p>
- * <ul>
- *   <li><b>Base Score:</b> Each successfully scheduled task contributes a large positive score (e.g., +1000).
- *       This is the primary driver of fitness.</li>
- *   <li><b>Hard Constraint Violation:</b> An assignment that fails the constraint pipeline does not get the base score
- *       and incurs a moderate penalty. This ensures invalid assignments are heavily disfavored.</li>
- *   <li><b>Soft Constraints (Bonuses/Penalties):</b>
- *     <ul>
- *       <li><b>Priority:</b> Higher priority tasks add a bonus scaled by {@code weightPriority}.</li>
- *       <li><b>Deadline Slack:</b> Finishing a task well before its deadline adds a bonus.</li>
- *       <li><b>Fairness:</b> Evenly distributed workloads across users add a bonus.</li>
- *     </ul>
- *   </li>
- * </ul>
- */
+
+// Evaluates the fitness (quality) of a candidate schedule encoded as an Individual.
+
+// Scoring strategy:
+// Base Score: Each successfully scheduled task contributes a large positive score (e.g., +1000). This is the primary driver of fitness.
+// Hard Constraint Violation: An assignment that fails the constraint pipeline does not get the base score and incurs a moderate penalty.
+// This ensures invalid assignments are heavily disfavored.
+
+// Soft Constraints (Bonuses/Penalties):
+// Priority: Higher priority tasks add a bonus scaled by weightPriority.
+// Deadline Slack: Finishing a task well before its deadline adds a bonus.
+// Fairness: Evenly distributed workloads across users add a bonus.
 public class FitnessEvaluator {
 
     private final List<ConstraintChecker> hardConstraints;
@@ -43,9 +37,7 @@ public class FitnessEvaluator {
     private static final double BASE_SCORE_PER_TASK = 1000.0;
     private static final double HARD_VIOLATION_PENALTY = 500.0;
 
-    public FitnessEvaluator(List<ConstraintChecker> hardConstraints,
-                            List<Scorer> softScorers,
-                            AlgoSchedulingConfiguration config) {
+    public FitnessEvaluator(List<ConstraintChecker> hardConstraints, List<Scorer> softScorers, AlgoSchedulingConfiguration config) {
         this.hardConstraints = hardConstraints;
         this.softScorers = softScorers;
         this.config = config;
@@ -181,7 +173,6 @@ public class FitnessEvaluator {
         }
         return Optional.empty();
     }
-
 
     private ConstraintResult runHardConstraints(ConstraintContext ctx) {
         for (ConstraintChecker checker : hardConstraints) {

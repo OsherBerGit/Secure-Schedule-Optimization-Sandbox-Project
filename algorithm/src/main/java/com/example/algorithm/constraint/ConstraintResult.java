@@ -1,15 +1,5 @@
 package com.example.algorithm.constraint;
 
-/**
- * Immutable result returned by every {@link ConstraintChecker}.
- *
- * <ul>
- *   <li>{@code valid = true}  → constraint passed, assignment may proceed.</li>
- *   <li>{@code valid = false} → constraint violated; {@code reason} explains why.</li>
- * </ul>
- *
- * Zero-Trust: contains only primitive/string data — no entity references.
- */
 public final class ConstraintResult {
 
     private final boolean valid;
@@ -20,12 +10,12 @@ public final class ConstraintResult {
         this.reason = reason;
     }
 
-    /** Factory: constraint passed. */
+    // Factory: constraint passed.
     public static ConstraintResult pass() {
         return new ConstraintResult(true, null);
     }
 
-    /** Factory: constraint failed with an explanation. */
+    // Factory: constraint failed with an explanation.
     public static ConstraintResult fail(String reason) {
         return new ConstraintResult(false, reason);
     }

@@ -19,20 +19,18 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/**
- * Security configuration for Secure-Schedule application.
- * Implements stateless JWT authentication with security best practices.
- *
- * Security Features:
- * - Stateless JWT authentication
- * - CSRF disabled (stateless API)
- * - CORS restricted to frontend origin
- * - XSS protection via security headers
- * - BCrypt password hashing (strength 12)
- * - SQL injection prevention via JPA prepared statements
- * - Method-level security with @PreAuthorize
- * - Rate Limiting to prevent Brute Force and DoS attacks
- */
+// Security configuration for Secure-Schedule application.
+// Implements stateless JWT authentication with security best practices.
+
+// Security Features:
+// Stateless JWT authentication
+// CSRF disabled (stateless API)
+// CORS restricted to frontend origin
+// XSS protection via security headers
+// BCrypt password hashing (strength 12)
+// SQL injection prevention via JPA prepared statements
+// Method-level security with @PreAuthorize
+// Rate Limiting to prevent Brute Force and DoS attacks
 @Configuration
 @EnableWebSecurity // Set debug = true only for troubleshooting
 @EnableMethodSecurity // Enable @PreAuthorize, @PostAuthorize annotations
@@ -45,14 +43,10 @@ public class SecurityConfig {
     private final CustomLogoutHandler customLogoutHandler;
     private final RateLimitProperties rateLimitProperties;
 
-    /**
-     * Password encoder using BCrypt with strength 12.
-     * Strength 12 provides a good balance between security and performance.
-     */
+    // Password encoder using BCrypt with strength 12.
+    // Strength 12 provides a good balance between security and performance.
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
-    }
+    public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(12); }
 
     // CORS configuration - restricts access to frontend origin only.
     @Bean

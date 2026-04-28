@@ -2,25 +2,8 @@ package com.example.algorithm.constraint;
 
 import com.example.algorithm.model.AlgoSchedulingConfiguration;
 
-/**
- * Max Tasks Scorer — Capacity Penalty.
- *
- * <p>Rule: Penalizes assignments that cause a worker to exceed their preferred
- * maximum task limit for the current scheduling run.</p>
- *
- * <p>Logic:
- * <ol>
- * <li>If the worker has no {@code maxTasks} limit defined, the score is {@code 0} (perfect).</li>
- * <li>If the worker's currently assigned tasks (from {@code ctx.assignedCount()})
- * are equal to or greater than their limit, a base penalty is applied.</li>
- * <li>The base penalty is multiplied by {@code config.weightFairness} to allow
- * users to determine how strictly this preference should be enforced.</li>
- * </ol>
- * </p>
- *
- * <p>Zero-Trust: accesses only anonymous worker IDs and integer counts.
- * Prevents burnout mathematically without knowing the employee's identity.</p>
- */
+// Max Tasks Scorer — Capacity Penalty.
+// Penalizes assignments that cause a worker to exceed their preferred maximum task limit for the current scheduling run.
 public class MaxTasksScorer implements Scorer {
 
     private static final double BASE_PENALTY = -100.0;

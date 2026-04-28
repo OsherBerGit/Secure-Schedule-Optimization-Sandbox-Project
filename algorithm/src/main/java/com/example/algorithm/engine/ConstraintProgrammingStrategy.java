@@ -22,55 +22,37 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 
-/**
- * Constraint Programming (CP) Scheduling Strategy using Choco Solver.
- *
- * <p>Uses the Choco Solver library (a Constraint Programming solver) to find a
- * mathematically valid schedule that satisfies all constraints simultaneously.</p>
- *
- * <p>Key Characteristics:</p>
- * <ul>
- *   <li>Models the scheduling problem as a CSP (Constraint Satisfaction Problem).</li>
- *   <li>Time is discretized into minutes from the start of the week (0 to 10080).</li>
- *   <li>Variables:
- *     <ul>
- *       <li>Start Time: When each task begins (0..10080).</li>
- *       <li>Assignee: Which worker performs the task (domain: eligible workers).</li>
- *     </ul>
- *   </li>
- *   <li>Constraints:
- *     <ul>
- *       <li>Precedence: Task B cannot start until Task A ends.</li>
- *       <li>Resources: Workers have limited availability (shifts) and capacity (1 task at a time).</li>
- *       <li>No Overlap: A worker cannot perform two tasks simultaneously (Cumulative constraint).</li>
- *       <li>Deadlines: Tasks must finish by their deadline (or end of week).</li>
- *     </ul>
- *   </li>
- * </ul>
- *
- * <p>If a valid solution exists, it returns the optimal assignment. If no solution
- * is found within the time limit (5s), it returns a failure explanation.</p>
- *
- * <h3>Complexity Analysis</h3>
- * <ul>
- *   <li><b>Time Complexity:</b> Exponential (NP-Hard), but optimized via pruning.</li>
- *   <li><b>Variables:</b>
- *     <ul>
- *       <li>N = Number of Tasks (Variables)</li>
- *       <li>D = Domain Size (Number of eligible workers + time slots)</li>
- *       <li>C = Number of Constraints</li>
- *     </ul>
- *   </li>
- *   <li><b>Explanation:</b>
- *     <ul>
- *       <li>Solving a Constraint Satisfaction Problem (CSP) is generally NP-Hard. In the worst case, backtracking search explores O(D^N) states.</li>
- *       <li>However, constraint propagation (Pruning) significantly reduces the search space by eliminating impossible values early.</li>
- *       <li>The <b>Arc Consistency</b> algorithms used by Choco (e.g., AC-3) run in polynomial time to reduce domains before search.</li>
- *       <li>We enforce a hard time limit (e.g., 5 seconds) to prevent infinite searching, effectively capping the runtime constant.</li>
- *     </ul>
- *   </li>
- * </ul>
- */
+// Constraint Programming (CP) Scheduling Strategy using Choco Solver.
+// Uses the Choco Solver library (a Constraint Programming solver) to find a mathematically valid schedule that satisfies all constraints simultaneously.
+
+// Key Characteristics:
+// Models the scheduling problem as a CSP (Constraint Satisfaction Problem).
+// Time is discretized into minutes from the start of the week (0 to 10080).
+
+// Variables:
+// Start Time: When each task begins (0..10080).
+// Assignee: Which worker performs the task (domain: eligible workers).
+
+// Constraints:
+// Precedence: Task B cannot start until Task A ends.
+// Resources: Workers have limited availability (shifts) and capacity (1 task at a time).
+// No Overlap: A worker cannot perform two tasks simultaneously (Cumulative constraint).
+// Deadlines: Tasks must finish by their deadline (or end of week).
+
+// If a valid solution exists, it returns the optimal assignment. If no solution is found within the time limit (5s), it returns a failure explanation.
+// Complexity Analysis:
+// Time Complexity: Exponential (NP-Hard), but optimized via pruning.
+
+// Variables:
+// N = Number of Tasks (Variables)
+// D = Domain Size (Number of eligible workers + time slots)
+// C = Number of Constraints
+
+// Explanation:
+// Solving a Constraint Satisfaction Problem (CSP) is generally NP-Hard. In the worst case, backtracking search explores O(D^N) states.
+// However, constraint propagation (Pruning) significantly reduces the search space by eliminating impossible values early.
+// The Arc Consistencyalgorithms used by Choco (e.g., AC-3) run in polynomial time to reduce domains before search.
+// We enforce a hard time limit (e.g., 5 seconds) to prevent infinite searching, effectively capping the runtime constant.
 public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
 
     private static final int MINUTES_IN_DAY = 24 * 60;
@@ -79,19 +61,15 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
     @Override
     public String getName() { return "CONSTRAINT_PROGRAMMING"; }
 
-    /**
-     * Executes the CP solver to find a valid schedule.
-     *
-     * <p>Steps:</p>
-     * <ol>
-     *   <li>Setup Time Anchor: Use Monday 00:00 as minute 0.</li>
-     *   <li>Initialize Choco Model.</li>
-     *   <li>Create Variables: Task start times, durations, ends, and assignees.</li>
-     *   <li>Post Task Constraints: Precedence and valid domains.</li>
-     *   <li>Post Resource Constraints: Worker availability windows and non-overlapping tasks.</li>
-     *   <li>Solve: Search for a solution with a timeout.</li>
-     * </ol>
-     */
+// Executes the CP solver to find a valid schedule.
+
+// Steps:
+// Setup Time Anchor: Use Monday 00:00 as minute 0.
+// Initialize Choco Model.
+// Create Variables: Task start times, durations, ends, and assignees.
+// Post Task Constraints: Precedence and valid domains.
+// Post Resource Constraints: Worker availability windows and non-overlapping tasks.
+// Solve: Search for a solution with a timeout.
     @Override
     public List<TaskAssignment> schedule(ScheduleData data) {
         List<AlgoTask> tasks = data.tasks();

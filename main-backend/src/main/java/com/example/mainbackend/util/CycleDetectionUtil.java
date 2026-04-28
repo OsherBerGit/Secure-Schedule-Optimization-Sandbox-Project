@@ -19,25 +19,18 @@ public class CycleDetectionUtil {
         return graph;
     }
 
-    /**
-     * Checks if adding a constraint from predecessorId to successorId
-     * will create a circular dependency in the task graph.
-     *
-     * <p>Uses DFS (Depth-First Search) to detect cycles.</p>
-     *
-     * <h3>Complexity Analysis</h3>
-     * <ul>
-     *   <li><b>Time Complexity:</b> O(V + E) in the worst case, where V is the number of tasks (Vertices)
-     *       and E is the number of constraints (Edges). The DFS visits every node and edge at most once.</li>
-     *   <li><b>Space Complexity:</b> O(V) for the recursion stack and visited sets, representing the maximum
-     *       depth of the recursive call stack.</li>
-     * </ul>
-     *
-     * @param predecessorId The task ID representing the source of the new hypothetical dependency.
-     * @param successorId The task ID representing the target of the new hypothetical dependency.
-     * @param graph The pre-built adjacency list representing the current task constraints.
-     * @return true if adding the constraint creates a cycle, false otherwise.
-     */
+    // Checks if adding a constraint from predecessorId to successorId will create a circular dependency in the task graph.
+
+    // Uses DFS (Depth-First Search) to detect cycles.
+
+    // Time Complexity: O(V + E) in the worst case, where V is the number of tasks (Vertices) and E is the number of constraints (Edges).
+    // Space Complexity: O(V) for the recursion stack and visited sets, representing the maximum depth of the recursive call stack.
+
+    // predecessorId The task ID representing the source of the new hypothetical dependency.
+    // successorId The task ID representing the target of the new hypothetical dependency.
+    // graph The pre-built adjacency list representing the current task constraints.
+    // return true if adding the constraint creates a cycle, false otherwise.
+
     public boolean wouldCreateCycle(Long predecessorId, Long successorId, Map<Long, List<Long>> graph) {
         // Add the new edge
         graph.computeIfAbsent(predecessorId, k -> new ArrayList<>()).add(successorId);

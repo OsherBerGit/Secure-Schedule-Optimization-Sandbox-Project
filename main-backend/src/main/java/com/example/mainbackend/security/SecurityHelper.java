@@ -60,15 +60,10 @@ public class SecurityHelper {
         return user.getDepartment().getId();
     }
 
-    // =========================================================================================
     // ABAC (Attribute-Based Access Control) Methods for @PreAuthorize
-    // =========================================================================================
 
-    /**
-     * Checks if the current user is allowed to access/manage the given department.
-     * - ADMINs can manage any department.
-     * - MANAGERs can only manage their own department.
-     */
+    // Checks if the current user is allowed to access/manage the given department.
+    //  ADMINs can manage any department. MANAGERs can only manage their own department.
     public boolean canManageDepartment(Long targetDepartmentId) {
         if (targetDepartmentId == null) return false;
         if (isAdmin()) return true;
@@ -84,10 +79,8 @@ public class SecurityHelper {
         return currentUser.getId().equals(targetUserId);
     }
 
-    /**
-     * Checks if the current user is allowed to access a specific user's sensitive data.
-     * Allowed if: It's the user themselves, OR their manager, OR an Admin.
-     */
+    // Checks if the current user is allowed to access a specific user's sensitive data.
+    // Allowed if: It's the user themselves, OR their manager, OR an Admin.
     public boolean canManageUser(Long targetUserId) {
         if (targetUserId == null) return false;
         if (isAdmin()) return true;
@@ -102,14 +95,10 @@ public class SecurityHelper {
         return false;
     }
 
-    // =========================================================================================
     // TasksetStatus-based Access Control Methods for @PreAuthorize
-    // =========================================================================================
 
-    /**
-     * Checks if the user can MANAGE (edit/delete) a specific task.
-     * Admin: Yes. Manager: Only if task is in their department. Worker: No.
-     */
+    // Checks if the user can MANAGE (edit/delete) a specific task.
+    // Admin: Yes. Manager: Only if task is in their department. Worker: No.
     public boolean canManageTask(Long taskId) {
         if (taskId == null) return false;
         if (isAdmin()) return true;
@@ -121,10 +110,8 @@ public class SecurityHelper {
         return false;
     }
 
-    /**
-     * Checks if the user can VIEW a specific task.
-     * Admin/Manager: Same as manage. Worker: Only if assigned to them.
-     */
+    // Checks if the user can VIEW a specific task.
+    // Admin/Manager: Same as manage. Worker: Only if assigned to them.
     public boolean canViewTask(Long taskId) {
         if (canManageTask(taskId)) return true; // If you can manage it, you can view it
         if (isWorker()) {
@@ -134,14 +121,10 @@ public class SecurityHelper {
         return false;
     }
 
-    // =========================================================================================
     // Vacation Access Control Methods for @PreAuthorize
-    // =========================================================================================
 
-    /**
-     * Checks if the user can MANAGE (approve/reject/edit) a specific vacation.
-     * Admin: Yes. Manager: Only if the worker belongs to their department. Worker: No.
-     */
+    // Checks if the user can MANAGE (approve/reject/edit) a specific vacation.
+    // Admin: Yes. Manager: Only if the worker belongs to their department. Worker: No.
     public boolean canManageVacation(Long vacationId) {
         if (vacationId == null) return false;
         if (isAdmin()) return true;
@@ -154,10 +137,8 @@ public class SecurityHelper {
         return false;
     }
 
-    /**
-     * Checks if the user can VIEW a specific vacation.
-     * Admin/Manager: Same as manage. Worker: Only if it's their own vacation.
-     */
+    // Checks if the user can VIEW a specific vacation.
+    // Admin/Manager: Same as manage. Worker: Only if it's their own vacation.
     public boolean canViewVacation(Long vacationId) {
         if (canManageVacation(vacationId)) return true;
 
@@ -167,14 +148,10 @@ public class SecurityHelper {
                 .orElse(false);
     }
 
-    // =========================================================================================
     // Settlement Access Control Methods for @PreAuthorize
-    // =========================================================================================
 
-    /**
-     * Checks if the user can MANAGE (delete/edit) a specific settlement.
-     * Admin: Yes. Manager: Only if the settlement belongs to their department.
-     */
+    // Checks if the user can MANAGE (delete/edit) a specific settlement.
+    // Admin: Yes. Manager: Only if the settlement belongs to their department.
     public boolean canManageSettlement(Long settlementId) {
         if (settlementId == null) return false;
         if (isAdmin()) return true;
@@ -187,10 +164,8 @@ public class SecurityHelper {
         return false; // Workers cannot manage/delete settlements
     }
 
-    /**
-     * Checks if the user can VIEW a specific settlement.
-     * Admin/Manager: Same as manage. Worker: Only if it's assigned to them.
-     */
+    // Checks if the user can VIEW a specific settlement.
+    // Admin/Manager: Same as manage. Worker: Only if it's assigned to them.
     public boolean canViewSettlement(Long settlementId) {
         if (canManageSettlement(settlementId)) return true;
 
@@ -202,9 +177,7 @@ public class SecurityHelper {
         return false;
     }
 
-    // =========================================================================================
     // Constraint Access Control Methods for @PreAuthorize
-    // =========================================================================================
 
     public boolean canManageConstraint(Long constraintId) {
         if (constraintId == null) return false;

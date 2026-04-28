@@ -4,29 +4,8 @@ import com.example.algorithm.model.AlgoVacation;
 
 import java.time.LocalDate;
 
-/**
- * Availability Constraint.
- *
- * Enforces two rules in a single check:
- *
- * Rule 1 — Vacation Overlap:
- *   The candidate employee must NOT be on an approved vacation during any
- *   part of the proposed task window [proposedStart, proposedEnd].
- *   Overlap condition: taskStart <= vacationEnd AND taskEnd >= vacationStart
- *
- * Rule 2 — Max Tasks:
- *   The candidate must not have already reached their maxTasks limit
- *   for this scheduling run.
- *
- * Anti-redundancy: these rules mirror the logic in
- * {@code BaseSchedulingStrategy.isAvailableDuring()} and
- * {@code BaseSchedulingStrategy.withinTaskLimit()}, which gate the initial
- * eligible-employee list. This checker acts as the explicit, named contract
- * that runs inside the constraint pipeline and produces a descriptive reason.
- *
- * Zero-Trust: accesses only AlgoUser (anonymous ID + metadata) and
- * AlgoVacation (anonymous ID + date range). No real names used in failure reasons.
- */
+// Availability Constraint.
+// Vacation Overlap: The candidate employee must NOT be on an approved vacation during any part of the proposed task window.
 public class AvailabilityConstraint implements ConstraintChecker {
 
     @Override
@@ -37,7 +16,7 @@ public class AvailabilityConstraint implements ConstraintChecker {
     @Override
     public ConstraintResult check(ConstraintContext ctx) {
 
-        // ── Rule: Vaca  tion overlap ─────────────────────────────────────────
+        // Rule: Vacation overlap
         if (ctx.candidate().getVacations() != null) {
             LocalDate taskStart = ctx.proposedStart().toLocalDate();
             LocalDate taskEnd   = ctx.proposedEnd().toLocalDate();

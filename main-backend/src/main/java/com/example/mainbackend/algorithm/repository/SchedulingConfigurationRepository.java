@@ -20,19 +20,17 @@ public interface SchedulingConfigurationRepository extends JpaRepository<Schedul
     @Query("UPDATE SchedulingConfiguration s SET s.isActive = false WHERE s.createdBy.nationalId = :nationalId")
     void deactivateAllByNationalId(@Param("nationalId") String nationalId);
 
-    /**
-     * Deactivates all configurations in a single bulk UPDATE.
-     *
-     * clearAutomatically = true  — evicts all managed entities from the 1st-level
-     *   persistence context after the JPQL UPDATE executes. Without this, any
-     *   SchedulingConfiguration already loaded in the same session would still
-     *   show isActive=true in memory even though the DB row was updated, causing
-     *   a stale-read bug on the subsequent save().
-     *
-     * flushAutomatically = true  — ensures any pending dirty entities are flushed
-     *   to the DB BEFORE the bulk UPDATE runs, preventing lost-update scenarios
-     *   where an in-memory change would be overwritten by the JPQL.
-     */
+
+     // Deactivates all configurations in a single bulk UPDATE.
+     //
+     // clearAutomatically = true
+     // evicts all managed entities from the 1st-level persistence context after the JPQL UPDATE executes.
+     // Without this, any SchedulingConfiguration already loaded in the same session would still show isActive=true in memory even though the DB row was updated,
+     // causing a stale-read bug on the subsequent save().
+     //
+     // flushAutomatically = true
+     // ensures any pending dirty entities are flushed to the DB BEFORE the bulk UPDATE runs,
+     // preventing lost-update scenarios where an in-memory change would be overwritten by the JPQL.
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE SchedulingConfiguration s SET s.isActive = false")
     void deactivateAll();

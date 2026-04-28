@@ -9,14 +9,10 @@ import com.example.algorithm.model.TaskAssignment;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/**
- * Simple "First-Fit" Greedy scheduling strategy.
- *
- * <p>Processes tasks in priority order (highest priority first, earliest deadline as tiebreak).
- * For each task, it tries to find the first available worker who can take the task,
- * looking into future shifts if necessary. The choice is based on the earliest possible start time.
- * </p>
- */
+// Simple "First-Fit" Greedy scheduling strategy.
+// Processes tasks in priority order (highest priority first, earliest deadline as tiebreak).
+// For each task, it tries to find the first available worker who can take the task,
+// looking into future shifts if necessary. The choice is based on the earliest possible start time.
 public class GreedySchedulingStrategy extends BaseSchedulingStrategy {
 
     @Override

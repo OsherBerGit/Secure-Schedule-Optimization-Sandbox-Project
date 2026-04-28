@@ -4,10 +4,6 @@ import lombok.Getter;
 
 import java.util.List;
 
-/**
- * Thrown when a batch operation (like scheduling) fails multiple validation checks.
- * Holds the list of all errors to return to the client.
- */
 @Getter
 public class BatchValidationException extends RuntimeException {
     

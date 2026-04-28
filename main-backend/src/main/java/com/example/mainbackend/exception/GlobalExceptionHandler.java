@@ -63,9 +63,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
 
-    /**
-     * Handle user not found exceptions.
-     */
+    // Handle user not found exceptions.
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(
             UsernameNotFoundException ex,
@@ -151,10 +149,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 
-    /**
-     * Handle batch validation failures (e.g., scheduling errors).
-     * Returns 422 Unprocessable Entity with a list of specific errors.
-     */
+    // Handle batch validation failures (e.g., scheduling errors).
+    // Returns 422 Unprocessable Entity with a list of specific errors.
     @ExceptionHandler(BatchValidationException.class)
     public ResponseEntity<ErrorResponse> handleBatchValidationException(
             BatchValidationException ex,
@@ -172,10 +168,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
-    /**
-     * Handle optimistic locking failures (concurrent modification).
-     * Returns 409 Conflict.
-     */
+    // Handle optimistic locking failures (concurrent modification).
+    // Returns 409 Conflict.
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     public ResponseEntity<ErrorResponse> handleOptimisticLockingFailure(
             ObjectOptimisticLockingFailureException ex,

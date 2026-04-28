@@ -23,10 +23,6 @@ public class Vacation {
     private LocalDate startDate;
     private LocalDate endDate;
 
-    /**
-     * Vacation request status (PENDING, APPROVED, REJECTED).
-     * Uses a dedicated VacationStatus lookup table, separate from TaskStatus.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vacation_status_id", nullable = false)
     private VacationStatus status;

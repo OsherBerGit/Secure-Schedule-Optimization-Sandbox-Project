@@ -9,25 +9,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Shared helper utilities used by all scheduling strategy implementations.
- * Handles start time calculation, sorting, and the modular constraint-checking pipeline.
- */
+// Shared helper utilities used by all scheduling strategy implementations.
+// Handles start time calculation, sorting, and the modular constraint-checking pipeline.
 public abstract class BaseSchedulingStrategy implements SchedulingStrategy {
 
     protected final List<ConstraintChecker> hardConstraints = List.of(
-            new SkillMatchConstraint(),
-            new OverlapConstraint(),
-            new PrecedenceConstraint(),
-            new DeadlineConstraint(),
-            new AvailabilityConstraint(),
-            new ShiftConstraint()
+            new SkillMatchConstraint(), new OverlapConstraint(), new PrecedenceConstraint(),
+            new DeadlineConstraint(), new AvailabilityConstraint(), new ShiftConstraint()
     );
 
-    protected final List<Scorer> softScorers = List.of(
-            new MaxTasksScorer(),
-            new PriorityScorer()
-    );
+    protected final List<Scorer> softScorers = List.of(new MaxTasksScorer(), new PriorityScorer());
 
     protected LocalDateTime calcStartTime(AlgoTask task, Map<Long, TaskAssignment> assignmentsMap) {
         LocalDateTime earliest = LocalDateTime.now();
@@ -61,16 +52,8 @@ public abstract class BaseSchedulingStrategy implements SchedulingStrategy {
         return start.plusHours(hours);
     }
 
-    /**
-     * Finds the earliest possible start time for a task by a specific worker,
-     * considering dependencies, the worker's previous task completion, and shift availability.
-     *
-     * @param task            The task to schedule.
-     * @param worker          The worker being considered.
-     * @param assignmentsMap Map of already assigned task IDs to their end times.
-     * @param workerNextFree  The time the worker finishes their previous assignment.
-     * @return An Optional containing the earliest valid start time, or empty if no valid slot is found within 7 days.
-     */
+    // Finds the earliest possible start time for a task by a specific worker,
+    // considering dependencies, the worker's previous task completion, and shift availability.
     protected Optional<LocalDateTime> findNextAvailableStartTime(AlgoTask task, AlgoUser worker,
                                                                  Map<Long, TaskAssignment> assignmentsMap,
                                                                  LocalDateTime workerNextFree) {
@@ -117,9 +100,7 @@ public abstract class BaseSchedulingStrategy implements SchedulingStrategy {
     }
 
     protected List<AlgoTask> getSortedUnassignedTasks(List<AlgoTask> tasks) {
-        return tasks.stream()
-                .filter(this::isTaskPending)
-                .toList();
+        return tasks.stream().filter(this::isTaskPending).toList();
     }
 
     private boolean isTaskPending(AlgoTask t) {
@@ -128,15 +109,8 @@ public abstract class BaseSchedulingStrategy implements SchedulingStrategy {
         return !status.equalsIgnoreCase("COMPLETED") && !status.equalsIgnoreCase("CANCELLED");
     }
 
-    protected ConstraintResult validateHardConstraints(AlgoTask task,
-                                                       AlgoUser candidate,
-                                                       LocalDateTime start,
-                                                       LocalDateTime end,
-                                                       Map<Long, LocalDateTime> completionTimes,
-                                                       Map<Long, Integer> assignedCount,
-                                                       List<TaskAssignment> currentAssignments) {
-        ConstraintContext ctx = new ConstraintContext(
-                task, candidate, start, end, completionTimes, assignedCount, currentAssignments);
+    protected ConstraintResult validateHardConstraints(AlgoTask task, AlgoUser candidate, LocalDateTime start, LocalDateTime end, Map<Long, LocalDateTime> completionTimes, Map<Long, Integer> assignedCount, List<TaskAssignment> currentAssignments) {
+        ConstraintContext ctx = new ConstraintContext(task, candidate, start, end, completionTimes, assignedCount, currentAssignments);
 
         for (ConstraintChecker checker : hardConstraints) {
             ConstraintResult result = checker.check(ctx);

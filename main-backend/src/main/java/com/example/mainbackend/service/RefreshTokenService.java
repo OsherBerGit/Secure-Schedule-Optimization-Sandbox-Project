@@ -23,11 +23,7 @@ public class RefreshTokenService {
     private final TokenBlacklistService tokenBlacklistService;
     private final Cache<String, String> refreshTokenIps;
 
-    public RefreshTokenService(JwtUtil jwtUtil,
-                               UserRepository userRepository,
-                               CustomUserDetailsService customUserDetailsService,
-                               TokenBlacklistService tokenBlacklistService,
-                               JwtProperties jwtProperties) {
+    public RefreshTokenService(JwtUtil jwtUtil, UserRepository userRepository, CustomUserDetailsService customUserDetailsService, TokenBlacklistService tokenBlacklistService, JwtProperties jwtProperties) {
         this.jwtUtil = jwtUtil;
         this.userRepository = userRepository;
         this.customUserDetailsService = customUserDetailsService;

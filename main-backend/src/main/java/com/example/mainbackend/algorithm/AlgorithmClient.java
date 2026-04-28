@@ -10,11 +10,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
-/**
- * HTTP client that calls the algorithm side-backend.
- * Uses Spring RestClient (Spring 6 / Boot 3).
- * Target: POST http://localhost:8081/api/v1/algo/schedule
- */
+// HTTP client that calls the algorithm side-backend.
+// Uses Spring RestClient.
+// Target: POST http://localhost:8081/api/v1/algo/schedule
 @Slf4j
 @Component
 public class AlgorithmClient {

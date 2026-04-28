@@ -4,18 +4,7 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 
-/**
- * Scheduling algorithm configuration: weights and GA parameters.
- *
- * <p>All weight fields must be in the range [0.0, 1.0].
- * Received from the main-backend along with every scheduling request.</p>
- *
- * @param weightPriority   Weight assigned to task priority in the scoring function
- * @param weightDeadline   Weight assigned to deadline urgency in the scoring function
- * @param weightFairness   Weight assigned to workload fairness across workers
- * @param populationSize   Genetic-algorithm population size (minimum 10)
- * @param maxGenerations   Genetic-algorithm generation limit (minimum 1)
- */
+// Scheduling algorithm configuration: weights and GA parameters.
 public record SchedulingConfigurationDto(
 
         @DecimalMin(value = "0.0", message = "weightPriority must be >= 0.0")

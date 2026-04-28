@@ -23,8 +23,7 @@ public class SettlementCreateRequest {
     @NotNull(message = "Settlement date is required")
     private LocalDateTime settlementDate;
 
-    private LocalDateTime completionDate; // Optional - can be null if task not yet completed
+    private LocalDateTime completionDate;
 
-    /** Initial status ID - defaults to ASSIGNED if not provided */
     private Long statusId;
 }

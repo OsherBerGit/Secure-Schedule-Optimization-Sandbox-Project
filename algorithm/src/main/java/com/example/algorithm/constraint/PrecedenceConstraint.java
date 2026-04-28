@@ -7,32 +7,12 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * FINISH_TO_START Precedence Constraint.
- *
- * Rule: Task B may not start before ALL of its predecessor tasks have finished.
- *
- * This constraint checks whether the {@code proposedStart} in the context
- * is strictly after (or equal to) the completion time of every predecessor
- * listed in {@code task.getPredecessorTaskIds()}.
- *
- * If a predecessor has not yet been scheduled (its end time is absent from
- * {@code completionTimes}), the assignment is rejected — unresolved
- * dependencies are treated as blocking.
- *
- * Anti-redundancy: the actual time calculation reuses
- * {@code BaseSchedulingStrategy.calcStartTime()}, which already computes
- * the earliest valid start from completionTimes. This checker acts as the
- * explicit gate that enforces that contract and surfaces a descriptive reason.
- *
- * Zero-Trust: operates solely on anonymous IDs and timestamps from AlgoTask.
- */
+// FINISH_TO_START Precedence Constraint.
+// Task B may not start before ALL of its predecessor tasks have finished.
 public class PrecedenceConstraint implements ConstraintChecker {
 
     @Override
-    public String getName() {
-        return "PrecedenceConstraint (FS, SS, FF, SF)";
-    }
+    public String getName() { return "PrecedenceConstraint (FS, SS, FF, SF)"; }
 
     @Override
     public ConstraintResult check(ConstraintContext ctx) {

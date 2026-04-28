@@ -5,27 +5,12 @@ import com.example.algorithm.model.TaskAssignment;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Overlap Constraint — Temporal Collision Avoidance.
- *
- * <p>Rule: A candidate employee must NOT have any other task assigned during
- * the proposed time window [proposedStart, proposedEnd].</p>
- *
- * <p>Logic:
- * The checker iterates through all tasks already assigned to this user in the
- * current scheduling session. An overlap occurs if:
- * {@code (proposedStart < existingEnd) AND (proposedEnd > existingStart)}
- * </p>
- *
- * <p>Zero-Trust: Accesses only anonymous task IDs and time intervals.
- * No information about the nature of the overlapping tasks is exposed.</p>
- */
+// Overlap Constraint — Temporal Collision Avoidance.
+// A candidate employee must NOT have any other task assigned during the proposed time window [proposedStart, proposedEnd].</p>
 public class OverlapConstraint implements ConstraintChecker {
 
     @Override
-    public String getName() {
-        return "OverlapConstraint (No Simultaneous Tasks)";
-    }
+    public String getName() { return "OverlapConstraint (No Simultaneous Tasks)"; }
 
     @Override
     public ConstraintResult check(ConstraintContext ctx) {

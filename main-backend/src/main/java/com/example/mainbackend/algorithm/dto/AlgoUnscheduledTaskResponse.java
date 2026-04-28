@@ -7,7 +7,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AlgoUnscheduledTaskResponse {
-    private Long   taskId;
+    private Long taskId;
     private String taskName;
     private String reason;
 }

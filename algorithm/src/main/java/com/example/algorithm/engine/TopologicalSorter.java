@@ -7,11 +7,9 @@ import java.util.*;
 
 public class TopologicalSorter {
 
-    /**
-     * Sorts tasks topologically based on their dependencies.
-     * Ties are broken using the provided priorityComparator.
-     * Throws an exception if a circular dependency (cycle) is detected.
-     */
+    // Sorts tasks topologically based on their dependencies.
+    // Ties are broken using the provided priorityComparator.
+    // Throws an exception if a circular dependency (cycle) is detected.
     public List<AlgoTask> sort(List<AlgoTask> tasks, Comparator<AlgoTask> priorityComparator) {
         Map<Long, AlgoTask> taskMap = new HashMap<>();
         Map<Long, Integer> inDegree = new HashMap<>();

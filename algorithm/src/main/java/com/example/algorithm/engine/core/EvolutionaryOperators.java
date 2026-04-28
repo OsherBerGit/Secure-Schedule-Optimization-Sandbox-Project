@@ -2,28 +2,15 @@ package com.example.algorithm.engine.core;
 
 import java.util.Random;
 
-/**
- * Provides the genetic operators used during evolution: crossover and mutation.
- *
- * <p>Pure Java: no Spring, Jackson, or Lombok annotations.</p>
- */
+// Provides the genetic operators used during evolution: crossover and mutation.
 public class EvolutionaryOperators {
 
     private final Random random = new Random();
 
-    /**
-     * Performs Uniform Crossover between two parents to produce one child.
-     *
-     * <p>For each gene position, the child independently inherits from either
-     * parent with equal probability (50/50).  This produces high diversity and
-     * disrupts building blocks less than single-point crossover when gene order
-     * is not meaningful — appropriate here because chromosome positions represent
-     * independent task-to-worker assignments.</p>
-     *
-     * @param parent1 first parent individual
-     * @param parent2 second parent individual (must have the same chromosome length)
-     * @return a new child individual whose fitness is not yet calculated
-     */
+    // Performs Uniform Crossover between two parents to produce one child.
+    // For each gene position, the child independently inherits from either parent with equal probability (50/50).
+    // This produces high diversity and disrupts building blocks less than single-point crossover when gene order is not meaningful
+    // — appropriate here because chromosome positions represent independent task-to-worker assignments.
     public Individual crossover(Individual parent1, Individual parent2) {
         int length = parent1.getChromosome().length;
         Individual child  = new Individual(length);
@@ -34,19 +21,10 @@ public class EvolutionaryOperators {
         return child;
     }
 
-    /**
-     * Applies random mutation to an individual in place.
-     *
-     * <p>Each gene is independently mutated with probability {@code mutationRate}.
-     * A mutated gene is reassigned to a uniformly random worker index in
-     * {@code [0, numberOfWorkers)}.  Mutation can also produce {@code -1}
-     * (unassigned) to allow the algorithm to "drop" tasks if they are causing
-     * severe constraint violations that can't be resolved otherwise.</p>
-     *
-     * @param individual      the individual to mutate (modified in place)
-     * @param numberOfWorkers total number of available workers
-     * @param mutationRate    probability [0.0, 1.0] that any given gene is mutated
-     */
+    // Applies random mutation to an individual in place.
+    // Each gene is independently mutated with probability {@code mutationRate}.
+    // A mutated gene is reassigned to a uniformly random worker index in.
+    // Mutation can also produce (unassigned) to allow the algorithm to "drop" tasks if they are causing severe constraint violations that can't be resolved otherwise.
     public void mutate(Individual individual, int numberOfWorkers, double mutationRate) {
         for (int i = 0; i < individual.getChromosome().length; i++)
             if (random.nextDouble() < mutationRate)

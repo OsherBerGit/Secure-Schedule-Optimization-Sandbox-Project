@@ -8,14 +8,10 @@ import com.example.algorithm.model.TaskAssignment;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/**
- * Simple Round-Robin Strategy.
- *
- * <p>Distributes tasks evenly across eligible employees by cycling through them in order.
- * This strategy now uses the forward-looking `findNextAvailableStartTime` method to
- * ensure tasks are scheduled in a worker's future shifts if they are not available 'right now'.
- * </p>
- */
+// Simple Round-Robin Strategy.
+// Distributes tasks evenly across eligible employees by cycling through them in order.
+// This strategy now uses the forward-looking `findNextAvailableStartTime` method to
+// ensure tasks are scheduled in a worker's future shifts if they are not available 'right now'.
 public class RoundRobinSchedulingStrategy extends BaseSchedulingStrategy {
 
     @Override
