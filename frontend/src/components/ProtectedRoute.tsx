@@ -1,31 +1,31 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/useAuth';
+import React from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
 
 interface ProtectedRouteProps {
-  children: React.ReactElement;
-  allowedRoles?: ('ADMIN' | 'MANAGER' | 'WORKER')[];
+    children: React.ReactElement;
+    allowedRoles?: ("ADMIN" | "MANAGER" | "WORKER")[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user, isLoading } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+    children,
+    allowedRoles,
+}) => {
+    const { isAuthenticated, user, isLoading } = useAuth();
 
-  if (isLoading)
-    return <div>Loading...</div>;
+    if (isLoading) return <div>Loading...</div>;
 
-  if (!isAuthenticated)
-    return <Navigate to="/login" replace />;
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  if (allowedRoles && user) {
-    // Derive role defensively: use stored role field, fall back to roles array
-    // This prevents a redirect when role is undefined after a page refresh
-    const effectiveRole: 'ADMIN' | 'MANAGER' | 'WORKER' = user.role ?? 'WORKER';
+    if (allowedRoles && user) {
+        const effectiveRole: "ADMIN" | "MANAGER" | "WORKER" =
+            user.role ?? "WORKER";
 
-    if (!allowedRoles.includes(effectiveRole))
-      return <Navigate to="/unauthorized" replace />;
-  }
+        if (!allowedRoles.includes(effectiveRole))
+            return <Navigate to="/unauthorized" replace />;
+    }
 
-  return children;
+    return children;
 };
 
 export default ProtectedRoute;

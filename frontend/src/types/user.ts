@@ -10,9 +10,16 @@ export interface Skill {
 
 export interface UserAvailability {
     id: number | null;
-    dayOfWeek: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+    dayOfWeek:
+        | "MONDAY"
+        | "TUESDAY"
+        | "WEDNESDAY"
+        | "THURSDAY"
+        | "FRIDAY"
+        | "SATURDAY"
+        | "SUNDAY";
     startTime: string; // ISO LocalTime, e.g. "09:00:00"
-    endTime: string;   // ISO LocalTime, e.g. "17:00:00"
+    endTime: string; // ISO LocalTime, e.g. "17:00:00"
 }
 
 export interface User {
@@ -26,7 +33,7 @@ export interface User {
     maxTasks: number | null;
     departmentName: string | null;
     departmentId?: number; // Decoded from JWT
-    role: 'ADMIN' | 'MANAGER' | 'WORKER';
+    role: "ADMIN" | "MANAGER" | "WORKER";
     maxTasks?: number;
     skills: Skill[];
 }
@@ -38,7 +45,7 @@ export interface CreateUserRequest {
     lastName?: string;
     email?: string;
     phoneNumber?: string;
-    role: 'ADMIN' | 'MANAGER' | 'WORKER';
+    role: "ADMIN" | "MANAGER" | "WORKER";
     maxTasks?: number;
     departmentName?: string;
     availabilities?: UserAvailability[];
@@ -50,7 +57,7 @@ export interface UpdateUserRequest {
     lastName?: string;
     email?: string;
     phoneNumber?: string;
-    role?: 'ADMIN' | 'MANAGER' | 'WORKER';
+    role?: "ADMIN" | "MANAGER" | "WORKER";
     maxTasks?: number;
     departmentName?: string | null;
     availabilities?: UserAvailability[];

@@ -1,4 +1,4 @@
-import type {Skill} from "./user.ts";
+import type { Skill } from "./user.ts";
 
 export interface Task {
     id: number;

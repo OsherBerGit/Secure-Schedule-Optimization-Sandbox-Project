@@ -1,4 +1,4 @@
-import type {User} from "./user.ts";
+import type { User } from "./user.ts";
 
 export interface Status {
     id: number;
@@ -58,7 +58,11 @@ export interface SchedulingConfiguration {
     createdByUserId?: number;
 }
 
-export type ScheduleStrategy = 'GREEDY' | 'ROUND_ROBIN' | 'MEMETIC' | 'CONSTRAINT_PROGRAMMING';
+export type ScheduleStrategy =
+    | "GREEDY"
+    | "ROUND_ROBIN"
+    | "MEMETIC"
+    | "CONSTRAINT_PROGRAMMING";
 
 export interface TaskAssignmentResult {
     taskId: number;
@@ -98,10 +102,16 @@ export interface ScheduleResult {
 }
 
 export interface MemeticScheduleResult extends ScheduleResult {
-    strategyUsed: 'MEMETIC';
+    strategyUsed: "MEMETIC";
     fitnessHistory: number[];
 }
 
-export function isMemeticResult(result: ScheduleResult | null | undefined): result is MemeticScheduleResult {
-    return !!result && result.strategyUsed === 'MEMETIC' && 'fitnessHistory' in result;
+export function isMemeticResult(
+    result: ScheduleResult | null | undefined,
+): result is MemeticScheduleResult {
+    return (
+        !!result &&
+        result.strategyUsed === "MEMETIC" &&
+        "fitnessHistory" in result
+    );
 }

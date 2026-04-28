@@ -57,5 +57,5 @@ export interface VacationRequestDto {
 }
 
 export interface VacationStatusUpdateRequest {
-    status: 'APPROVED' | 'REJECTED';
+    status: "APPROVED" | "REJECTED";
 }
