@@ -3,7 +3,6 @@ package com.example.mainbackend.service;
 import com.example.mainbackend.security.CustomUserDetailsService;
 import com.example.mainbackend.security.JwtUtil;
 import com.example.mainbackend.dto.auth.AuthenticationResponse;
-import com.example.mainbackend.dto.auth.RefreshTokenRequest;
 import com.example.mainbackend.entity.User;
 import com.example.mainbackend.repository.UserRepository;
 import com.example.mainbackend.security.JwtProperties;
@@ -34,8 +33,7 @@ public class RefreshTokenService {
                 .build();
     }
 
-    public AuthenticationResponse refreshAccessToken(RefreshTokenRequest refreshTokenRequest) {
-        String refreshToken = refreshTokenRequest.getRefreshToken();
+    public AuthenticationResponse refreshAccessToken(String refreshToken, String clientIP) {
 
         String jwtID = jwtUtil.extractJWTID(refreshToken);
 
@@ -45,7 +43,6 @@ public class RefreshTokenService {
         String nationalId = jwtUtil.extractNationalId(refreshToken);
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(nationalId);
 
-        String clientIP = refreshTokenRequest.getIp();
         String storedIP = refreshTokenIps.getIfPresent(jwtID);
         if (storedIP == null || !storedIP.equals(clientIP))
             throw new RuntimeException("Invalid IP address for this refresh token");

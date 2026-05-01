@@ -12,6 +12,8 @@ const axiosInstance = axios.create({
     headers: {
         "Content-Type": "application/json",
     },
+    // Zero-Trust: HttpOnly Cookies
+    withCredentials: true,
 });
 
 // Zero-Trust: Automatically attach the JWT access token to every outgoing request
@@ -61,22 +63,15 @@ axiosInstance.interceptors.response.use(
             originalRequest._retry = true;
 
             try {
-                const refreshToken = localStorage.getItem("refreshToken");
-                if (!refreshToken)
-                    throw new Error("No refresh token available");
-
                 const response = await axios.post(
                     `${BASE_URL}/auth/refresh-token`,
-                    {
-                        refreshToken,
-                    },
+                    { },
+                    { withCredentials: true }
                 );
 
-                const { accessToken, refreshToken: newRefreshToken } =
-                    response.data;
+                const { accessToken } = response.data;
 
                 localStorage.setItem("accessToken", accessToken);
-                localStorage.setItem("refreshToken", newRefreshToken);
 
                 // Re-attempt the original failed request with the new access token
                 if (originalRequest.headers)
@@ -86,7 +81,6 @@ axiosInstance.interceptors.response.use(
             } catch (refreshError) {
                 // Security fallback: Purge sensitive data on refresh failure
                 localStorage.removeItem("accessToken");
-                localStorage.removeItem("refreshToken");
                 localStorage.removeItem("user");
                 window.dispatchEvent(new Event("unauthorized"));
                 return Promise.reject(refreshError);

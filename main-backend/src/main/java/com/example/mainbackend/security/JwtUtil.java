@@ -46,6 +46,7 @@ public class JwtUtil {
             claims.put("departmentId", departmentId);
 
         return Jwts.builder()
+                .header().add("typ", "JWT").and()
                 .claims()
                 .add(claims)
                 .subject(userDetails.getUsername())
@@ -65,6 +66,7 @@ public class JwtUtil {
         Map<String, Object> claims = new HashMap<>();
 
         return Jwts.builder()
+                .header().add("typ", "JWT").and()
                 .claims()
                 .add(claims)
                 .subject(userDetails.getUsername())

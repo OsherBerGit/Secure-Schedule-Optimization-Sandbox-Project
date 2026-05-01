@@ -24,7 +24,7 @@ public class AuthenticationService {
     private final RefreshTokenService refreshTokenService;
     private final UserRepository userRepository;
 
-    public AuthenticationResponse authenticate(AuthenticationRequest authenticationRequest) {
+    public AuthenticationResponse authenticate(AuthenticationRequest authenticationRequest, String clientIP) {
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(authenticationRequest.getNationalId());
 
         if (!passwordEncoder.matches(authenticationRequest.getPassword(), userDetails.getPassword()))
@@ -35,7 +35,7 @@ public class AuthenticationService {
         Long departmentId = (user.getDepartment() != null) ? user.getDepartment().getId() : null;
 
         String jwtID = UUID.randomUUID().toString();
-        String clientIP = authenticationRequest.getIp();
+
         refreshTokenService.storeRefreshTokenIp(jwtID, clientIP);
 
         String accessToken = jwtUtil.generateToken(authenticationRequest, userDetails, departmentId, jwtID);

@@ -108,18 +108,17 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
-    // ---
     // Lookup tables
-    // ---
+
     @Transactional
     public void seedTaskStatuses() {
-        seedTaskStatus(TaskStatusLevel.OPEN.name(),      "#3B82F6");
-        seedTaskStatus(TaskStatusLevel.LOCKED.name(),    "#F59E0B");
-        seedTaskStatus(TaskStatusLevel.SCHEDULED.name(), "#A855F7");
-        seedTaskStatus(TaskStatusLevel.CLOSED.name(),    "#10B981");
+        seedTaskStatus(TaskStatusLevel.OPEN.name());
+        seedTaskStatus(TaskStatusLevel.LOCKED.name());
+        seedTaskStatus(TaskStatusLevel.SCHEDULED.name());
+        seedTaskStatus(TaskStatusLevel.CLOSED.name());
     }
 
-    private void seedTaskStatus(String name, String colorCode) {
+    private void seedTaskStatus(String name) {
         if (taskStatusRepository.findByName(name).isEmpty()) {
             taskStatusRepository.save(TaskStatus.builder().name(name).build());
             log.info("Seeded task status: {}", name);
@@ -128,14 +127,14 @@ public class DataLoader implements CommandLineRunner {
 
     @Transactional
     public void seedSettlementStatuses() {
-        seedSettlementStatus(SettlementStatusLevel.PENDING.name(),     "#6B7280");
-        seedSettlementStatus(SettlementStatusLevel.ASSIGNED.name(),    "#3B82F6");
-        seedSettlementStatus(SettlementStatusLevel.IN_PROGRESS.name(), "#8B5CF6");
-        seedSettlementStatus(SettlementStatusLevel.COMPLETED.name(),   "#10B981");
-        seedSettlementStatus(SettlementStatusLevel.FAILED.name(),      "#EF4444");
+        seedSettlementStatus(SettlementStatusLevel.PENDING.name());
+        seedSettlementStatus(SettlementStatusLevel.ASSIGNED.name());
+        seedSettlementStatus(SettlementStatusLevel.IN_PROGRESS.name());
+        seedSettlementStatus(SettlementStatusLevel.COMPLETED.name());
+        seedSettlementStatus(SettlementStatusLevel.FAILED.name());
     }
 
-    private void seedSettlementStatus(String name, String colorCode) {
+    private void seedSettlementStatus(String name) {
         if (settlementStatusRepository.findByName(name).isEmpty()) {
             settlementStatusRepository.save(SettlementStatus.builder().name(name).build());
             log.info("Seeded settlement status: {}", name);
@@ -146,9 +145,7 @@ public class DataLoader implements CommandLineRunner {
     public void seedVacationStatuses() {
         for (VacationStatusLevel level : VacationStatusLevel.values()) {
             if (vacationStatusRepository.findByName(level.name()).isEmpty()) {
-                vacationStatusRepository.save(VacationStatus.builder()
-                        .name(level.name())
-                        .build());
+                vacationStatusRepository.save(VacationStatus.builder().name(level.name()).build());
                 log.info("Seeded vacation status: {}", level.name());
             }
         }
@@ -160,10 +157,7 @@ public class DataLoader implements CommandLineRunner {
             String name = priorityEnum.name();
             int value = priorityEnum.getWeight();
             if (taskPriorityRepository.findByName(name).isEmpty()) {
-                taskPriorityRepository.save(TaskPriority.builder()
-                        .name(name)
-                        .value(value)
-                        .build());
+                taskPriorityRepository.save(TaskPriority.builder().name(name).value(value).build());
                 log.info("Seeded priority: {} (value={})", name, value);
             }
         }
@@ -179,18 +173,14 @@ public class DataLoader implements CommandLineRunner {
         };
         for (ConstraintTypeLevel level : ConstraintTypeLevel.values()) {
             if (constraintTypeRepository.findByName(level.name()).isEmpty()) {
-                constraintTypeRepository.save(ConstraintType.builder()
-                        .name(level.name())
-                        .description(level.getDescription())
-                        .build());
+                constraintTypeRepository.save(ConstraintType.builder().name(level.name()).description(level.getDescription()).build());
                 log.info("Seeded constraint type: {}", level.name());
             }
         }
     }
 
-    // ---
     // Roles + 15 Workers with real shift schedules
-    // ---
+
     @Transactional
     public void seedUsers() {
         Role adminRole  = roleRepository.findByName(RoleType.ADMIN.name()).orElseThrow();
@@ -208,216 +198,214 @@ public class DataLoader implements CommandLineRunner {
         upsertUser("admin", "admin", "admin", "admin@company.com", 15,
                 adminRole,
                 shifts(
-                        shift(DayOfWeek.SUNDAY,    "09:00", "17:00"),
-                        shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
-                        shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
+                        shift(DayOfWeek.SUNDAY, "09:00", "17:00"),
+                        shift(DayOfWeek.MONDAY, "09:00", "17:00"),
+                        shift(DayOfWeek.TUESDAY, "09:00", "17:00"),
                         shift(DayOfWeek.WEDNESDAY, "09:00", "17:00"),
-                        shift(DayOfWeek.THURSDAY,  "09:00", "17:00")
+                        shift(DayOfWeek.THURSDAY, "09:00", "17:00")
                 ), generalDepartment, Set.of(softwareEngineer, qaEngineer, devopsEngineer));
 
         upsertUser("manager", "manager", "manager", "manager@company.com", 10,
                 managerRole,
                 shifts(
-                        shift(DayOfWeek.SUNDAY,    "09:00", "17:00"),
-                        shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
-                        shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
+                        shift(DayOfWeek.SUNDAY, "09:00", "17:00"),
+                        shift(DayOfWeek.MONDAY, "09:00", "17:00"),
+                        shift(DayOfWeek.TUESDAY, "09:00", "17:00"),
                         shift(DayOfWeek.WEDNESDAY, "09:00", "17:00"),
-                        shift(DayOfWeek.THURSDAY,  "09:00", "17:00")
+                        shift(DayOfWeek.THURSDAY, "09:00", "17:00")
                 ), generalDepartment, Set.of(softwareEngineer, qaEngineer));
 
         upsertUser("user", "user", "user", "user@company.com", 5,
                 workerRole,
                 shifts(
-                        shift(DayOfWeek.SUNDAY,    "08:00", "16:00"),
-                        shift(DayOfWeek.MONDAY,    "08:00", "16:00"),
-                        shift(DayOfWeek.TUESDAY,   "08:00", "16:00"),
+                        shift(DayOfWeek.SUNDAY, "08:00", "16:00"),
+                        shift(DayOfWeek.MONDAY, "08:00", "16:00"),
+                        shift(DayOfWeek.TUESDAY, "08:00", "16:00"),
                         shift(DayOfWeek.WEDNESDAY, "08:00", "16:00"),
-                        shift(DayOfWeek.THURSDAY,  "08:00", "16:00")
+                        shift(DayOfWeek.THURSDAY, "08:00", "16:00")
                 ), generalDepartment, Set.of(softwareEngineer));
 
         // - Admin ---
         upsertUser("admin2", "Admin", "User", "admin2@company.com", 15,
                 adminRole,
                 shifts(
-                    shift(DayOfWeek.SUNDAY,    "09:00", "17:00"),
-                    shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
-                    shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
+                    shift(DayOfWeek.SUNDAY, "09:00", "17:00"),
+                    shift(DayOfWeek.MONDAY, "09:00", "17:00"),
+                    shift(DayOfWeek.TUESDAY, "09:00", "17:00"),
                     shift(DayOfWeek.WEDNESDAY, "09:00", "17:00"),
-                    shift(DayOfWeek.THURSDAY,  "09:00", "17:00")
+                    shift(DayOfWeek.THURSDAY, "09:00", "17:00")
                 ), generalDepartment, Set.of(softwareEngineer, qaEngineer, devopsEngineer));
 
         // - Workers ---
         upsertUser("john", "John", "Doe", "john@company.com", 5,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.SUNDAY,    "08:00", "16:00"),
-                    shift(DayOfWeek.MONDAY,    "08:00", "16:00"),
-                    shift(DayOfWeek.TUESDAY,   "08:00", "16:00"),
+                    shift(DayOfWeek.SUNDAY, "08:00", "16:00"),
+                    shift(DayOfWeek.MONDAY, "08:00", "16:00"),
+                    shift(DayOfWeek.TUESDAY, "08:00", "16:00"),
                     shift(DayOfWeek.WEDNESDAY, "08:00", "16:00"),
-                    shift(DayOfWeek.THURSDAY,  "08:00", "16:00")
+                    shift(DayOfWeek.THURSDAY, "08:00", "16:00")
                 ), generalDepartment, Set.of(softwareEngineer));
 
         upsertUser("alice", "Alice", "Smith", "alice@company.com", 4,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
+                    shift(DayOfWeek.MONDAY, "09:00", "17:00"),
                     shift(DayOfWeek.WEDNESDAY, "09:00", "17:00"),
-                    shift(DayOfWeek.THURSDAY,  "09:00", "17:00"),
-                    shift(DayOfWeek.FRIDAY,    "09:00", "13:00")
+                    shift(DayOfWeek.THURSDAY, "09:00", "17:00"),
+                    shift(DayOfWeek.FRIDAY, "09:00", "13:00")
                 ), generalDepartment, Set.of(qaEngineer));
 
         upsertUser("bob", "Bob", "Johnson", "bob@company.com", 3,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.SUNDAY,    "07:00", "15:00"),
-                    shift(DayOfWeek.MONDAY,    "07:00", "15:00"),
-                    shift(DayOfWeek.TUESDAY,   "07:00", "15:00"),
-                    shift(DayOfWeek.THURSDAY,  "07:00", "15:00")
+                    shift(DayOfWeek.SUNDAY, "07:00", "15:00"),
+                    shift(DayOfWeek.MONDAY, "07:00", "15:00"),
+                    shift(DayOfWeek.TUESDAY, "07:00", "15:00"),
+                    shift(DayOfWeek.THURSDAY, "07:00", "15:00")
                 ), generalDepartment, Set.of(devopsEngineer));
 
         upsertUser("carol", "Carol", "Williams", "carol@company.com", 4,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.SUNDAY,    "10:00", "18:00"),
-                    shift(DayOfWeek.MONDAY,    "10:00", "18:00"),
-                    shift(DayOfWeek.TUESDAY,   "10:00", "18:00"),
+                    shift(DayOfWeek.SUNDAY, "10:00", "18:00"),
+                    shift(DayOfWeek.MONDAY, "10:00", "18:00"),
+                    shift(DayOfWeek.TUESDAY, "10:00", "18:00"),
                     shift(DayOfWeek.WEDNESDAY, "10:00", "18:00"),
-                    shift(DayOfWeek.THURSDAY,  "10:00", "18:00")
+                    shift(DayOfWeek.THURSDAY, "10:00", "18:00")
                 ), generalDepartment, Set.of(softwareEngineer));
 
         upsertUser("david", "David", "Brown", "david@company.com", 6,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.SUNDAY,    "08:00", "17:00"),
-                    shift(DayOfWeek.MONDAY,    "08:00", "17:00"),
-                    shift(DayOfWeek.TUESDAY,   "08:00", "17:00"),
+                    shift(DayOfWeek.SUNDAY, "08:00", "17:00"),
+                    shift(DayOfWeek.MONDAY, "08:00", "17:00"),
+                    shift(DayOfWeek.TUESDAY, "08:00", "17:00"),
                     shift(DayOfWeek.WEDNESDAY, "08:00", "17:00"),
-                    shift(DayOfWeek.THURSDAY,  "08:00", "17:00"),
-                    shift(DayOfWeek.FRIDAY,    "08:00", "12:00")
+                    shift(DayOfWeek.THURSDAY, "08:00", "17:00"),
+                    shift(DayOfWeek.FRIDAY, "08:00", "12:00")
                 ), generalDepartment, Set.of(qaEngineer));
 
         upsertUser("emma", "Emma", "Davis", "emma@company.com", 5,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.MONDAY,    "09:00", "18:00"),
-                    shift(DayOfWeek.TUESDAY,   "09:00", "18:00"),
+                    shift(DayOfWeek.MONDAY, "09:00", "18:00"),
+                    shift(DayOfWeek.TUESDAY, "09:00", "18:00"),
                     shift(DayOfWeek.WEDNESDAY, "09:00", "18:00"),
-                    shift(DayOfWeek.THURSDAY,  "09:00", "18:00")
+                    shift(DayOfWeek.THURSDAY, "09:00", "18:00")
                 ), generalDepartment, Set.of(devopsEngineer));
 
         upsertUser("frank", "Frank", "Miller", "frank@company.com", 4,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.SUNDAY,    "06:00", "14:00"),
-                    shift(DayOfWeek.MONDAY,    "06:00", "14:00"),
-                    shift(DayOfWeek.TUESDAY,   "06:00", "14:00"),
+                    shift(DayOfWeek.SUNDAY, "06:00", "14:00"),
+                    shift(DayOfWeek.MONDAY, "06:00", "14:00"),
+                    shift(DayOfWeek.TUESDAY, "06:00", "14:00"),
                     shift(DayOfWeek.WEDNESDAY, "06:00", "14:00")
                 ), generalDepartment, Set.of(softwareEngineer));
 
         upsertUser("grace", "Grace", "Wilson", "grace@company.com", 5,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.SUNDAY,    "09:00", "17:00"),
-                    shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
+                    shift(DayOfWeek.SUNDAY, "09:00", "17:00"),
+                    shift(DayOfWeek.TUESDAY, "09:00", "17:00"),
                     shift(DayOfWeek.WEDNESDAY, "09:00", "17:00"),
-                    shift(DayOfWeek.THURSDAY,  "09:00", "17:00"),
-                    shift(DayOfWeek.FRIDAY,    "09:00", "17:00")
+                    shift(DayOfWeek.THURSDAY, "09:00", "17:00"),
+                    shift(DayOfWeek.FRIDAY, "09:00", "17:00")
                 ), generalDepartment, Set.of(qaEngineer));
 
         upsertUser("henry", "Henry", "Moore", "henry@company.com", 3,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.MONDAY,    "11:00", "19:00"),
-                    shift(DayOfWeek.TUESDAY,   "11:00", "19:00"),
+                    shift(DayOfWeek.MONDAY, "11:00", "19:00"),
+                    shift(DayOfWeek.TUESDAY, "11:00", "19:00"),
                     shift(DayOfWeek.WEDNESDAY, "11:00", "19:00"),
-                    shift(DayOfWeek.THURSDAY,  "11:00", "19:00"),
-                    shift(DayOfWeek.FRIDAY,    "11:00", "19:00")
+                    shift(DayOfWeek.THURSDAY, "11:00", "19:00"),
+                    shift(DayOfWeek.FRIDAY, "11:00", "19:00")
                 ), generalDepartment, Set.of(devopsEngineer));
 
         upsertUser("iris", "Iris", "Taylor", "iris@company.com", 5,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.SUNDAY,    "08:00", "16:00"),
-                    shift(DayOfWeek.MONDAY,    "08:00", "16:00"),
+                    shift(DayOfWeek.SUNDAY, "08:00", "16:00"),
+                    shift(DayOfWeek.MONDAY, "08:00", "16:00"),
                     shift(DayOfWeek.WEDNESDAY, "08:00", "16:00"),
-                    shift(DayOfWeek.THURSDAY,  "08:00", "16:00")
+                    shift(DayOfWeek.THURSDAY, "08:00", "16:00")
                 ), generalDepartment, Set.of(softwareEngineer));
 
         upsertUser("jack", "Jack", "Anderson", "jack@company.com", 6,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.SUNDAY,    "09:00", "18:00"),
-                    shift(DayOfWeek.MONDAY,    "09:00", "18:00"),
-                    shift(DayOfWeek.TUESDAY,   "09:00", "18:00"),
+                    shift(DayOfWeek.SUNDAY, "09:00", "18:00"),
+                    shift(DayOfWeek.MONDAY, "09:00", "18:00"),
+                    shift(DayOfWeek.TUESDAY, "09:00", "18:00"),
                     shift(DayOfWeek.WEDNESDAY, "09:00", "18:00"),
-                    shift(DayOfWeek.THURSDAY,  "09:00", "18:00"),
-                    shift(DayOfWeek.FRIDAY,    "09:00", "13:00")
+                    shift(DayOfWeek.THURSDAY, "09:00", "18:00"),
+                    shift(DayOfWeek.FRIDAY, "09:00", "13:00")
                 ), generalDepartment, Set.of(qaEngineer));
 
         upsertUser("karen", "Karen", "Thomas", "karen@company.com", 4,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.SUNDAY,    "10:00", "16:00"),
-                    shift(DayOfWeek.MONDAY,    "10:00", "16:00"),
-                    shift(DayOfWeek.TUESDAY,   "10:00", "16:00"),
+                    shift(DayOfWeek.SUNDAY, "10:00", "16:00"),
+                    shift(DayOfWeek.MONDAY, "10:00", "16:00"),
+                    shift(DayOfWeek.TUESDAY, "10:00", "16:00"),
                     shift(DayOfWeek.WEDNESDAY, "10:00", "16:00"),
-                    shift(DayOfWeek.THURSDAY,  "10:00", "16:00")
+                    shift(DayOfWeek.THURSDAY, "10:00", "16:00")
                 ), generalDepartment, Set.of(devopsEngineer));
 
         upsertUser("liam", "Liam", "Jackson", "liam@company.com", 5,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.MONDAY,    "08:00", "17:00"),
-                    shift(DayOfWeek.TUESDAY,   "08:00", "17:00"),
+                    shift(DayOfWeek.MONDAY, "08:00", "17:00"),
+                    shift(DayOfWeek.TUESDAY, "08:00", "17:00"),
                     shift(DayOfWeek.WEDNESDAY, "08:00", "17:00"),
-                    shift(DayOfWeek.THURSDAY,  "08:00", "17:00"),
-                    shift(DayOfWeek.FRIDAY,    "08:00", "17:00")
+                    shift(DayOfWeek.THURSDAY, "08:00", "17:00"),
+                    shift(DayOfWeek.FRIDAY, "08:00", "17:00")
                 ), generalDepartment, Set.of(softwareEngineer));
 
         upsertUser("mia", "Mia", "White", "mia@company.com", 4,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.SUNDAY,    "07:00", "15:00"),
-                    shift(DayOfWeek.MONDAY,    "07:00", "15:00"),
-                    shift(DayOfWeek.TUESDAY,   "07:00", "15:00"),
-                    shift(DayOfWeek.THURSDAY,  "07:00", "15:00"),
-                    shift(DayOfWeek.FRIDAY,    "07:00", "11:00")
+                    shift(DayOfWeek.SUNDAY, "07:00", "15:00"),
+                    shift(DayOfWeek.MONDAY, "07:00", "15:00"),
+                    shift(DayOfWeek.TUESDAY, "07:00", "15:00"),
+                    shift(DayOfWeek.THURSDAY, "07:00", "15:00"),
+                    shift(DayOfWeek.FRIDAY, "07:00", "11:00")
                 ), generalDepartment, Set.of(qaEngineer));
 
         // The Specialist (Super User with all 3 skills)
         upsertUser("super1", "Clark", "Kent", "specialist@company.com", 5,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
-                    shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
+                    shift(DayOfWeek.MONDAY, "09:00", "17:00"),
+                    shift(DayOfWeek.TUESDAY, "09:00", "17:00"),
                     shift(DayOfWeek.WEDNESDAY, "09:00", "17:00"),
-                    shift(DayOfWeek.THURSDAY,  "09:00", "17:00"),
-                    shift(DayOfWeek.FRIDAY,    "09:00", "17:00")
+                    shift(DayOfWeek.THURSDAY, "09:00", "17:00"),
+                    shift(DayOfWeek.FRIDAY, "09:00", "17:00")
                 ), generalDepartment, Set.of(java, react, devOps));
 
         // The Juniors (Only 1 or 2 skills)
         upsertUser("junior1", "Jimmy", "Olsen", "jimmy@company.com", 5,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
-                    shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
+                    shift(DayOfWeek.MONDAY, "09:00", "17:00"),
+                    shift(DayOfWeek.TUESDAY, "09:00", "17:00"),
                     shift(DayOfWeek.WEDNESDAY, "09:00", "17:00")
                 ), generalDepartment, Set.of(java));
 
         upsertUser("junior2", "Lois", "Lane", "lois@company.com", 5,
                 workerRole,
                 shifts(
-                    shift(DayOfWeek.MONDAY,    "09:00", "17:00"),
-                    shift(DayOfWeek.TUESDAY,   "09:00", "17:00"),
+                    shift(DayOfWeek.MONDAY, "09:00", "17:00"),
+                    shift(DayOfWeek.TUESDAY, "09:00", "17:00"),
                     shift(DayOfWeek.WEDNESDAY, "09:00", "17:00")
                 ), generalDepartment, Set.of(react, devOps));
 
         log.info("Seeded {} users", userRepository.count());
     }
 
-    // ---
     // 30 OPEN tasks with varied priorities, durations, and rich descriptions
-    // ---
     @Transactional
     public void seedTasks() {
         if (taskRepository.count() > 0) {
@@ -425,9 +413,9 @@ public class DataLoader implements CommandLineRunner {
             return;
         }
 
-        TaskPriority low      = taskPriorityRepository.findByName(TaskPriorityLevel.LOW.name()).orElseThrow();
-        TaskPriority medium   = taskPriorityRepository.findByName(TaskPriorityLevel.MEDIUM.name()).orElseThrow();
-        TaskPriority high     = taskPriorityRepository.findByName(TaskPriorityLevel.HIGH.name()).orElseThrow();
+        TaskPriority low = taskPriorityRepository.findByName(TaskPriorityLevel.LOW.name()).orElseThrow();
+        TaskPriority medium = taskPriorityRepository.findByName(TaskPriorityLevel.MEDIUM.name()).orElseThrow();
+        TaskPriority high = taskPriorityRepository.findByName(TaskPriorityLevel.HIGH.name()).orElseThrow();
         TaskPriority critical = taskPriorityRepository.findByName(TaskPriorityLevel.CRITICAL.name()).orElseThrow();
         TaskStatus open = taskStatusRepository.findByName(TaskStatusLevel.OPEN.name()).orElseThrow();
         Department generalDepartment = departmentRepository.findByName("General").orElseThrow();
@@ -613,8 +601,7 @@ public class DataLoader implements CommandLineRunner {
         log.info("Seeded {} tasks", taskRepository.count());
 
         // - Finish-to-Start Constraints ---
-        ConstraintType fts = constraintTypeRepository
-                .findByName(ConstraintTypeLevel.FINISH_TO_START.name()).orElseThrow();
+        ConstraintType fts = constraintTypeRepository.findByName(ConstraintTypeLevel.FINISH_TO_START.name()).orElseThrow();
 
         // DB Schema must finish before: Auth API, Tasks API, Users API, Settlements API
         addConstraint(t01, t06, fts);
@@ -675,9 +662,7 @@ public class DataLoader implements CommandLineRunner {
         log.info("Seeded task constraints");
     }
 
-    // ---
     // Vacations - create realistic blocked windows for the algorithm
-    // ---
     @Transactional
     public void seedVacations() {
         if (vacationRepository.count() > 0) {
@@ -708,15 +693,12 @@ public class DataLoader implements CommandLineRunner {
 
     private void saveVacation(String nationalId, LocalDate start, LocalDate end, VacationStatus status) {
         userRepository.findByNationalId(nationalId).ifPresent(user -> {
-            vacationRepository.save(Vacation.builder()
-                    .user(user).startDate(start).endDate(end).status(status).build());
+            vacationRepository.save(Vacation.builder().user(user).startDate(start).endDate(end).status(status).build());
             log.info("Seeded {} vacation for {} ({} - {})", status.getName(), nationalId, start, end);
         });
     }
 
-    // ---
     // Settlements - seed 2 already-settled tasks so the UI has variety
-    // ---
     @Transactional
     public void seedSettlements() {
         if (settlementRepository.count() > 0) {
@@ -724,7 +706,7 @@ public class DataLoader implements CommandLineRunner {
             return;
         }
 
-        SettlementStatus pending   = settlementStatusRepository.findByName(SettlementStatusLevel.PENDING.name()).orElseThrow();
+        SettlementStatus pending = settlementStatusRepository.findByName(SettlementStatusLevel.PENDING.name()).orElseThrow();
         SettlementStatus completed = settlementStatusRepository.findByName(SettlementStatusLevel.COMPLETED.name()).orElseThrow();
         TaskStatus locked = taskStatusRepository.findByName(TaskStatusLevel.LOCKED.name()).orElseThrow();
         TaskStatus closed = taskStatusRepository.findByName(TaskStatusLevel.CLOSED.name()).orElseThrow();
@@ -757,12 +739,8 @@ public class DataLoader implements CommandLineRunner {
         log.info("Seeded {} settlements", settlementRepository.count());
     }
 
-    // ---
     // Helpers
-    // ---
-    private void upsertUser(String nationalId, String firstName, String lastName,
-                             String email, int maxTasks, Role role,
-                             List<UserAvailability> availabilityTemplates, Department department, Set<Skill> skills) {
+    private void upsertUser(String nationalId, String firstName, String lastName, String email, int maxTasks, Role role, List<UserAvailability> availabilityTemplates, Department department, Set<Skill> skills) {
         User user = userRepository.findByNationalId(nationalId).orElseGet(() -> {
             User u = new User();
             u.setNationalId(nationalId);

@@ -39,8 +39,7 @@ export const authApi = {
 
     logout: () => axiosInstance.post("/auth/logout"),
 
-    refresh: (data: RefreshTokenRequest) =>
-        axiosInstance.post<RefreshTokenResponse>("/auth/refresh-token", data),
+    refresh: () => axiosInstance.post<RefreshTokenResponse>("/auth/refresh-token", {}),
 };
 
 // User API

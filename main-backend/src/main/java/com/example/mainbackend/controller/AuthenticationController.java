@@ -2,19 +2,18 @@ package com.example.mainbackend.controller;
 
 import com.example.mainbackend.dto.auth.AuthenticationRequest;
 import com.example.mainbackend.dto.auth.AuthenticationResponse;
-import com.example.mainbackend.dto.auth.RefreshTokenRequest;
+import com.example.mainbackend.security.JwtProperties;
 import com.example.mainbackend.service.AuthenticationService;
 import com.example.mainbackend.service.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,32 +23,58 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
     private final RefreshTokenService refreshTokenService;
 
+    private ResponseCookie createRefreshTokenCookie(String refreshToken) {
+        return ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(false)
+                .path("/api/auth/refresh-token")
+                .maxAge(JwtProperties.REFRESH_TOKEN_EXPIRATION_TIME / 1000)
+                .sameSite("Strict")
+                .build();
+    }
+
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody AuthenticationRequest authenticationRequest,
-                                              HttpServletRequest request) {
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody AuthenticationRequest authenticationRequest, HttpServletRequest request) {
         try {
             String clientIP = request.getRemoteAddr();
-            authenticationRequest.setIp(clientIP);
-            AuthenticationResponse authResponse = authenticationService.authenticate(authenticationRequest);
-            return ResponseEntity.ok(authResponse);
+            AuthenticationResponse authResponse = authenticationService.authenticate(authenticationRequest, clientIP);
+
+            ResponseCookie cookie = createRefreshTokenCookie(authResponse.getRefreshToken());
+
+            AuthenticationResponse bodyResponse = AuthenticationResponse.builder()
+                    .accessToken(authResponse.getAccessToken())
+                    .build();
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                    .body(bodyResponse);
+
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"error\": \"Invalid national ID or password\"}");
         }
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<?> refreshAccessToken(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest,
-                                                HttpServletRequest request) {
-        if (request == null || refreshTokenRequest.getRefreshToken() == null || refreshTokenRequest.getRefreshToken().isEmpty())
-            return ResponseEntity.badRequest().build();
+    public ResponseEntity<?> refreshAccessToken(@CookieValue(name = "refreshToken", required = false) String refreshToken, HttpServletRequest request) {
+        if (refreshToken == null || refreshToken.isEmpty())
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"error\": \"Refresh token is missing or expired\"}");
 
         try {
             String clientIP = request.getRemoteAddr();
-            refreshTokenRequest.setIp(clientIP);
-            AuthenticationResponse authResponse = refreshTokenService.refreshAccessToken(refreshTokenRequest);
-            return ResponseEntity.ok(authResponse);
+            AuthenticationResponse authResponse = refreshTokenService.refreshAccessToken(refreshToken, clientIP);
+
+            ResponseCookie cookie = createRefreshTokenCookie(authResponse.getRefreshToken());
+
+            AuthenticationResponse bodyResponse = AuthenticationResponse.builder()
+                    .accessToken(authResponse.getAccessToken())
+                    .build();
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                    .body(bodyResponse);
+
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"error\": \"" + e.getMessage() + "\"}");
         }
     }
 }
