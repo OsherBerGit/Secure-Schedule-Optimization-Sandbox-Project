@@ -1,0 +1,19 @@
+.task-modal-card { background: var(--card-bg); border-radius: 1.25rem; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); width: 90%; max-width: 800px; height: 90vh; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden !important; }
+.task-modal-form { display: flex; flex-direction: column; overflow: hidden; flex: 1; min-height: 0; }
+.task-modal-body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 2rem; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent; }
+.task-modal-body::-webkit-scrollbar { width: 6px; }
+.task-modal-body::-webkit-scrollbar-track { background: transparent; }
+.task-modal-body::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+.task-calendar .react-datepicker__navigation--next { right: 100px !important; top: 3px !important; }
+.task-calendar .react-datepicker__navigation--previous { left: 2px !important; }
+.skills-container-wrapper { border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 1.25rem; background: transparent; margin-bottom: 1rem; }
+.modal-section-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; display: block; }
+.skills-selection-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 0; }
+.skill-checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-primary); cursor: pointer; padding: 6px; border-radius: 6px; transition: background 0.2s; }
+.skill-checkbox-item:hover { background: var(--input-bg); }
+.skill-checkbox-item input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #4f46e5; }
+.dark .task-modal-card { background-color: var(--card-bg) !important; color: var(--text-primary) !important; }
+.dark .skills-container-wrapper { border-color: var(--border-color) !important; }
+.dark .task-modal-card input, .dark .task-modal-card select, .dark .task-modal-card textarea { background-color: var(--input-bg) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; }
+.dark .task-modal-card label { color: var(--text-secondary) !important; }
+.dark .modal-header h2, .dark .modern-close-btn { color: var(--text-primary) !important; }

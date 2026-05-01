@@ -1,43 +1,33 @@
-import {
-    BrowserRouter as Router,
-    Routes,
-    Route,
-    Navigate,
-} from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext.tsx";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Layout from "./components/Layout";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Unauthorized from "./pages/Unauthorized";
+import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/layout/ProtectedRoute";
+import Layout from "./components/layout/Layout";
 
-import Users from "./pages/Users";
-import Vacations from "./pages/Vacations";
-import Tasks from "./pages/Tasks.tsx";
-import Settlements from "./pages/Settlements";
-import Schedule from "./pages/Schedule";
-import TaskConstraints from "./pages/TaskConstraints";
-import Departments from "./pages/Departments";
-import Skills from "./pages/Skills";
-import { useState, useEffect } from "react";
+import Login from "./pages/Login/Login";
+import Dashboard from "./pages/Dashboard/Dashboard";
+import Unauthorized from "./pages/Unauthorized/Unauthorized";
+import Users from "./pages/Users/Users";
+import Vacations from "./pages/Vacations/Vacations";
+import Tasks from "./pages/Tasks/Tasks";
+import Settlements from "./pages/Settlements/Settlements";
+import Schedule from "./pages/Schedule/Schedule";
+import TaskConstraints from "./pages/TaskConstraints/TaskConstraints";
+import Departments from "./pages/Departments/Departments";
+import Skills from "./pages/Skills/Skills";
 
 import "./App.css";
 
-function App() {
+const App: React.FC = () => {
     const [isDarkMode, setIsDarkMode] = useState(() => {
-        const savedTheme = localStorage.getItem("theme");
-        if (savedTheme) return savedTheme === "dark";
-        return window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const saved = localStorage.getItem("theme");
+        return saved ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
     });
 
     useEffect(() => {
-        if (isDarkMode) {
-            document.documentElement.classList.add("dark");
-            localStorage.setItem("theme", "dark");
-        } else {
-            document.documentElement.classList.remove("dark");
-            localStorage.setItem("theme", "light");
-        }
+        const root = document.documentElement;
+        isDarkMode ? root.classList.add("dark") : root.classList.remove("dark");
+        localStorage.setItem("theme", isDarkMode ? "dark" : "light");
     }, [isDarkMode]);
 
     return (
@@ -45,134 +35,34 @@ function App() {
             <Router>
                 <Layout isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}>
                     <Routes>
-                        {/* Public routes */}
                         <Route path="/login" element={<Login />} />
-                        <Route
-                            path="/unauthorized"
-                            element={<Unauthorized />}
-                        />
+                        <Route path="/unauthorized" element={<Unauthorized />} />
 
-                        <Route
-                            path="/users"
-                            element={
-                                <ProtectedRoute
-                                    allowedRoles={["ADMIN", "MANAGER"]}
-                                >
-                                    <Users />
-                                </ProtectedRoute>
-                            }
-                        />
+                        <Route element={<ProtectedRoute allowedRoles={["ADMIN", "MANAGER"]} />}>
+                            <Route path="/users" element={<Users />} />
+                            <Route path="/tasks" element={<Tasks />} />
+                            <Route path="/settlements" element={<Settlements />} />
+                            <Route path="/task-constraints" element={<TaskConstraints />} />
+                        </Route>
 
-                        {/* Protected routes */}
-                        <Route
-                            path="/tasks"
-                            element={
-                                <ProtectedRoute
-                                    allowedRoles={["ADMIN", "MANAGER"]}
-                                >
-                                    <Tasks />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/vacations"
-                            element={
-                                <ProtectedRoute
-                                    allowedRoles={[
-                                        "ADMIN",
-                                        "MANAGER",
-                                        "WORKER",
-                                    ]}
-                                >
-                                    <Vacations />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/dashboard"
-                            element={
-                                <ProtectedRoute
-                                    allowedRoles={[
-                                        "ADMIN",
-                                        "MANAGER",
-                                        "WORKER",
-                                    ]}
-                                >
-                                    <Dashboard />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/schedule"
-                            element={
-                                <ProtectedRoute
-                                    allowedRoles={[
-                                        "ADMIN",
-                                        "MANAGER",
-                                        "WORKER",
-                                    ]}
-                                >
-                                    <Schedule />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/settlements"
-                            element={
-                                <ProtectedRoute
-                                    allowedRoles={["ADMIN", "MANAGER"]}
-                                >
-                                    <Settlements />
-                                </ProtectedRoute>
-                            }
-                        />
+                        <Route element={<ProtectedRoute allowedRoles={["ADMIN", "MANAGER", "WORKER"]} />}>
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/vacations" element={<Vacations />} />
+                            <Route path="/schedule" element={<Schedule />} />
+                        </Route>
 
-                        {/* Admin-only lookup table management */}
-                        <Route
-                            path="/departments"
-                            element={
-                                <ProtectedRoute allowedRoles={["ADMIN"]}>
-                                    <Departments />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/skills"
-                            element={
-                                <ProtectedRoute allowedRoles={["ADMIN"]}>
-                                    <Skills />
-                                </ProtectedRoute>
-                            }
-                        />
+                        <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+                            <Route path="/departments" element={<Departments />} />
+                            <Route path="/skills" element={<Skills />} />
+                        </Route>
 
-                        {/* Task constraints - visible to all authenticated users, create/delete is ADMIN only (enforced in component) */}
-                        <Route
-                            path="/task-constraints"
-                            element={
-                                <ProtectedRoute
-                                    allowedRoles={["ADMIN", "MANAGER"]}
-                                >
-                                    <TaskConstraints />
-                                </ProtectedRoute>
-                            }
-                        />
-
-                        {/* Redirect root to dashboard */}
-                        <Route
-                            path="/"
-                            element={<Navigate to="/dashboard" replace />}
-                        />
-
-                        {/* Catch-all - redirect to dashboard */}
-                        <Route
-                            path="*"
-                            element={<Navigate to="/dashboard" replace />}
-                        />
+                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                        <Route path="*" element={<Navigate to="/dashboard" replace />} />
                     </Routes>
                 </Layout>
             </Router>
         </AuthProvider>
     );
-}
+};
 
 export default App;

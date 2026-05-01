@@ -14,16 +14,10 @@ export interface LoginRequest {
 
 export interface LoginResponse {
     accessToken: string;
-    refreshToken: string;
-}
-
-export interface RefreshTokenRequest {
-    refreshToken: string;
 }
 
 export interface RefreshTokenResponse {
     accessToken: string;
-    refreshToken: string;
 }
 
 export interface ApiResponse<T> {
@@ -36,7 +30,7 @@ export interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-    login: (username: string, password: string) => Promise<void>;
+    login: (nationalId: string, password: string) => Promise<void>;
     logout: () => void;
     refreshAccessToken: () => Promise<void>;
 }
@@ -58,11 +52,7 @@ export interface SchedulingConfiguration {
     createdByUserId?: number;
 }
 
-export type ScheduleStrategy =
-    | "GREEDY"
-    | "ROUND_ROBIN"
-    | "MEMETIC"
-    | "CONSTRAINT_PROGRAMMING";
+export type ScheduleStrategy = "GREEDY" | "ROUND_ROBIN" | "MEMETIC" | "CONSTRAINT_PROGRAMMING";
 
 export interface TaskAssignmentResult {
     taskId: number;
@@ -106,12 +96,6 @@ export interface MemeticScheduleResult extends ScheduleResult {
     fitnessHistory: number[];
 }
 
-export function isMemeticResult(
-    result: ScheduleResult | null | undefined,
-): result is MemeticScheduleResult {
-    return (
-        !!result &&
-        result.strategyUsed === "MEMETIC" &&
-        "fitnessHistory" in result
-    );
+export function isMemeticResult(result: ScheduleResult | null | undefined): result is MemeticScheduleResult {
+    return !!result && result.strategyUsed === "MEMETIC" && "fitnessHistory" in result;
 }

@@ -1,0 +1,24 @@
+.task-graph-wrapper { width: 100%; height: 600px; background: #f8fafc; border-radius: 1rem; border: 1px solid var(--border-light); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); overflow: hidden; position: relative; }
+.saas-graph-node { background: white !important; border: 2px solid var(--border-light) !important; border-radius: 0.5rem !important; padding: 0 !important; width: 220px; box-shadow: var(--shadow-sm) !important; transition: all 0.2s ease !important; }
+.saas-graph-node:hover { border-color: var(--primary-color) !important; box-shadow: var(--shadow-md) !important; transform: translateY(-2px); }
+.graph-node-content { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.8rem 1rem; text-align: center; }
+.graph-node-id { font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.25rem; background: #f1f5f9; padding: 0.15rem 0.5rem; border-radius: 999px; }
+.graph-node-title { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+.graph-empty-state { height: 400px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); background: white; border-radius: 1rem; border: 1px dashed var(--border-light); font-style: italic; }
+.saas-react-flow .react-flow__controls { box-shadow: var(--shadow-md); border-radius: 0.5rem; overflow: hidden; border: 1px solid var(--border-light); }
+.saas-react-flow .react-flow__controls-button { border-bottom: 1px solid var(--border-light); background: white; color: var(--text-secondary); }
+.saas-react-flow .react-flow__controls-button:hover { background: #f8fafc; color: var(--primary-color); }
+.saas-minimap { border-radius: 0.5rem; border: 1px solid var(--border-light); box-shadow: var(--shadow-md); background: white; }
+.graph-panel { background: white; padding: 0.5rem 1rem; border-radius: 999px; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); pointer-events: none; }
+.dark .task-graph-wrapper { background: var(--bg-main); border-color: var(--border-color); }
+.dark .saas-graph-node { background: var(--card-bg) !important; color: var(--text-primary); border: 1px solid var(--border-color) !important; }
+.dark .saas-graph-node:hover { border-color: var(--primary-color) !important; }
+.dark .graph-node-title { color: var(--text-primary); }
+.dark .graph-node-id { background: var(--input-bg); color: var(--text-secondary); }
+.dark .react-flow__background pattern circle { fill: rgba(255, 255, 255, 0.1) !important; }
+.dark .saas-react-flow .react-flow__controls-button { background: var(--card-bg); color: var(--text-secondary); border-color: var(--border-color); }
+.dark .saas-react-flow .react-flow__controls-button:hover { background: var(--input-bg); color: var(--primary-color); }
+.dark .saas-minimap { background: var(--card-bg); border-color: var(--border-color); }
+.dark .saas-minimap mask rect { fill: rgba(30, 41, 59, 0.7) !important; }
+.dark .graph-panel { background: var(--card-bg); color: var(--text-secondary); border-color: var(--border-color); }
+.dark .graph-empty-state { background: var(--card-bg); color: var(--text-secondary); border-color: var(--border-color); }

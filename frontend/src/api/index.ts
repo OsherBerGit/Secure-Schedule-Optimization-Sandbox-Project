@@ -2,7 +2,6 @@ import axiosInstance from "./axios";
 import type {
     LoginRequest,
     LoginResponse,
-    RefreshTokenRequest,
     RefreshTokenResponse,
     User,
     CreateUserRequest,
@@ -29,271 +28,140 @@ import type {
     CreateTaskConstraintRequest,
     ScheduleStrategy,
     ScheduleResult,
-    SaveScheduleRequest,
+    SaveScheduleRequest
 } from "../types";
 
-// Auth API
 export const authApi = {
-    login: (data: LoginRequest) =>
-        axiosInstance.post<LoginResponse>("/auth/login", data),
-
+    login: (data: LoginRequest) => axiosInstance.post<LoginResponse>("/auth/login", data),
     logout: () => axiosInstance.post("/auth/logout"),
-
-    refresh: () => axiosInstance.post<RefreshTokenResponse>("/auth/refresh-token", {}),
+    refresh: () => axiosInstance.post<RefreshTokenResponse>("/auth/refresh-token", {})
 };
 
-// User API
 export const userApi = {
     getAll: () => axiosInstance.get<User[]>("/users"),
-
     getById: (id: number) => axiosInstance.get<User>(`/users/${id}`),
-
-    getByNationalId: (nationalId: string) =>
-        axiosInstance.get<User>(`/users/national-id/${nationalId}`),
-
-    create: (data: CreateUserRequest) =>
-        axiosInstance.post<User>("/users", data),
-
-    // Backend PUT /users/{id} accepts UserDto - forward the full shape
-    update: (id: number, data: UpdateUserRequest) =>
-        axiosInstance.put<User>(`/users/${id}`, data),
-
+    getByNationalId: (nationalId: string) => axiosInstance.get<User>(`/users/national-id/${nationalId}`),
+    create: (data: CreateUserRequest) => axiosInstance.post<User>("/users", data),
+    update: (id: number, data: UpdateUserRequest) => axiosInstance.put<User>(`/users/${id}`, data),
     delete: (id: number) => axiosInstance.delete(`/users/${id}`),
-
-    getByRole: (role: string) =>
-        axiosInstance.get<User[]>(`/users/role/${role}`),
-
-    getByDepartment: (departmentId: number) =>
-        axiosInstance.get<User[]>(`/users/department/${departmentId}`),
-
-    getByEmail: (email: string) =>
-        axiosInstance.get<User>(`/users/email/${email}`),
+    getByRole: (role: string) => axiosInstance.get<User[]>(`/users/role/${role}`),
+    getByDepartment: (departmentId: number) => axiosInstance.get<User[]>(`/users/department/${departmentId}`),
+    getByEmail: (email: string) => axiosInstance.get<User>(`/users/email/${email}`)
 };
 
-// Department API
 export const departmentApi = {
     getAll: () => axiosInstance.get<Department[]>("/departments"),
-
-    getById: (id: number) =>
-        axiosInstance.get<Department>(`/departments/${id}`),
-
-    create: (name: string) =>
-        axiosInstance.post<Department>("/departments", { name }),
-
-    update: (id: number, name: string) =>
-        axiosInstance.put<Department>(`/departments/${id}`, { name }),
-
-    delete: (id: number) => axiosInstance.delete(`/departments/${id}`),
+    getById: (id: number) => axiosInstance.get<Department>(`/departments/${id}`),
+    create: (name: string) => axiosInstance.post<Department>("/departments", { name }),
+    update: (id: number, name: string) => axiosInstance.put<Department>(`/departments/${id}`, { name }),
+    delete: (id: number) => axiosInstance.delete(`/departments/${id}`)
 };
 
-// Skill API
 export const skillApi = {
     getAll: () => axiosInstance.get<Skill[]>("/skill"),
-    create: (name: string, description?: string) =>
-        axiosInstance.post<Skill>("/skill", { name, description }),
-    update: (id: number, name: string, description?: string) =>
-        axiosInstance.put<Skill>(`/skill/${id}`, { name, description }),
-    delete: (id: number) => axiosInstance.delete(`/skill/${id}`),
+    create: (name: string, description?: string) => axiosInstance.post<Skill>("/skill", { name, description }),
+    update: (id: number, name: string, description?: string) => axiosInstance.put<Skill>(`/skill/${id}`, { name, description }),
+    delete: (id: number) => axiosInstance.delete(`/skill/${id}`)
 };
 
-// Task API
 export const taskApi = {
     getAll: () => axiosInstance.get<Task[]>("/tasks"),
-
     getById: (id: number) => axiosInstance.get<Task>(`/tasks/${id}`),
-
-    create: (data: CreateTaskRequest) =>
-        axiosInstance.post<Task>("/tasks", data),
-
-    update: (id: number, data: UpdateTaskRequest) =>
-        axiosInstance.put<Task>(`/tasks/${id}`, data),
-
+    create: (data: CreateTaskRequest) => axiosInstance.post<Task>("/tasks", data),
+    update: (id: number, data: UpdateTaskRequest) => axiosInstance.put<Task>(`/tasks/${id}`, data),
     delete: (id: number) => axiosInstance.delete(`/tasks/${id}`),
-
-    getByUser: (userId: number) =>
-        axiosInstance.get<Task[]>(`/tasks/user/${userId}`),
-
-    getValidPrerequisites: (taskId: number) =>
-        axiosInstance.get<Task[]>(`/tasks/${taskId}/valid-prerequisites`),
-    // getByStatus removed - status is now on Settlement
+    getByUser: (userId: number) => axiosInstance.get<Task[]>(`/tasks/user/${userId}`),
+    getValidPrerequisites: (taskId: number) => axiosInstance.get<Task[]>(`/tasks/${taskId}/valid-prerequisites`)
 };
 
-// Status API
 export const statusApi = {
     getAll: () => axiosInstance.get<Status[]>("/task-statuses"),
     getById: (id: number) => axiosInstance.get<Status>(`/task-statuses/${id}`),
-    create: (data: { name: string }) =>
-        axiosInstance.post<Status>("/task-statuses", data),
-    update: (id: number, data: { name: string }) =>
-        axiosInstance.put<Status>(`/task-statuses/${id}`, data),
-    delete: (id: number) => axiosInstance.delete(`/task-statuses/${id}`),
+    create: (data: { name: string }) => axiosInstance.post<Status>("/task-statuses", data),
+    update: (id: number, data: { name: string }) => axiosInstance.put<Status>(`/task-statuses/${id}`, data),
+    delete: (id: number) => axiosInstance.delete(`/task-statuses/${id}`)
 };
 
-// Settlement Status API - read-only, values are system-seeded
 export const settlementStatusApi = {
-    getAll: () => axiosInstance.get<SettlementStatus[]>("/settlement-statuses"),
+    getAll: () => axiosInstance.get<SettlementStatus[]>("/settlement-statuses")
 };
 
-// Priority API
 export const priorityApi = {
     getAll: () => axiosInstance.get<Priority[]>("/priorities"),
     getById: (id: number) => axiosInstance.get<Priority>(`/priorities/${id}`),
-    create: (data: { name: string }) =>
-        axiosInstance.post<Priority>("/priorities", data),
-    update: (id: number, data: { name: string }) =>
-        axiosInstance.put<Priority>(`/priorities/${id}`, data),
-    delete: (id: number) => axiosInstance.delete(`/priorities/${id}`),
+    create: (data: { name: string }) => axiosInstance.post<Priority>("/priorities", data),
+    update: (id: number, data: { name: string }) => axiosInstance.put<Priority>(`/priorities/${id}`, data),
+    delete: (id: number) => axiosInstance.delete(`/priorities/${id}`)
 };
 
-// Constraint Type API
 export const constraintTypeApi = {
     getAll: () => axiosInstance.get<ConstraintType[]>("/constraint-types"),
-    getById: (id: number) =>
-        axiosInstance.get<ConstraintType>(`/constraint-types/${id}`),
-    create: (data: CreateConstraintTypeRequest) =>
-        axiosInstance.post<ConstraintType>("/constraint-types", data),
-    update: (id: number, data: UpdateConstraintTypeRequest) =>
-        axiosInstance.put<ConstraintType>(`/constraint-types/${id}`, data),
-    delete: (id: number) => axiosInstance.delete(`/constraint-types/${id}`),
+    getById: (id: number) => axiosInstance.get<ConstraintType>(`/constraint-types/${id}`),
+    create: (data: CreateConstraintTypeRequest) => axiosInstance.post<ConstraintType>("/constraint-types", data),
+    update: (id: number, data: UpdateConstraintTypeRequest) => axiosInstance.put<ConstraintType>(`/constraint-types/${id}`, data),
+    delete: (id: number) => axiosInstance.delete(`/constraint-types/${id}`)
 };
 
-// Task Constraint API
 export const taskConstraintApi = {
     getAll: () => axiosInstance.get<TaskConstraint[]>("/task-constraints"),
-    getById: (id: number) =>
-        axiosInstance.get<TaskConstraint>(`/task-constraints/${id}`),
-    create: (data: CreateTaskConstraintRequest) =>
-        axiosInstance.post<TaskConstraint>("/task-constraints", data),
-    update: (id: number, data: CreateTaskConstraintRequest) =>
-        axiosInstance.put<TaskConstraint>(`/task-constraints/${id}`, data),
+    getById: (id: number) => axiosInstance.get<TaskConstraint>(`/task-constraints/${id}`),
+    create: (data: CreateTaskConstraintRequest) => axiosInstance.post<TaskConstraint>("/task-constraints", data),
+    update: (id: number, data: CreateTaskConstraintRequest) => axiosInstance.put<TaskConstraint>(`/task-constraints/${id}`, data),
     delete: (id: number) => axiosInstance.delete(`/task-constraints/${id}`),
-    getByPredecessor: (taskId: number) =>
-        axiosInstance.get<TaskConstraint[]>(
-            `/task-constraints/predecessor/${taskId}`,
-        ),
-    getBySuccessor: (taskId: number) =>
-        axiosInstance.get<TaskConstraint[]>(
-            `/task-constraints/successor/${taskId}`,
-        ),
+    getByPredecessor: (taskId: number) => axiosInstance.get<TaskConstraint[]>(`/task-constraints/predecessor/${taskId}`),
+    getBySuccessor: (taskId: number) => axiosInstance.get<TaskConstraint[]>(`/task-constraints/successor/${taskId}`)
 };
 
-// Settlement API
 export const settlementApi = {
     getAll: () => axiosInstance.get<Settlement[]>("/settlements"),
-
-    getById: (id: number) =>
-        axiosInstance.get<Settlement>(`/settlements/${id}`),
-
-    create: (data: CreateSettlementRequest) =>
-        axiosInstance.post<Settlement>("/settlements", data),
-
+    getById: (id: number) => axiosInstance.get<Settlement>(`/settlements/${id}`),
+    create: (data: CreateSettlementRequest) => axiosInstance.post<Settlement>("/settlements", data),
     delete: (id: number) => axiosInstance.delete(`/settlements/${id}`),
-
-    getByUser: (userId: number) =>
-        axiosInstance.get<Settlement[]>(`/settlements/user/${userId}`),
-
-    /** Returns settlements for the currently authenticated user (JWT-based). */
-    getMySettlements: () =>
-        axiosInstance.get<Settlement[]>("/settlements/user/me"),
-
-    /** Marks a settlement as COMPLETED. User must own the settlement. */
-    completeSettlement: (id: number) =>
-        axiosInstance.patch<Settlement>(`/settlements/${id}/complete`),
-
-    getByTask: (taskId: number) =>
-        axiosInstance.get<Settlement[]>(`/settlements/task/${taskId}`),
+    getByUser: (userId: number) => axiosInstance.get<Settlement[]>(`/settlements/user/${userId}`),
+    getMySettlements: () => axiosInstance.get<Settlement[]>("/settlements/user/me"),
+    completeSettlement: (id: number) => axiosInstance.patch<Settlement>(`/settlements/${id}/complete`),
+    getByTask: (taskId: number) => axiosInstance.get<Settlement[]>(`/settlements/task/${taskId}`)
 };
 
-// Vacation API
 export const vacationApi = {
     getAll: () => axiosInstance.get<Vacation[]>("/vacations"),
-
     getById: (id: number) => axiosInstance.get<Vacation>(`/vacations/${id}`),
-
-    // ADMIN: create vacation directly (auto-approved)
-    create: (data: CreateVacationRequest) =>
-        axiosInstance.post<Vacation>("/vacations", data),
-
-    // WORKER: submit a vacation request (starts as PENDING)
-    request: (data: VacationRequestDto) =>
-        axiosInstance.post<Vacation>("/vacations/request", data),
-
-    // ADMIN: approve or reject a PENDING vacation
-    updateStatus: (id: number, data: VacationStatusUpdateRequest) =>
-        axiosInstance.patch<Vacation>(`/vacations/${id}/status`, data),
-
-    update: (id: number, data: UpdateVacationRequest) =>
-        axiosInstance.put<Vacation>(`/vacations/${id}`, data),
-
+    create: (data: CreateVacationRequest) => axiosInstance.post<Vacation>("/vacations", data),
+    request: (data: VacationRequestDto) => axiosInstance.post<Vacation>("/vacations/request", data),
+    updateStatus: (id: number, data: VacationStatusUpdateRequest) => axiosInstance.patch<Vacation>(`/vacations/${id}/status`, data),
+    update: (id: number, data: UpdateVacationRequest) => axiosInstance.put<Vacation>(`/vacations/${id}`, data),
     delete: (id: number) => axiosInstance.delete(`/vacations/${id}`),
-
-    getByUser: (userId: number) =>
-        axiosInstance.get<Vacation[]>(`/vacations/user/${userId}`),
-
+    getByUser: (userId: number) => axiosInstance.get<Vacation[]>(`/vacations/user/${userId}`),
     getByDateRange: (startDate: string, endDate: string) =>
         axiosInstance.get<Vacation[]>("/vacations/date-range", {
-            params: { startDate, endDate },
-        }),
+            params: { startDate, endDate }
+        })
 };
 
-// Schedule API - calls main-backend which forwards to the algorithm service
 export const scheduleApi = {
-    /** PHASE 1: Generates a draft schedule preview. Nothing is saved to the DB.
-     *  @param strategy      "GREEDY" (default) | "ROUND_ROBIN" | "MEMETIC" | "CONSTRAINT_PROGRAMMING"
-     *  @param departmentId  Optional ADMIN-only scope - omit for global scheduling
-     */
-    run: (
-        strategy: ScheduleStrategy = "GREEDY",
-        departmentId?: number | null,
-    ) => {
+    run: (strategy: ScheduleStrategy = "GREEDY", departmentId?: number | null) => {
         const params = new URLSearchParams({ strategy });
-        if (departmentId != null)
-            params.append("departmentId", String(departmentId));
-        return axiosInstance.post<ScheduleResult>(
-            `/schedule/run?${params.toString()}`,
-        );
+        if (departmentId != null) params.append("departmentId", String(departmentId));
+        return axiosInstance.post<ScheduleResult>(`/schedule/run?${params.toString()}`);
     },
 
-    /** PHASE 2: Persists the admin-approved draft assignments to the DB.
-     *  Tasks are marked SCHEDULED and Settlements are created as ASSIGNED.
-     */
-    save: (data: SaveScheduleRequest) =>
-        axiosInstance.post<void>("/schedule/save", data),
+    save: (data: SaveScheduleRequest) => axiosInstance.post<void>("/schedule/save", data),
 
-    /** Optional PHASE 1 override: Run with a specific config preset (Memetic only) */
-    runWithConfig: (
-        strategy: ScheduleStrategy,
-        configId: number,
-        departmentId?: number | null,
-    ) => {
+    runWithConfig: (strategy: ScheduleStrategy, configId: number, departmentId?: number | null) => {
         const params = new URLSearchParams({
             strategy,
-            configId: String(configId),
+            configId: String(configId)
         });
-        if (departmentId != null)
-            params.append("departmentId", String(departmentId));
-        return axiosInstance.post<ScheduleResult>(
-            `/schedule/run?${params.toString()}`,
-        );
-    },
+        if (departmentId != null) params.append("departmentId", String(departmentId));
+        return axiosInstance.post<ScheduleResult>(`/schedule/run?${params.toString()}`);
+    }
 };
 
-// Scheduling Configuration API - CRUD for algorithm parameters
 export const schedulingConfigApi = {
-    getActive: () =>
-        axiosInstance.get<import("../types").SchedulingConfiguration>(
-            "/scheduling-configs/active",
-        ),
+    getActive: () => axiosInstance.get<import("../types").SchedulingConfiguration>("/scheduling-configs/active"),
 
     create: (config: Omit<import("../types").SchedulingConfiguration, "id">) =>
-        axiosInstance.post<import("../types").SchedulingConfiguration>(
-            "/scheduling-configs",
-            config,
-        ),
+        axiosInstance.post<import("../types").SchedulingConfiguration>("/scheduling-configs", config),
 
-    // If a GetAll endpoint exists, add it here. For now we assume we might need to populate a dropdown
-    getAll: () =>
-        axiosInstance.get<import("../types").SchedulingConfiguration[]>(
-            "/scheduling-configs",
-        ),
+    getAll: () => axiosInstance.get<import("../types").SchedulingConfiguration[]>("/scheduling-configs")
 };

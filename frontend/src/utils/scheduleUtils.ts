@@ -1,8 +1,7 @@
 export function formatReason(rawReason: string): string {
     if (!rawReason) return "Unknown reason";
 
-    const prefixPattern =
-        /^(memetic|greedy|round.?robin)\s*:\s*(constraint violation during decode\s*[-–-]+\s*|[^-–]*(decode|scheduling)\s*[-–-]+\s*)?/i;
+    const prefixPattern = /^(memetic|greedy|round.?robin)\s*:\s*(constraint violation during decode\s*[-–-]+\s*|[^-–]*(decode|scheduling)\s*[-–-]+\s*)?/i;
     const stripped = rawReason.replace(prefixPattern, "").trim();
 
     const result = stripped.length > 0 ? stripped : rawReason.trim();

@@ -1,19 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, createContext } from "react";
 import type { ReactNode } from "react";
 import type { User, AuthContextType } from "../types";
 import { authApi } from "../api";
 import axiosInstance from "../api/axios";
-import { AuthContext } from "./AuthContext";
+
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
     children: ReactNode;
 }
 
-function decodeJwt(token: string): {
-    sub?: string;
-    role?: "ROLE_ADMIN" | "ROLE_MANAGER" | "ROLE_WORKER";
-    departmentId?: number;
-} {
+function decodeJwt(token: string): { sub?: string } {
     try {
         const payload = token.split(".")[1];
         return JSON.parse(atob(payload));
@@ -28,27 +25,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     useEffect(() => {
         const accessToken = localStorage.getItem("accessToken");
+
         if (accessToken) {
-            // If a token exists, decode it to get the user's nationalId and fetch fresh data
             const payload = decodeJwt(accessToken);
-            const nationalId = payload.sub;
-            if (nationalId) {
+
+            if (payload.sub) {
                 axiosInstance
                     .get<User>(`/users/me`)
-                    .then((response) => {
-                        const userData = response.data;
-                        // The role now comes directly from the backend response
-                        setUser(userData);
+                    .then(response => {
+                        setUser(response.data);
                     })
                     .catch(() => {
-                        // If fetching the user fails (e.g., token expired), log them out
                         logout();
                     })
                     .finally(() => {
                         setIsLoading(false);
                     });
             } else {
-                // Invalid token, clear session
                 logout();
                 setIsLoading(false);
             }
@@ -59,20 +52,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const login = async (nationalId: string, password: string) => {
         try {
-            // 1. Authenticate - backend returns tokens
             const response = await authApi.login({ nationalId, password });
-            const { accessToken } = response.data;
-            localStorage.setItem("accessToken", accessToken);
+            localStorage.setItem("accessToken", response.data.accessToken);
 
-            // 2. Fetch full user profile using the /me endpoint
             const userResponse = await axiosInstance.get<User>(`/users/me`);
-            const userData = userResponse.data;
+            setUser(userResponse.data);
 
-            // 3. The user object from the backend now includes the correct single role.
-            setUser(userData);
-            // We no longer store the full user object in localStorage for security and to prevent stale data. The user is now fetched fresh on every application load.
-            localStorage.removeItem("user"); // Clean up old storage if it exists
-        } catch (error) {
+            localStorage.removeItem("user");
+        } catch (error: unknown) {
             console.error("Login failed:", error);
             throw error;
         }
@@ -80,15 +67,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const logout = async () => {
         try {
-            // Inform the backend, but don't let it block the frontend logout
             await authApi.logout();
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Logout failed on backend:", error);
         } finally {
-            // Clear all session-related items from storage
             localStorage.removeItem("accessToken");
-            localStorage.removeItem("user"); // Ensure old user object is gone
-            axiosInstance.defaults.headers.common["Authorization"] = ""; // Clear auth header
+            localStorage.removeItem("user");
+            axiosInstance.defaults.headers.common["Authorization"] = "";
             setUser(null);
         }
     };
@@ -99,9 +84,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const { accessToken } = response.data;
 
             localStorage.setItem("accessToken", accessToken);
-            axiosInstance.defaults.headers.common["Authorization"] =
-                `Bearer ${accessToken}`;
-        } catch (error) {
+            axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+        } catch (error: unknown) {
             console.error("Token refresh failed:", error);
             await logout();
             throw error;
@@ -114,10 +98,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isLoading,
         login,
         logout,
-        refreshAccessToken,
+        refreshAccessToken
     };
 
-    return (
-        <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-    );
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

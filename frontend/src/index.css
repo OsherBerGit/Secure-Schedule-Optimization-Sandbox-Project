@@ -94,3 +94,22 @@ body { margin: 0; min-height: 100vh; background-color: var(--bg-main); color: va
 .dark button.settlement-btn:hover { background-color: rgba(192, 132, 252, 0.15) !important; color: #c084fc !important; }
 .dark .recharts-reference-line line, .dark .recharts-reference-line > line, .dark svg .recharts-reference-line line { stroke: #22c55e !important; visibility: visible !important; opacity: 1 !important; stroke-dasharray: 5 3 !important; }
 .dark .recharts-reference-line text, .dark svg .recharts-reference-line text { fill: #22c55e !important; visibility: visible !important; display: block !important; opacity: 1 !important; }
+
+/* --- Global React DatePicker Icon & Placeholder Fix --- */
+.react-datepicker-wrapper { position: relative; width: 100%; display: block; }
+.react-datepicker__calendar-icon { position: absolute !important; right: 12px !important; left: auto !important; top: 50% !important; transform: translateY(-50%) !important; padding: 0 !important; pointer-events: none !important; }
+
+/* Aggressive target on SVG paths to remove the brown/tan tint */
+.react-datepicker__calendar-icon,
+.react-datepicker__calendar-icon path,
+.react-datepicker-wrapper svg.react-datepicker__calendar-icon path {
+    fill: var(--text-secondary) !important;
+    color: var(--text-secondary) !important;
+    stroke: none !important;
+    outline: none !important;
+}
+
+.react-datepicker-wrapper input { padding-left: 1rem !important; padding-right: 2.5rem !important; }
+
+/* Ensure the placeholder text matches the clean UI without weird tints */
+.modern-input::placeholder { color: var(--text-secondary) !important; opacity: 0.8 !important; }

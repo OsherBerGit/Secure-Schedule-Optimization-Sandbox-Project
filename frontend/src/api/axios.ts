@@ -1,19 +1,15 @@
 import axios from "axios";
-import type {
-    InternalAxiosRequestConfig,
-    AxiosResponse,
-    AxiosError,
-} from "axios";
+import type { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 
 const BASE_URL = "http://localhost:8080/api";
 
 const axiosInstance = axios.create({
     baseURL: BASE_URL,
     headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
     },
     // Zero-Trust: HttpOnly Cookies
-    withCredentials: true,
+    withCredentials: true
 });
 
 // Zero-Trust: Automatically attach the JWT access token to every outgoing request
@@ -23,7 +19,7 @@ axiosInstance.interceptors.request.use(
         if (token) config.headers.Authorization = `Bearer ${token}`;
         return config;
     },
-    (error: AxiosError) => Promise.reject(error),
+    (error: AxiosError) => Promise.reject(error)
 );
 
 // Global Error Handler & Stateless JWT Refresh Flow
@@ -43,9 +39,7 @@ axiosInstance.interceptors.response.use(
         // Handle 409 Conflict (Optimistic Locking)
         // Optimistic Locking guard (syncs with Backend @Version mechanism)
         if (error.response?.status === 409) {
-            alert(
-                "Data Conflict: The schedule has been modified by another user. Please refresh the page to get the latest version.",
-            );
+            alert("Data Conflict: The schedule has been modified by another user. Please refresh the page to get the latest version.");
             return Promise.reject(error);
         }
 
@@ -55,27 +49,18 @@ axiosInstance.interceptors.response.use(
         }
 
         // Token Refresh Execution (Triggered on 401/403 Unauthorized)
-        if (
-            (error.response?.status === 401 ||
-                error.response?.status === 403) &&
-            !originalRequest._retry
-        ) {
+        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
-                const response = await axios.post(
-                    `${BASE_URL}/auth/refresh-token`,
-                    { },
-                    { withCredentials: true }
-                );
+                const response = await axios.post(`${BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
 
                 const { accessToken } = response.data;
 
                 localStorage.setItem("accessToken", accessToken);
 
                 // Re-attempt the original failed request with the new access token
-                if (originalRequest.headers)
-                    originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                if (originalRequest.headers) originalRequest.headers.Authorization = `Bearer ${accessToken}`;
 
                 return axiosInstance(originalRequest);
             } catch (refreshError) {
@@ -88,7 +73,7 @@ axiosInstance.interceptors.response.use(
         }
 
         return Promise.reject(error);
-    },
+    }
 );
 
 export default axiosInstance;
