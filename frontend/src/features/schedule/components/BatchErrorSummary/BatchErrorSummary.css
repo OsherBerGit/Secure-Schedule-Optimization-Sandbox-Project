@@ -1,11 +1,58 @@
-.batch-error-container { margin-bottom: 1.5rem; padding: 1rem; background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 0.5rem; box-shadow: var(--shadow-sm); }
-.batch-error-header { display: flex; justify-content: space-between; align-items: flex-start; }
-.batch-error-title-wrapper { display: flex; align-items: center; margin-bottom: 0.5rem; }
-.batch-error-icon { width: 1.25rem; height: 1.25rem; color: #ef4444; margin-right: 0.5rem; }
-.batch-error-title { font-size: 1.125rem; font-weight: 600; color: #ef4444; margin: 0; }
-.batch-error-close { background: none; border: none; cursor: pointer; color: #f87171; transition: color 0.2s; }
-.batch-error-close:hover { color: #ef4444; }
-.batch-error-content { margin-left: 1.75rem; }
-.batch-error-description { color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 500; }
-.batch-error-list { list-style-type: disc; padding-left: 1.25rem; margin: 0; }
-.batch-error-list li { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem; }
+.batch-error-container {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-sm);
+}
+.batch-error-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.batch-error-title-wrapper {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+.batch-error-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #ef4444;
+    margin-right: 0.5rem;
+}
+.batch-error-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #ef4444;
+    margin: 0;
+}
+.batch-error-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #f87171;
+    transition: color 0.2s;
+}
+.batch-error-close:hover {
+    color: #ef4444;
+}
+.batch-error-content {
+    margin-left: 1.75rem;
+}
+.batch-error-description {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+.batch-error-list {
+    list-style-type: disc;
+    padding-left: 1.25rem;
+    margin: 0;
+}
+.batch-error-list li {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}

@@ -1,9 +1,18 @@
-.fitness-chart-card { width: 100%; }
-
-/* --- Dark Mode Recharts Overrides --- */
-.dark .fitness-chart-card .recharts-cartesian-grid line { stroke: var(--border-color) !important; opacity: 0.4; }
+.fitness-chart-card {
+    width: 100%;
+}
+.dark .fitness-chart-card .recharts-cartesian-grid line {
+    stroke: var(--border-color) !important;
+    opacity: 0.4;
+}
 .dark .fitness-chart-card .recharts-text,
 .dark .fitness-chart-card .recharts-cartesian-axis-tick-value tspan,
-.dark .fitness-chart-card .recharts-label { fill: var(--text-secondary) !important; }
-.dark .fitness-chart-card .recharts-reference-line-line { stroke: #10b981 !important; }
-.dark .recharts-dot circle { fill: #818cf8 !important; }
+.dark .fitness-chart-card .recharts-label {
+    fill: var(--text-secondary) !important;
+}
+.dark .fitness-chart-card .recharts-reference-line-line {
+    stroke: #10b981 !important;
+}
+.dark .recharts-dot circle {
+    fill: #818cf8 !important;
+}

@@ -1,15 +1,93 @@
-.modern-modal-card, .modern-modal-form, .modal-body, .dates-grid { overflow: visible !important; }
-.modal-header { border-top-left-radius: 1rem; border-top-right-radius: 1rem; }
-.dates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.modal-body { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
-.modern-modal-card { border-radius: 1rem; box-shadow: var(--shadow-md); position: relative; max-width: 500px; width: 100%; background-color: var(--card-bg); border: 1px solid var(--border-color); }
-.modern-form-group { display: flex; flex-direction: column; gap: 0.5rem; }
-.modern-form-group label { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); }
-.modern-input { height: 48px; border-radius: 0.5rem; border: 1px solid var(--border-color); padding: 0 1rem; font-family: inherit; font-size: 0.95rem; color: var(--text-primary); box-sizing: border-box; width: 100%; outline: none; background-color: var(--input-bg); transition: border-color 0.2s; }
-.modern-input:focus { border-color: var(--primary-color); }
-.modal-actions { padding: 1.5rem 2rem; border-top: 1px solid var(--border-color); background-color: var(--bg-main); display: flex; justify-content: flex-end; gap: 1rem; border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem; }
-.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-cancel { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-weight: 500; transition: all 0.2s; }
-.btn-cancel:hover { background: var(--border-color); }
-.vacation-calendar .react-datepicker__navigation--next, .vacation-datepicker-popper .react-datepicker__navigation--next { right: 2px !important; top: 3px !important; }
-.vacation-calendar .react-datepicker__navigation--previous, .vacation-datepicker-popper .react-datepicker__navigation--previous { left: 2px !important; }
+.modern-modal-card,
+.modern-modal-form,
+.modal-body,
+.dates-grid {
+    overflow: visible !important;
+}
+.modal-header {
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+}
+.dates-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.modal-body {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+.modern-modal-card {
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
+    position: relative;
+    max-width: 500px;
+    width: 100%;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+.modern-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.modern-form-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.modern-input {
+    height: 48px;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    padding: 0 1rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    box-sizing: border-box;
+    width: 100%;
+    outline: none;
+    background-color: var(--input-bg);
+    transition: border-color 0.2s;
+}
+.modern-input:focus {
+    border-color: var(--primary-color);
+}
+.modal-actions {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-main);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    border-bottom-left-radius: 1rem;
+    border-bottom-right-radius: 1rem;
+}
+.btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+.btn-cancel:hover {
+    background: var(--border-color);
+}
+.vacation-calendar .react-datepicker__navigation--next,
+.vacation-datepicker-popper .react-datepicker__navigation--next {
+    right: 2px !important;
+    top: 3px !important;
+}
+.vacation-calendar .react-datepicker__navigation--previous,
+.vacation-datepicker-popper .react-datepicker__navigation--previous {
+    left: 2px !important;
+}

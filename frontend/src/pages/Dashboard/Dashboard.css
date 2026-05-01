@@ -1,32 +1,209 @@
-.dashboard-container { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; height: 100%; min-height: 100vh; flex-grow: 1; background-color: transparent; }
-.dashboard-main { max-width: 1400px; width: 100%; margin: 0 auto; padding: 2rem; display: flex; flex-direction: column; flex-grow: 1; }
-.welcome-banner { background: var(--card-bg); padding: 2rem; border-radius: 1rem; border: 1px solid var(--border-color); margin-bottom: 2rem; box-shadow: var(--card-shadow); }
-.welcome-banner h2 { margin: 0; color: var(--text-primary); font-size: 1.75rem; font-weight: 700; }
-.banner-details { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem; }
-.banner-pill { background: var(--bg-main); color: var(--text-secondary); padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; border: 1px solid var(--border-color); }
-.my-assignments-section { background: var(--card-bg); border-radius: 1rem; padding: 2rem; margin-bottom: 2rem; box-shadow: var(--card-shadow); border: 1px solid var(--border-color); }
-.section-header { margin-bottom: 1.5rem; }
-.section-header h3 { margin: 0; color: var(--text-primary); font-size: 1.25rem; font-weight: 700; }
-.dashboard-table-wrapper { overflow-x: auto; }
-.assignments-table { width: 100%; border-collapse: collapse; }
-.assignments-table th { text-align: left; padding: 1rem; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; border-bottom: 1px solid var(--border-color); background-color: var(--bg-main); }
-.assignments-table td { padding: 1rem; border-bottom: 1px solid var(--border-color); font-size: 0.95rem; color: var(--text-primary); }
-.assignments-table tr:last-child td { border-bottom: none; }
-.assignments-table tr:hover { background-color: var(--bg-main); }
-.assignment-task-title { font-weight: 600; }
-.dashboard-action-rows { display: flex; flex-direction: column; gap: 1.5rem; }
-.middle-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
-.bottom-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
-.dashboard-card { height: 100%; box-sizing: border-box; display: flex; flex-direction: column; text-decoration: none; background-color: var(--card-bg); padding: 1.75rem; border-radius: 1rem; border: 1px solid var(--border-color); box-shadow: var(--card-shadow); transition: all 0.2s ease; align-items: flex-start; gap: 1rem; }
-.dashboard-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--primary-color); }
-.dashboard-card .card-icon { color: var(--primary-color); background: var(--bg-main); padding: 0.85rem; border-radius: 0.75rem; display: inline-flex; }
-.dashboard-card h3 { color: var(--text-primary); margin: 0; font-size: 1.125rem; font-weight: 700; }
-.dashboard-card p { color: var(--text-secondary); margin: 0; font-size: 0.9rem; line-height: 1.5; }
-.dashboard-card.hero-card { background: var(--primary-gradient); color: white; border: none; flex-direction: row; align-items: center; gap: 2rem; padding: 2.5rem; }
-.dashboard-card.hero-card .hero-icon { background: rgba(255, 255, 255, 0.2); color: white; padding: 1.25rem; border-radius: 1rem; }
-.dashboard-card.hero-card h3, .dashboard-card.hero-card p { color: white; }
-.dashboard-card.hero-card p { opacity: 0.9; }
-.btn-complete-dash { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border: none; border-radius: 0.5rem; font-size: 0.85rem; cursor: pointer; font-weight: 600; background: rgba(22, 163, 74, 0.15); color: #22c55e; transition: all 0.2s; }
-.btn-complete-dash:hover { background-color: rgba(22, 163, 74, 0.25); }
-.done-text { color: #22c55e; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem; }
-.status-badge { display: inline-flex; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+    flex-grow: 1;
+    background-color: transparent;
+}
+.dashboard-main {
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+.welcome-banner {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 1rem;
+    border: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+    box-shadow: var(--card-shadow);
+}
+.welcome-banner h2 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+.banner-details {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+}
+.banner-pill {
+    background: var(--bg-main);
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--border-color);
+}
+.my-assignments-section {
+    background: var(--card-bg);
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border-color);
+}
+.section-header {
+    margin-bottom: 1.5rem;
+}
+.section-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+.dashboard-table-wrapper {
+    overflow-x: auto;
+}
+.assignments-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.assignments-table th {
+    text-align: left;
+    padding: 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-main);
+}
+.assignments-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+.assignments-table tr:last-child td {
+    border-bottom: none;
+}
+.assignments-table tr:hover {
+    background-color: var(--bg-main);
+}
+.assignment-task-title {
+    font-weight: 600;
+}
+.dashboard-action-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+.middle-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+.bottom-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+.dashboard-card {
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    background-color: var(--card-bg);
+    padding: 1.75rem;
+    border-radius: 1rem;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
+    transition: all 0.2s ease;
+    align-items: flex-start;
+    gap: 1rem;
+}
+.dashboard-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
+}
+.dashboard-card .card-icon {
+    color: var(--primary-color);
+    background: var(--bg-main);
+    padding: 0.85rem;
+    border-radius: 0.75rem;
+    display: inline-flex;
+}
+.dashboard-card h3 {
+    color: var(--text-primary);
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+.dashboard-card p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+.dashboard-card.hero-card {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 2rem;
+    padding: 2.5rem;
+}
+.dashboard-card.hero-card .hero-icon {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 1.25rem;
+    border-radius: 1rem;
+}
+.dashboard-card.hero-card h3,
+.dashboard-card.hero-card p {
+    color: white;
+}
+.dashboard-card.hero-card p {
+    opacity: 0.9;
+}
+.btn-complete-dash {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 600;
+    background: rgba(22, 163, 74, 0.15);
+    color: #22c55e;
+    transition: all 0.2s;
+}
+.btn-complete-dash:hover {
+    background-color: rgba(22, 163, 74, 0.25);
+}
+.done-text {
+    color: #22c55e;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.status-badge {
+    display: inline-flex;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
