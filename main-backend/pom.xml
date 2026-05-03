@@ -94,12 +94,13 @@
             <version>8.3.0</version>
         </dependency>
 
-        <!-- Algorithm Dependency -->
+        <!-- Lombok Dependency -->
         <dependency>
-            <groupId>com.example</groupId>
-            <artifactId>algorithm</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
         </dependency>
+
     </dependencies>
 
     <build>

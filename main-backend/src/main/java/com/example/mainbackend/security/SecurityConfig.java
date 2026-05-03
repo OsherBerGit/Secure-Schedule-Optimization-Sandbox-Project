@@ -67,7 +67,7 @@ public class SecurityConfig {
 
     // Main security filter chain configuration.
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 // Disable CSRF for stateless JWT authentication
                 .csrf(csrf -> csrf.disable())
