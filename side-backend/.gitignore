@@ -1,0 +1,21 @@
+# SECRETS
+src/main/resources/application.properties
+src/main/resources/application-*.properties
+!src/main/resources/application.properties.example
+!src/main/resources/application-*.properties.example
+
+# Build & Compiled
+target/
+*.class
+.mvn/wrapper/maven-wrapper.jar
+HELP.md
+
+# IDEs
+.idea
+*.iws
+*.iml
+*.ipr
+.vscode/
+.classpath
+.project
+.settings
