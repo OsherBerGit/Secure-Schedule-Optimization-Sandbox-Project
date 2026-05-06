@@ -36,11 +36,7 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!--
-            Algorithm module (local pure library jar).
-            Contains: engine/, model/, db/ScheduleData
-            No Spring Boot, no web server — direct function calls only.
-        -->
+        <!-- Algorithm module -->
         <dependency>
             <groupId>com.example</groupId>
             <artifactId>algorithm</artifactId>
@@ -53,7 +49,6 @@
             <artifactId>choco-solver</artifactId>
             <version>4.10.14</version>
         </dependency>
-
 
         <!-- Spring Boot Test -->
         <dependency>

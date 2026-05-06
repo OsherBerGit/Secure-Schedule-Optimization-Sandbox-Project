@@ -1,12 +1,16 @@
 spring.application.name=main-backend
 
-# Database configuration
-spring.datasource.url=jdbc:mysql://localhost:3306/main_backend_db?createDatabaseIfNotExist=true&serverTimezone=UTC
+# ==========================================
+# 1. Database Configuration
+# ==========================================
+# For local dev with IntelliJ & Docker Compose, use localhost.
+# For full Docker/AWS deployment, use the container name, e.g., jdbc:mysql://db:3306/...
+spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/main_backend_db?createDatabaseIfNotExist=true&serverTimezone=UTC}
 spring.datasource.username=root
 # REQUIRED: Set via environment variable DB_PASSWORD
 spring.datasource.password=${DB_PASSWORD:YOUR_DB_PASSWORD}
 
-# Hibernate configuration
+# Hibernate configuration (Use 'update' or 'validate' for prod)
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
@@ -14,10 +18,14 @@ spring.jpa.properties.hibernate.format_sql=true
 # Dialect for MySQL
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
 
-# Server Port
+# ==========================================
+# 2. Server Configuration
+# ==========================================
 server.port=8080
 
-# JWT Configuration
+# ==========================================
+# 3. Security & JWT Configuration
+# ==========================================
 # REQUIRED: Generate with `openssl rand -base64 32` and set via environment variable JWT_SECRET
 # Must be at least 32 characters long
 jwt.secret=${JWT_SECRET:YOUR_JWT_SECRET_MIN_32_CHARS}
@@ -38,6 +46,8 @@ spring.main.allow-bean-definition-overriding=true
 # IMPORTANT: Set to false in production to enable full authentication/authorization
 app.development-mode=true
 
+# ==========================================
+# 4. Algorithm Service Integration
+# ==========================================
 # Algorithm service URL — set via environment variable ALGO_SERVICE_URL in production
 algorithm.service.url=${ALGO_SERVICE_URL:http://localhost:8081}
-

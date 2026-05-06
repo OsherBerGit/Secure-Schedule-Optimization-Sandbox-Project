@@ -4,19 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!--
-        The algorithm module is a pure Java library — NOT a Spring Boot application.
-        It exposes engine/, model/, dto/, and db/ScheduleData to any consumer
-        (e.g. side-backend) via a plain thin jar.
-        No web server, no database, no @SpringBootApplication.
-    -->
-
     <groupId>com.example</groupId>
     <artifactId>algorithm</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>algorithm</name>
-    <description>Secure Schedule Optimization — Pure Library (engine, models, DTOs)</description>
+    <description>Secure Schedule Optimization — Pure Library</description>
 
     <properties>
         <java.version>17</java.version>
@@ -32,15 +25,6 @@
             <groupId>org.choco-solver</groupId>
             <artifactId>choco-solver</artifactId>
             <version>4.10.14</version>
-        </dependency>
-
-
-        <!-- Lombok — used by model classes (@Builder, @Getter, @Setter, etc.) -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.36</version>
-            <optional>true</optional>
         </dependency>
 
         <!-- JUnit 5 for unit-testing the engine -->
@@ -63,13 +47,6 @@
                 <configuration>
                     <source>17</source>
                     <target>17</target>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>1.18.36</version>
-                        </path>
-                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
         </plugins>

@@ -4,12 +4,13 @@
 FROM maven:3.9.6-eclipse-temurin-17 AS builder
 WORKDIR /build
 
-# Step 1: Copy and install the 'algorithm' pure library locally
+# Step 1: Copy and install the 'algorithm' pure library locally.
+# This ensures the 'side-backend' can resolve its dependency on the shared module.
 COPY algorithm/pom.xml algorithm/
 COPY algorithm/src algorithm/src/
 RUN mvn -f algorithm/pom.xml clean install -DskipTests
 
-# Step 2: Copy and build the 'side-backend' which depends on 'algorithm'
+# Step 2: Copy and build the 'side-backend', which depends on the locally installed 'algorithm'.
 COPY side-backend/pom.xml side-backend/
 COPY side-backend/src side-backend/src/
 RUN mvn -f side-backend/pom.xml clean package -DskipTests
@@ -20,20 +21,21 @@ RUN mvn -f side-backend/pom.xml clean package -DskipTests
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# SECURITY: Create a non-root user for the isolated process
+# SECURITY: Create a non-root user for the isolated process to enforce Least Privilege.
 RUN addgroup -S algo && adduser -S algo -G algo
 USER algo:algo
 
-# Copy the compiled JAR from the builder stage
-COPY --from=builder /build/side-backend/target/side-backend-0.0.1-SNAPSHOT.jar ./app.jar
+# Copy the compiled JAR from the builder stage.
+# A wildcard is used to dynamically match the version specified in the pom.xml.
+COPY --from=builder /build/side-backend/target/side-backend-*.jar ./app.jar
 
-# Expose the algorithm port
+# Expose the designated port for the Algorithm Sandbox.
 EXPOSE 8081
 
-# SECURITY: Override 127.0.0.1 to 0.0.0.0 so it can receive traffic from the
-# isolated Docker internal network (from main-backend ONLY).
-# We also expect INTERNAL_KEY to be injected via docker-compose.
+# SECURITY: Override 127.0.0.1 to 0.0.0.0 to allow traffic ONLY from the
+# isolated Docker internal network (routed strictly from the main-backend).
+# The INTERNAL_KEY is injected via docker-compose for service-to-service validation.
 ENV SERVER_ADDRESS=0.0.0.0
 
-# Run the stateless algorithm service
+# Run the stateless algorithm service with a secure entropy source.
 ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
