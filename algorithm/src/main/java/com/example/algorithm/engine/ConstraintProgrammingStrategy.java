@@ -61,15 +61,15 @@ public class ConstraintProgrammingStrategy extends BaseSchedulingStrategy {
     @Override
     public String getName() { return "CONSTRAINT_PROGRAMMING"; }
 
-// Executes the CP solver to find a valid schedule.
+    // Executes the CP solver to find a valid schedule.
 
-// Steps:
-// Setup Time Anchor: Use Monday 00:00 as minute 0.
-// Initialize Choco Model.
-// Create Variables: Task start times, durations, ends, and assignees.
-// Post Task Constraints: Precedence and valid domains.
-// Post Resource Constraints: Worker availability windows and non-overlapping tasks.
-// Solve: Search for a solution with a timeout.
+    // Steps:
+    // Setup Time Anchor: Use Monday 00:00 as minute 0.
+    // Initialize Choco Model.
+    // Create Variables: Task start times, durations, ends, and assignees.
+    // Post Task Constraints: Precedence and valid domains.
+    // Post Resource Constraints: Worker availability windows and non-overlapping tasks.
+    // Solve: Search for a solution with a timeout.
     @Override
     public List<TaskAssignment> schedule(ScheduleData data) {
         List<AlgoTask> tasks = data.tasks();

@@ -17,10 +17,7 @@ public class LocalSearch {
         this.fitnessEvaluator = fitnessEvaluator;
     }
 
-    public void optimize(Individual individual,
-                         List<AlgoTask> tasks,
-                         List<AlgoUser> users,
-                         int searchIterations) {
+    public void optimize(Individual individual, List<AlgoTask> tasks, List<AlgoUser> users, int searchIterations) {
 
         // 1. Repair Phase: If a gene is invalid (e.g., causes a hard penalty), try to fix it.
         // We know a gene is invalid if the overall fitness is very low, but since fitness

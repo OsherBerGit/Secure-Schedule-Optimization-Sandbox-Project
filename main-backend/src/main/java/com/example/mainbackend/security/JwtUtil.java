@@ -1,6 +1,5 @@
 package com.example.mainbackend.security;
 
-import com.example.mainbackend.dto.auth.AuthenticationRequest;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -40,7 +39,7 @@ public class JwtUtil {
 
     private SecretKey getKey() { return this.key; }
 
-    public String generateToken(AuthenticationRequest authenticationRequest, UserDetails userDetails, Long departmentId, String jwtID) {
+    public String generateToken(UserDetails userDetails, Long departmentId, String jwtID) {
         Map<String, Object> claims = new HashMap<>();
         if (departmentId != null)
             claims.put("departmentId", departmentId);
@@ -62,18 +61,13 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String generateRefreshToken(AuthenticationRequest authenticationRequest, UserDetails userDetails, String jwtID) {
-        Map<String, Object> claims = new HashMap<>();
-
+    public String generateRefreshToken(UserDetails userDetails, String jwtID) {
         return Jwts.builder()
                 .header().add("typ", "JWT").and()
-                .claims()
-                .add(claims)
                 .subject(userDetails.getUsername())
                 .setId(jwtID)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshTokenExpiration()))
-                .and()
                 .claim("issuedBy", "Secure-Schedule System")
                 .signWith(getKey())
                 .compact();

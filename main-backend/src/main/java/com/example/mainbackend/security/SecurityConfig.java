@@ -40,8 +40,8 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
-    private final CustomLogoutHandler customLogoutHandler;
     private final RateLimitProperties rateLimitProperties;
+    // private final CustomLogoutHandler customLogoutHandler;
 
     // Password encoder using BCrypt with strength 12.
     // Strength 12 provides a good balance between security and performance.
@@ -106,20 +106,22 @@ public class SecurityConfig {
                 )
 
                 // Logout configuration
-                .logout(logout -> logout
-                        .logoutUrl("/api/auth/logout")
-                        .logoutSuccessHandler(customLogoutHandler)
-                        .invalidateHttpSession(true)
-                        .clearAuthentication(true)
-                        .permitAll()
-                )
+                // .logout(logout -> logout
+                //         .logoutUrl("/api/auth/logout")
+                //         .logoutSuccessHandler(customLogoutHandler)
+                //         .invalidateHttpSession(true)
+                //         .clearAuthentication(true)
+                //         .permitAll()
+                // )
 
                 // Authorization rules
                 .authorizeHttpRequests(auth -> auth
                         // Public: login and token refresh — no JWT required
                         .requestMatchers(
-                                HttpMethod.POST, "/api/auth/login",
-                                "/api/auth/refresh-token"
+                                HttpMethod.POST,
+                                "/api/auth/login",
+                                "/api/auth/refresh-token",
+                                "/api/auth/logout"
                         ).permitAll()
 
                         // OPTIONS preflight requests — required for CORS handshake

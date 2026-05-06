@@ -3,8 +3,10 @@ package com.example.mainbackend.controller;
 import com.example.mainbackend.dto.auth.AuthenticationRequest;
 import com.example.mainbackend.dto.auth.AuthenticationResponse;
 import com.example.mainbackend.security.JwtProperties;
+import com.example.mainbackend.security.JwtUtil;
 import com.example.mainbackend.service.AuthenticationService;
 import com.example.mainbackend.service.RefreshTokenService;
+import com.example.mainbackend.service.TokenBlacklistService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/auth")
@@ -22,6 +26,8 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
     private final RefreshTokenService refreshTokenService;
+    private final JwtUtil jwtUtil;
+    private final TokenBlacklistService tokenBlacklistService;
 
     private ResponseCookie createRefreshTokenCookie(String refreshToken) {
         return ResponseCookie.from("refreshToken", refreshToken)
@@ -76,5 +82,38 @@ public class AuthenticationController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"error\": \"" + e.getMessage() + "\"}");
         }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser(HttpServletRequest request, @CookieValue(name = "refreshToken", required = false) String refreshToken) {
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String accessToken = authHeader.substring(7);
+            try {
+                String jwtID = jwtUtil.extractJWTID(accessToken);
+                Date expiration = jwtUtil.extractExpiration(accessToken);
+                tokenBlacklistService.blacklistToken(jwtID, expiration, "logout (access token)");
+            } catch (Exception e) { }
+        }
+
+        if (refreshToken != null && !refreshToken.isEmpty()) {
+            try {
+                String refreshJwtID = jwtUtil.extractJWTID(refreshToken);
+                Date refreshExpiration = jwtUtil.extractExpiration(refreshToken);
+                tokenBlacklistService.blacklistToken(refreshJwtID, refreshExpiration, "logout (refresh token)");
+            } catch (Exception e) { }
+        }
+
+        ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/api/auth/refresh-token")
+                .maxAge(0)
+                .sameSite("Strict")
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
+                .body("{\"success\": true, \"message\": \"Logged out successfully. Tokens invalidated.\"}");
     }
 }

@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+
+import java.util.Date;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -35,31 +38,34 @@ public class RefreshTokenService {
 
     public AuthenticationResponse refreshAccessToken(String refreshToken, String clientIP) {
 
-        String jwtID = jwtUtil.extractJWTID(refreshToken);
+        String oldJwtID = jwtUtil.extractJWTID(refreshToken);
 
-        if (tokenBlacklistService.isTokenBlacklisted(jwtID))
+        if (tokenBlacklistService.isTokenBlacklisted(oldJwtID))
             throw new RuntimeException("Token is blacklisted");
+
+        String storedIP = refreshTokenIps.getIfPresent(oldJwtID);
+        if (storedIP == null || !storedIP.equals(clientIP))
+            throw new RuntimeException("Invalid IP address for this refresh token");
 
         String nationalId = jwtUtil.extractNationalId(refreshToken);
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(nationalId);
 
-        String storedIP = refreshTokenIps.getIfPresent(jwtID);
-        if (storedIP == null || !storedIP.equals(clientIP))
-            throw new RuntimeException("Invalid IP address for this refresh token");
-
         if (!jwtUtil.validateToken(refreshToken, userDetails))
             throw new RuntimeException("Invalid or expired refresh token");
 
+        String newJwtId = UUID.randomUUID().toString();
+
         User user = userRepository.findByNationalId(nationalId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
         Long departmentId = (user.getDepartment() != null) ? user.getDepartment().getId() : null;
 
-        String newAccessToken = jwtUtil.generateToken(null, userDetails, departmentId, jwtID);
-        String newRefreshToken = jwtUtil.generateRefreshToken(null, userDetails, jwtID);
+        String newAccessToken = jwtUtil.generateToken(userDetails, departmentId, newJwtId);
+        String newRefreshToken = jwtUtil.generateRefreshToken(userDetails, newJwtId);
 
-        // Reset the cache's expiration timer so it matches the new refresh token's lifespan
-        storeRefreshTokenIp(jwtID, clientIP);
+        Date expiryDate = jwtUtil.extractExpiration(refreshToken);
+        tokenBlacklistService.blacklistToken(oldJwtID, expiryDate, "refresh");
+
+        storeRefreshTokenIp(newJwtId, clientIP);
 
         return new AuthenticationResponse(newAccessToken, newRefreshToken);
     }

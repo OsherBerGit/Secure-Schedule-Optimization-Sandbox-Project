@@ -38,8 +38,8 @@ public class AuthenticationService {
 
         refreshTokenService.storeRefreshTokenIp(jwtID, clientIP);
 
-        String accessToken = jwtUtil.generateToken(authenticationRequest, userDetails, departmentId, jwtID);
-        String refreshToken = jwtUtil.generateRefreshToken(authenticationRequest, userDetails, jwtID);
+        String accessToken = jwtUtil.generateToken(userDetails, departmentId, jwtID);
+        String refreshToken = jwtUtil.generateRefreshToken(userDetails, jwtID);
 
         return new AuthenticationResponse(accessToken, refreshToken);
     }
